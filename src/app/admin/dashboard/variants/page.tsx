@@ -239,8 +239,8 @@ export default function AdminVariantsPage() {
           m?.type === "weight"
             ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border-[var(--color-primary-200)]"
             : m?.type === "volume"
-            ? "bg-blue-50 text-blue-700 border-blue-200"
-            : "bg-amber-50 text-amber-700 border-amber-200";
+              ? "bg-blue-50 text-blue-700 border-blue-200"
+              : "bg-amber-50 text-amber-700 border-amber-200";
 
         return (
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -302,11 +302,10 @@ export default function AdminVariantsPage() {
             onClick={() => handleToggleStock(row.original, !isOutOfStock)}
             disabled={isRowPending}
             title={isOutOfStock ? "Click to mark In Stock" : "Click to mark Out of Stock"}
-            className={`group inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-bold border bg-white cursor-pointer shadow-xs transition-all hover:shadow-sm active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100 ${
-              !isOutOfStock
+            className={`group inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-bold border bg-white cursor-pointer shadow-xs transition-all hover:shadow-sm active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100 ${!isOutOfStock
                 ? "text-emerald-700 border-emerald-300 hover:bg-emerald-50"
                 : "text-rose-700 border-rose-300 hover:bg-rose-50"
-            }`}
+              }`}
           >
             {isRowPending ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -332,16 +331,14 @@ export default function AdminVariantsPage() {
       header: "Status",
       cell: ({ row }) => (
         <span
-          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
-            row.original.isActive
+          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${row.original.isActive
               ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
               : "bg-neutral-100 text-neutral-600 border border-neutral-200"
-          }`}
+            }`}
         >
           <span
-            className={`w-1.5 h-1.5 rounded-full ${
-              row.original.isActive ? "bg-emerald-600" : "bg-neutral-400"
-            }`}
+            className={`w-1.5 h-1.5 rounded-full ${row.original.isActive ? "bg-emerald-600" : "bg-neutral-400"
+              }`}
           />
           {row.original.isActive ? "Active" : "Inactive"}
         </span>
@@ -457,11 +454,10 @@ export default function AdminVariantsPage() {
                 <button
                   type="button"
                   onClick={() => setViewMode("table")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                    viewMode === "table"
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${viewMode === "table"
                       ? "bg-[var(--color-secondary-600)] text-white shadow-xs"
                       : "text-neutral-600 hover:text-neutral-900"
-                  }`}
+                    }`}
                   title="Table List View"
                 >
                   <LayoutList className="h-4 w-4" />
@@ -471,11 +467,10 @@ export default function AdminVariantsPage() {
                 <button
                   type="button"
                   onClick={() => setViewMode("cards")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                    viewMode === "cards"
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${viewMode === "cards"
                       ? "bg-[var(--color-secondary-600)] text-white shadow-xs"
                       : "text-neutral-600 hover:text-neutral-900"
-                  }`}
+                    }`}
                   title="Storefront Customer Card View"
                 >
                   <LayoutGrid className="h-4 w-4" />
@@ -639,30 +634,29 @@ export default function AdminVariantsPage() {
           createStep === 1
             ? "Add Product Item"
             : createStep === 2
-            ? `Units & Pricing: ${createdVariant?.name || "Item"}`
-            : createStep === 3
-            ? `Add Images: ${createdVariant?.name || "Item"}`
-            : `Item Created: ${createdVariant?.name || "Item"}`
+              ? `Units & Pricing: ${createdVariant?.name || "Item"}`
+              : createStep === 3
+                ? `Add Images: ${createdVariant?.name || "Item"}`
+                : `Item Created: ${createdVariant?.name || "Item"}`
         }
         description={
           createStep === 1
             ? "Step 1 of 4: Basic details — name, description and dietary type"
             : createStep === 2
-            ? "Step 2 of 4: Add the pack sizes (e.g. 250g, 500g) and price for each"
-            : createStep === 3
-            ? "Step 3 of 4: Upload photos for this item"
-            : "Step 4 of 4: See how this item will look to customers"
+              ? "Step 2 of 4: Add the pack sizes (e.g. 250g, 500g) and price for each"
+              : createStep === 3
+                ? "Step 3 of 4: Upload photos for this item"
+                : "Step 4 of 4: See how this item will look to customers"
         }
         size="lg"
       >
         {/* Stepper Progress Bar */}
         <div className="mb-6 flex items-center justify-center gap-2 sm:gap-3 border-b border-[var(--color-neutral-200)] pb-4">
           <div
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-              createStep === 1
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${createStep === 1
                 ? "bg-[var(--color-secondary-600)] text-white shadow"
                 : "bg-[var(--color-success-100)] text-[var(--color-success-700)]"
-            }`}
+              }`}
           >
             {createStep > 1 ? (
               <Check className="h-3.5 w-3.5" />
@@ -675,13 +669,12 @@ export default function AdminVariantsPage() {
           <span className="text-xs text-[var(--color-neutral-400)]">→</span>
 
           <div
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-              createStep === 2
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${createStep === 2
                 ? "bg-[var(--color-secondary-600)] text-white shadow"
                 : createStep > 2
-                ? "bg-[var(--color-success-100)] text-[var(--color-success-700)]"
-                : "bg-[var(--color-neutral-100)] text-[var(--color-neutral-500)]"
-            }`}
+                  ? "bg-[var(--color-success-100)] text-[var(--color-success-700)]"
+                  : "bg-[var(--color-neutral-100)] text-[var(--color-neutral-500)]"
+              }`}
           >
             {createStep > 2 ? (
               <Check className="h-3.5 w-3.5" />
@@ -694,13 +687,12 @@ export default function AdminVariantsPage() {
           <span className="text-xs text-[var(--color-neutral-400)]">→</span>
 
           <div
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-              createStep === 3
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${createStep === 3
                 ? "bg-[var(--color-secondary-600)] text-white shadow"
                 : createStep > 3
-                ? "bg-[var(--color-success-100)] text-[var(--color-success-700)]"
-                : "bg-[var(--color-neutral-100)] text-[var(--color-neutral-500)]"
-            }`}
+                  ? "bg-[var(--color-success-100)] text-[var(--color-success-700)]"
+                  : "bg-[var(--color-neutral-100)] text-[var(--color-neutral-500)]"
+              }`}
           >
             {createStep > 3 ? (
               <Check className="h-3.5 w-3.5" />
@@ -713,11 +705,10 @@ export default function AdminVariantsPage() {
           <span className="text-xs text-[var(--color-neutral-400)]">→</span>
 
           <div
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-              createStep === 4
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${createStep === 4
                 ? "bg-[var(--color-secondary-600)] text-white shadow"
                 : "bg-[var(--color-neutral-100)] text-[var(--color-neutral-500)]"
-            }`}
+              }`}
           >
             <span>4</span>
             <span>Preview</span>
@@ -735,10 +726,6 @@ export default function AdminVariantsPage() {
                 slug: formData.slug,
                 shortDescription: formData.shortDescription || null,
                 description: formData.description || null,
-                ingredients: formData.ingredients || null,
-                isReadyToMix: formData.isReadyToMix,
-                cookingRecipe: formData.cookingRecipe || null,
-                shelfLife: formData.shelfLife || null,
                 vegType: formData.vegType,
                 isFeatured: formData.isFeatured,
               };
@@ -856,11 +843,10 @@ export default function AdminVariantsPage() {
               <button
                 type="button"
                 onClick={() => setEditTab("details")}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors cursor-pointer ${
-                  editTab === "details"
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors cursor-pointer ${editTab === "details"
                     ? "border-[var(--color-secondary-600)] text-[var(--color-secondary-600)]"
                     : "border-transparent text-[var(--color-neutral-500)] hover:text-[var(--color-neutral-800)]"
-                }`}
+                  }`}
               >
                 <Package className="h-4 w-4" />
                 Item Details
@@ -869,11 +855,10 @@ export default function AdminVariantsPage() {
               <button
                 type="button"
                 onClick={() => setEditTab("pricing")}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors cursor-pointer ${
-                  editTab === "pricing"
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors cursor-pointer ${editTab === "pricing"
                     ? "border-[var(--color-secondary-600)] text-[var(--color-secondary-600)]"
                     : "border-transparent text-[var(--color-neutral-500)] hover:text-[var(--color-neutral-800)]"
-                }`}
+                  }`}
               >
                 <Package className="h-4 w-4" />
                 Units & Pricing
@@ -882,11 +867,10 @@ export default function AdminVariantsPage() {
               <button
                 type="button"
                 onClick={() => setEditTab("images")}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors cursor-pointer ${
-                  editTab === "images"
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors cursor-pointer ${editTab === "images"
                     ? "border-[var(--color-secondary-600)] text-[var(--color-secondary-600)]"
                     : "border-transparent text-[var(--color-neutral-500)] hover:text-[var(--color-neutral-800)]"
-                }`}
+                  }`}
               >
                 <ImageIcon className="h-4 w-4" />
                 Manage Images
@@ -901,10 +885,6 @@ export default function AdminVariantsPage() {
                   slug: selectedVariant.slug || "",
                   shortDescription: selectedVariant.shortDescription || "",
                   description: selectedVariant.description || "",
-                  ingredients: selectedVariant.ingredients || "",
-                  isReadyToMix: selectedVariant.isReadyToMix ?? false,
-                  cookingRecipe: selectedVariant.cookingRecipe || "",
-                  shelfLife: selectedVariant.shelfLife || "",
                   vegType: selectedVariant.vegType || "na",
                   isFeatured: selectedVariant.isFeatured ?? false,
                 }}
@@ -919,10 +899,6 @@ export default function AdminVariantsPage() {
                     slug: formData.slug,
                     shortDescription: formData.shortDescription || null,
                     description: formData.description || null,
-                    ingredients: formData.ingredients || null,
-                    isReadyToMix: formData.isReadyToMix,
-                    cookingRecipe: formData.cookingRecipe || null,
-                    shelfLife: formData.shelfLife || null,
                     vegType: formData.vegType,
                     isFeatured: formData.isFeatured,
                   };
@@ -987,3 +963,4 @@ export default function AdminVariantsPage() {
     </div>
   );
 }
+
