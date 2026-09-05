@@ -28,6 +28,7 @@ import {
   useRemoveFromWishlist,
 } from "@/features/wishlist/hooks/use-wishlist";
 import type { CustomerProductDetailDto, CustomerVariantListItemDto } from "../types";
+import { sanitizeRichText } from "@/lib/sanitize-html";
 
 interface ProductDetailsProps {
   product: CustomerProductDetailDto;
@@ -205,6 +206,38 @@ function ProductDetails({ product }: ProductDetailsProps) {
             className="rich-text-content text-sm text-stone-600 leading-relaxed max-w-none border-b border-stone-100 pb-4"
             dangerouslySetInnerHTML={{ __html: sanitizeRichText(product.description) }}
           />
+        )}
+
+        {/* Ingredients / Cooking Recipe / Best Before */}
+        {(selectedVariant?.ingredients ||
+          (selectedVariant?.isReadyToMix && selectedVariant?.cookingRecipe) ||
+          selectedVariant?.shelfLife) && (
+          <div className="space-y-3 border-b border-stone-100 pb-4">
+            {selectedVariant?.ingredients && (
+              <div>
+                <h3 className="text-sm font-semibold text-stone-800 mb-1">Ingredients</h3>
+                <p className="text-sm text-stone-600 leading-relaxed whitespace-pre-line">
+                  {selectedVariant.ingredients}
+                </p>
+              </div>
+            )}
+            {selectedVariant?.isReadyToMix && selectedVariant?.cookingRecipe && (
+              <div>
+                <h3 className="text-sm font-semibold text-stone-800 mb-1">Cooking Recipe</h3>
+                <p className="text-sm text-stone-600 leading-relaxed whitespace-pre-line">
+                  {selectedVariant.cookingRecipe}
+                </p>
+              </div>
+            )}
+            {selectedVariant?.shelfLife && (
+              <div>
+                <h3 className="text-sm font-semibold text-stone-800 mb-1">Best Before</h3>
+                <p className="text-sm text-stone-600 leading-relaxed">
+                  {selectedVariant.shelfLife}
+                </p>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Variant Selector */}
