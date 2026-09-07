@@ -35,46 +35,67 @@ const APP_TOAST_EVENT = "app-toast-event";
 const recentToasts = new Map<string, number>();
 const DEDUPE_TIME_MS = 2500;
 
-export const toast = {
-  show: (toastData: Omit<Toast, "id">) => {
-    if (typeof window === "undefined") return;
+type ToastInput =
+  | Omit<Toast, "id">
+  | {
+      title: string;
+      description?: string;
+      variant?: ToastVariant | "default" | "destructive";
+      duration?: number;
+    };
 
-    // Deduplicate based on message content to prevent dual toasts from MutationCache & components
-    const content = (toastData.description || toastData.title || "").trim().toLowerCase();
-    const dedupeKey = `${toastData.variant}:${content}`;
-    const now = Date.now();
-    const lastShown = recentToasts.get(dedupeKey);
+function showToast(toastData: ToastInput) {
+  if (typeof window === "undefined") return;
 
-    if (lastShown && now - lastShown < DEDUPE_TIME_MS) {
-      return; // Skip duplicate toast within dedupe window
-    }
+  const variant: ToastVariant =
+    toastData.variant === "destructive"
+      ? "error"
+      : toastData.variant === "default" || !toastData.variant
+      ? "success"
+      : toastData.variant;
 
-    recentToasts.set(dedupeKey, now);
-    setTimeout(() => {
-      recentToasts.delete(dedupeKey);
-    }, DEDUPE_TIME_MS);
+  // Deduplicate based on message content to prevent dual toasts from MutationCache & components
+  const content = (toastData.description || toastData.title || "").trim().toLowerCase();
+  const dedupeKey = `${variant}:${content}`;
+  const now = Date.now();
+  const lastShown = recentToasts.get(dedupeKey);
 
-    window.dispatchEvent(
-      new CustomEvent(APP_TOAST_EVENT, { detail: toastData })
-    );
-  },
+  if (lastShown && now - lastShown < DEDUPE_TIME_MS) {
+    return; // Skip duplicate toast within dedupe window
+  }
 
+  recentToasts.set(dedupeKey, now);
+  setTimeout(() => {
+    recentToasts.delete(dedupeKey);
+  }, DEDUPE_TIME_MS);
+
+  window.dispatchEvent(
+    new CustomEvent(APP_TOAST_EVENT, {
+      detail: {
+        title: toastData.title,
+        description: toastData.description,
+        variant,
+        duration: toastData.duration,
+      },
+    })
+  );
+}
+
+export const toast = Object.assign(showToast, {
+  show: showToast,
   success: (title: string, description?: string, duration?: number) => {
-    toast.show({ variant: "success", title, description, duration });
+    showToast({ variant: "success", title, description, duration });
   },
-
   error: (title: string, description?: string, duration?: number) => {
-    toast.show({ variant: "error", title, description, duration });
+    showToast({ variant: "error", title, description, duration });
   },
-
   warning: (title: string, description?: string, duration?: number) => {
-    toast.show({ variant: "warning", title, description, duration });
+    showToast({ variant: "warning", title, description, duration });
   },
-
   info: (title: string, description?: string, duration?: number) => {
-    toast.show({ variant: "info", title, description, duration });
+    showToast({ variant: "info", title, description, duration });
   },
-};
+});
 
 function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = React.useState<Toast[]>([]);
