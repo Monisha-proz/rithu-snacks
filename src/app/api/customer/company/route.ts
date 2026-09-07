@@ -1,10 +1,6 @@
 import { createApiHandler } from "@/lib/api/api-handler";
 import { apiSuccess } from "@/lib/api/api-response";
 import { companyService } from "@/features/company/services/company.service";
-import {
-  updateCompanySchema,
-  type UpdateCompanySchemaInput,
-} from "@/features/company/validations/company.schema";
 
 export const GET = createApiHandler(
   {
@@ -27,22 +23,5 @@ export const GET = createApiHandler(
   },
   {
     requireAuth: false,
-  }
-);
-
-export const PUT = createApiHandler(
-  {
-    PUT: async (_request, context) => {
-      const body = context.body as UpdateCompanySchemaInput;
-      const adminEmail = context.session?.user?.email;
-
-      const result = await companyService.updateCompany(body, adminEmail);
-      return apiSuccess(result, "Company details updated successfully", 200);
-    },
-  },
-  {
-    requireAuth: true,
-    requiredRole: ["ADMIN"],
-    bodySchema: updateCompanySchema,
   }
 );

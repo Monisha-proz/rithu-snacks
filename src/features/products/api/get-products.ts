@@ -5,55 +5,8 @@ import type {
   AdminProductListParams,
   GetAdminProductsParams,
   AdminProductImageResponse,
-  CustomerProductListItemDto,
-  CustomerProductDetailDto,
-  CustomerProductListParams,
 } from "../types";
 
-// Customer-facing product catalog
-export async function getCustomerProducts(params?: CustomerProductListParams) {
-  const body: Record<string, unknown> = {
-    page: params?.page ?? 1,
-    pageSize: params?.pageSize ?? 20,
-    sortBy: params?.sortBy ?? "createdAt",
-    sortOrder: params?.sortOrder ?? "desc",
-  };
-
-  if (params?.search && params.search.trim()) {
-    body.search = params.search.trim();
-  }
-  if (params?.brandIds && params.brandIds.length > 0) {
-    body.brandIds = params.brandIds;
-  }
-  if (params?.categoryIds && params.categoryIds.length > 0) {
-    body.categoryIds = params.categoryIds;
-  }
-  if (params?.minPrice !== undefined && params?.minPrice !== null) {
-    body.minPrice = params.minPrice;
-  }
-  if (params?.maxPrice !== undefined && params?.maxPrice !== null) {
-    body.maxPrice = params.maxPrice;
-  }
-
-  const response = await apiClient.post<CustomerProductListItemDto[]>(
-    "/api/customer/products",
-    body
-  );
-
-  return {
-    data: response.data ?? [],
-    meta: response.meta,
-  };
-}
-
-export async function getCustomerProduct(uuid: string): Promise<CustomerProductDetailDto> {
-  const response = await apiClient.get<CustomerProductDetailDto>(
-    `/api/customer/products/${uuid}`
-  );
-  return response.data!;
-}
-
-// Admin Products API
 export async function getAdminProducts(
   params?: AdminProductListParams | GetAdminProductsParams
 ): Promise<GetAdminProductsResult> {
@@ -81,6 +34,10 @@ export async function getAdminProducts(
   if (p?.categoryId) body.categoryId = String(p.categoryId);
   if (p?.brandId) body.brandId = String(p.brandId);
   if (p?.hsnCodeId) body.hsnCodeId = String(p.hsnCodeId);
+  if (p?.vegType) body.vegType = p.vegType;
+  if (p?.isFeatured !== undefined && p?.isFeatured !== null) {
+    body.isFeatured = Boolean(p.isFeatured);
+  }
   if (p?.status !== undefined && p?.status !== null) {
     body.status = Boolean(p.status);
   }
@@ -149,29 +106,35 @@ export async function updateAdminProductImage(
   productUuid: string,
   imageId: string,
   data: { imageUrl?: string; sortOrder?: number }
-) {
-  return apiClient.put<AdminProductImageResponse>(
+): Promise<AdminProductImageResponse | null> {
+  const response = await apiClient.put<AdminProductImageResponse>(
     `/api/admin/products/${productUuid}/images/${imageId}`,
     data
   );
+  return response.data ?? null;
 }
 
 export async function setPrimaryAdminProductImage(
   productUuid: string,
   imageId: string
-) {
-  return apiClient.put<AdminProductImageResponse>(
+): Promise<AdminProductImageResponse | null> {
+  const response = await apiClient.put<AdminProductImageResponse>(
     `/api/admin/products/${productUuid}/images/${imageId}/primary`
   );
+  return response.data ?? null;
 }
 
 export async function deleteAdminProductImage(
   productUuid: string,
   imageId: string
-) {
-  return apiClient.delete(
+): Promise<{ success: boolean; message: string }> {
+  const response = await apiClient.delete<{ success: boolean; message: string }>(
     `/api/admin/products/${productUuid}/images/${imageId}`
   );
+  return {
+    success: response.success ?? true,
+    message: response.message ?? "Product image deleted successfully",
+  };
 }
 
 // Multipart File Upload Helpers
@@ -221,6 +184,26 @@ export async function uploadProductImageFiles(
   return result.data;
 }
 
+export async function getStoreProducts(
+  params?: Record<string, unknown>
+) {
+  const query = new URLSearchParams();
+  if (params) {
+    Object.entries(params).forEach(([key, val]) => {
+      if (val !== undefined && val !== null && val !== "") {
+        query.set(key, String(val));
+      }
+    });
+  }
+  const queryString = query.toString();
+  const url = queryString ? `/api/products?${queryString}` : "/api/products";
+  return apiClient.get<any>(url);
+}
+
+export async function getStoreProduct(idOrSlug: string) {
+  return apiClient.get<any>(`/api/products/${encodeURIComponent(idOrSlug)}`);
+}
+
 // Aliases for compatibility
 export const getProducts = getAdminProducts;
 export const getProduct = getAdminProduct;
@@ -231,6 +214,4 @@ export const updateProduct = (
 ) => updateAdminProduct(String(idOrUuid), data);
 export const deleteProduct = (idOrUuid: string | number) =>
   deleteAdminProduct(String(idOrUuid));
-
-export const getStoreProducts = getCustomerProducts;
-export const getStoreProduct = getCustomerProduct;
+export const getProductImages = getAdminProductImages;

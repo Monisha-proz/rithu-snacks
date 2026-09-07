@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import {
-  useProducts,
+  useAdminProducts,
   useCreateProduct,
   useUpdateProduct,
   useDeleteProduct,
@@ -46,7 +46,7 @@ export default function AdminProductsPage() {
     useState<AdminProductResponse | null>(null);
 
   // Main Products Query (filtered by search and selected category)
-  const { data, isLoading, error, refetch } = useProducts({
+  const { data, isLoading, error, refetch } = useAdminProducts({
     page,
     pageSize,
     search: search || undefined,

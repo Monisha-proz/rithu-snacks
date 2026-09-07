@@ -178,6 +178,44 @@
   --theme-status-can-fg: #A9433A;
   --theme-tag-work-bg: #EDE7F6;
   --theme-tag-work-fg: #5B4B8A;
+
+  /* ================================================================== */
+  /* About Us Page Design Tokens (Figma Design System)                  */
+  /* ================================================================== */
+  --about-hero-bg: #381514;
+  --about-hero-bg-dark: #2D100F;
+  --about-hero-gold: #E5B880;
+  --about-hero-gold-hover: #DDAA6D;
+  --about-hero-gold-text: #E8BF87;
+  --about-hero-btn-dark: #2C1210;
+  --about-hero-badge-bg: rgba(255, 255, 255, 0.06);
+  --about-hero-badge-border: rgba(231, 195, 146, 0.3);
+  --about-hero-border: rgba(255, 255, 255, 0.12);
+  --about-hero-subtext: #D5C7C5;
+  --about-hero-circle-bg: #DCAE74;
+  --about-hero-circle-border: #381514;
+
+  --about-story-bg: #FFFFFF;
+  --about-story-badge-bg: #D7A368;
+  --about-story-badge-text: #2C1210;
+  --about-story-badge-sub: #4A2518;
+  --about-eyebrow: #C87A38;
+  --about-heading: #2B1B17;
+  --about-body: #57534E;
+  --about-card-bg: #FDFBF7;
+  --about-card-border: #EFE8DC;
+  --about-card-border-hover: #DFCBB5;
+  --about-card-icon-bg: #F7EFE3;
+  --about-card-icon-fg: #B67332;
+
+  --about-founder-bg: #F8F3EC;
+  --about-arch-from: #C49377;
+  --about-arch-via: #B88467;
+  --about-arch-to: #A46E51;
+  --about-signature: #9E6438;
+  --about-quote-bg: #361514;
+  --about-quote-accent: #E5B880;
+  --about-divider: #E3D7C5;
 }
 
 @theme inline {
@@ -311,6 +349,42 @@
   --color-theme-status-can-fg: var(--theme-status-can-fg);
   --color-theme-tag-work-bg: var(--theme-tag-work-bg);
   --color-theme-tag-work-fg: var(--theme-tag-work-fg);
+
+  /* About Us Theme Scale */
+  --color-about-hero-bg: var(--about-hero-bg);
+  --color-about-hero-bg-dark: var(--about-hero-bg-dark);
+  --color-about-hero-gold: var(--about-hero-gold);
+  --color-about-hero-gold-hover: var(--about-hero-gold-hover);
+  --color-about-hero-gold-text: var(--about-hero-gold-text);
+  --color-about-hero-btn-dark: var(--about-hero-btn-dark);
+  --color-about-hero-badge-bg: var(--about-hero-badge-bg);
+  --color-about-hero-badge-border: var(--about-hero-badge-border);
+  --color-about-hero-border: var(--about-hero-border);
+  --color-about-hero-subtext: var(--about-hero-subtext);
+  --color-about-hero-circle-bg: var(--about-hero-circle-bg);
+  --color-about-hero-circle-border: var(--about-hero-circle-border);
+
+  --color-about-story-bg: var(--about-story-bg);
+  --color-about-story-badge-bg: var(--about-story-badge-bg);
+  --color-about-story-badge-text: var(--about-story-badge-text);
+  --color-about-story-badge-sub: var(--about-story-badge-sub);
+  --color-about-eyebrow: var(--about-eyebrow);
+  --color-about-heading: var(--about-heading);
+  --color-about-body: var(--about-body);
+  --color-about-card-bg: var(--about-card-bg);
+  --color-about-card-border: var(--about-card-border);
+  --color-about-card-border-hover: var(--about-card-border-hover);
+  --color-about-card-icon-bg: var(--about-card-icon-bg);
+  --color-about-card-icon-fg: var(--about-card-icon-fg);
+
+  --color-about-founder-bg: var(--about-founder-bg);
+  --color-about-arch-from: var(--about-arch-from);
+  --color-about-arch-via: var(--about-arch-via);
+  --color-about-arch-to: var(--about-arch-to);
+  --color-about-signature: var(--about-signature);
+  --color-about-quote-bg: var(--about-quote-bg);
+  --color-about-quote-accent: var(--about-quote-accent);
+  --color-about-divider: var(--about-divider);
 }
 
 body {

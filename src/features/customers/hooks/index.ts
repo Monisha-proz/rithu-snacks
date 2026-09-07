@@ -56,3 +56,7 @@ export {
   useCustomerBanners,
   CUSTOMER_CATALOG_QUERY_KEYS,
 } from "./use-customer-catalog";
+export {
+  useCustomerCompany,
+  CUSTOMER_COMPANY_QUERY_KEY,
+} from "./use-customer-company";

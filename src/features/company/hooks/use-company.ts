@@ -1,0 +1,72 @@
+"use client";
+
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { companyKeys } from "@/lib/api/query-keys";
+import { companyApi } from "../api/company.api";
+import type { CompanyResponse, UpdateCompanyInput } from "../types";
+import { toast } from "@/components/ui";
+
+/**
+ * Hook to fetch company profile & settings
+ */
+export function useCompany() {
+  return useQuery<CompanyResponse | null>({
+    queryKey: companyKeys.all,
+    queryFn: () => companyApi.getCompany(),
+    staleTime: 1000 * 60 * 5, // 5 minutes cache
+  });
+}
+
+/**
+ * Hook to update company settings
+ */
+export function useUpdateCompany() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: UpdateCompanyInput) => companyApi.updateCompany(data),
+    onSuccess: (updatedCompany) => {
+      queryClient.setQueryData(companyKeys.all, updatedCompany);
+      queryClient.invalidateQueries({ queryKey: companyKeys.all });
+      toast({
+        title: "Success",
+        description: "Company details updated successfully.",
+        variant: "default",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update company details.",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+/**
+ * Hook to upload company logo
+ */
+export function useUploadCompanyLogo() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (file: File) => companyApi.uploadLogo(file),
+    onSuccess: (result) => {
+      queryClient.setQueryData(companyKeys.all, result.company);
+      queryClient.invalidateQueries({ queryKey: companyKeys.all });
+      toast({
+        title: "Logo Uploaded",
+        description: "Company logo updated successfully.",
+        variant: "default",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Upload Failed",
+        description: error.message || "Failed to upload company logo.",
+        variant: "destructive",
+      });
+    },
+  });
+}

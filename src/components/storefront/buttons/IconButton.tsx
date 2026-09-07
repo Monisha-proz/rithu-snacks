@@ -4,6 +4,8 @@ import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
 
+import { cn } from "@/lib/utils";
+
 export interface IconButtonProps {
   icon: string;
   alt: string;
@@ -44,15 +46,10 @@ export function IconButton({
     </>
   );
 
-  const sharedClasses = `
-    relative inline-flex items-center justify-center
-    cursor-pointer
-    hover:scale-110
-    active:scale-90
-    transition-transform
-    duration-150
-    ${className}
-  `;
+  const sharedClasses = cn(
+    "relative inline-flex items-center justify-center cursor-pointer hover:scale-110 active:scale-90 transition-transform duration-150",
+    className
+  );
 
   if (href) {
     return (
