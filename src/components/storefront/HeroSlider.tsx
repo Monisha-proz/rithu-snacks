@@ -47,31 +47,33 @@ export function HeroSlider() {
   );
 
   return (
-    <section className="relative w-full overflow-hidden">
+    <section className="relative w-full overflow-hidden group">
       <IconButton
         icon={ICONS.leftButton}
         alt="Previous"
         onClick={previous}
         width={50}
         height={50}
-        className="absolute left-1 sm:left-2 md:left-4 lg:left-6 top-1/2 -translate-y-1/2 z-10"
-        imageClassName="w-6 sm:w-8 md:w-10 lg:w-12 h-auto"
+        className="absolute left-2 sm:left-4 md:left-6 lg:left-8 top-1/2 -translate-y-1/2 z-20 hover:scale-110 transition-transform"
+        imageClassName="w-7 sm:w-9 md:w-11 lg:w-14 h-auto drop-shadow-md"
       />
 
       {activeSlide.link ? (
-        <Link href={activeSlide.link}>{slideImage}</Link>
+        <Link href={activeSlide.link} className="block w-full">
+          {slideImage}
+        </Link>
       ) : (
-        slideImage
+        <div className="w-full">{slideImage}</div>
       )}
 
       <IconButton
-        icon={ICONS.leftButton}
+        icon={ICONS.rightButton}
         alt="Next"
         onClick={next}
         width={50}
         height={50}
-        className="absolute right-1 sm:right-2 md:right-4 lg:right-6 top-1/2 -translate-y-1/2 z-10"
-        imageClassName="w-6 sm:w-8 md:w-10 lg:w-12 h-auto rotate-180"
+        className="absolute right-2 sm:right-4 md:right-6 lg:right-8 top-1/2 -translate-y-1/2 z-20 hover:scale-110 transition-transform"
+        imageClassName="w-7 sm:w-9 md:w-11 lg:w-14 h-auto drop-shadow-md"
       />
     </section>
   );

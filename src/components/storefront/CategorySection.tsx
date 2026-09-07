@@ -80,7 +80,7 @@ export function CategorySection() {
           width={70}
           height={70}
           className="h-8 w-8 rounded flex items-center justify-center shrink-0"
-          imageClassName="w-full h-auto rotate-180"
+          imageClassName="w-full h-auto invert rotate-180"
         />
 
         {/* Categories Carousel */}
@@ -189,7 +189,7 @@ export function CategorySection() {
             justify-center
             shrink-0
           "
-          imageClassName="w-full h-auto"
+          imageClassName="w-full h-auto invert"
         />
       </div>
     </Section>
