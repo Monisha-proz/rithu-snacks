@@ -94,7 +94,7 @@ export function Header() {
             <Image
               src={LOGOS.mobileTitle}
               alt="mobile title"
-              width={120}
+              width={80}
               height={40}
               priority
               className="w-[95px] sm:w-[120px] hover:scale-105 transition-transform duration-300"
@@ -106,8 +106,8 @@ export function Header() {
             <Image
               src={LOGOS.title}
               alt="title"
-              width={150}
-              height={60}
+              width={80}
+              height={80}
               priority
               className="hover:scale-105 transition-transform duration-300"
             />
