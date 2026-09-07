@@ -7,7 +7,6 @@ import { z } from "zod";
 import { FormInput } from "@/components/forms/form-input";
 import { FormSelect } from "@/components/forms/form-select";
 import { FormImageUpload } from "@/components/forms/form-image-upload";
-import { FormVideoUpload } from "@/components/forms/form-video-upload";
 import { FormSwitch } from "@/components/forms/FormSwitch";
 import { FormSubmitButton } from "@/components/forms/form-submit-button";
 import type { BannerDto } from "../types";
@@ -52,7 +51,10 @@ export type BannerFormData = z.infer<typeof bannerFormSchema>;
 interface BannerPositionOption {
   value: string;
   label: string;
+  slug?: string;
 }
+
+const HOME_REEL_POSITION_SLUG = "home-reels";
 
 interface BannerFormProps {
   initialData?: Partial<BannerDto> | null;
@@ -106,6 +108,21 @@ export function BannerForm({
     methods.reset(getFormDefaults());
   }, [getFormDefaults, methods]);
 
+  const selectedPositionId = methods.watch("bannerPositionId");
+  const isHomeReelPosition = React.useMemo(
+    () =>
+      bannerPositions.find((p) => p.value === selectedPositionId)?.slug ===
+      HOME_REEL_POSITION_SLUG,
+    [bannerPositions, selectedPositionId]
+  );
+
+  useEffect(() => {
+    if (!isHomeReelPosition && methods.getValues("mediaType") === "video") {
+      methods.setValue("mediaType", "image", { shouldValidate: true });
+      methods.setValue("videoUrl", "", { shouldValidate: true });
+    }
+  }, [isHomeReelPosition, methods]);
+
   const handleFormSubmit = async (values: BannerFormData) => {
     const payload: Record<string, unknown> = {
       bannerPositionId: values.bannerPositionId,
@@ -158,30 +175,32 @@ export function BannerForm({
           />
         </div>
 
-        {/* Media Type Toggle */}
-        <div className="flex items-center gap-2 rounded-xl border border-[var(--color-neutral-200)] bg-[var(--color-neutral-50)] p-1.5 w-fit">
-          {(["image", "video"] as const).map((type) => (
-            <button
-              key={type}
-              type="button"
-              onClick={() => methods.setValue("mediaType", type, { shouldValidate: true })}
-              className={`rounded-lg px-4 py-1.5 text-sm font-medium capitalize transition-colors cursor-pointer ${
-                methods.watch("mediaType") === type
-                  ? "bg-[var(--color-secondary-600)] text-white"
-                  : "text-[var(--color-neutral-600)] hover:bg-white"
-              }`}
-            >
-              {type === "video" ? "Video (Reel)" : "Image"}
-            </button>
-          ))}
-        </div>
+        {/* Media Type Toggle - only available for the Home Reel position */}
+        {isHomeReelPosition && (
+          <div className="flex items-center gap-2 rounded-xl border border-[var(--color-neutral-200)] bg-[var(--color-neutral-50)] p-1.5 w-fit">
+            {(["image", "video"] as const).map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => methods.setValue("mediaType", type, { shouldValidate: true })}
+                className={`rounded-lg px-4 py-1.5 text-sm font-medium capitalize transition-colors cursor-pointer ${
+                  methods.watch("mediaType") === type
+                    ? "bg-[var(--color-secondary-600)] text-white"
+                    : "text-[var(--color-neutral-600)] hover:bg-white"
+                }`}
+              >
+                {type === "video" ? "Video (Reel)" : "Image"}
+              </button>
+            ))}
+          </div>
+        )}
 
-        {methods.watch("mediaType") === "video" ? (
+        {isHomeReelPosition && methods.watch("mediaType") === "video" ? (
           <>
-            <FormVideoUpload
+            <FormInput
               name="videoUrl"
-              label="Reel Video (9:16 Portrait)"
-              folder="banners"
+              label="Reel Video Link (9:16 Portrait)"
+              placeholder="Paste video URL, e.g. https://..."
               required
             />
             <FormImageUpload

@@ -8,16 +8,10 @@ export const GET = createApiHandler(
     GET: async (_request, context) => {
       const query = context.query as ReturnType<typeof getProductsQuerySchema.parse>;
 
-      const result = await productService.getProducts({
+      const result = await productService.getAdminProducts({
         page: query.page,
-        limit: query.limit,
+        pageSize: query.limit,
         search: query.search,
-        category: query.category,
-        brand: query.brand,
-        sort: query.sort,
-        isFeatured: query.isFeatured,
-        minPrice: query.minPrice,
-        maxPrice: query.maxPrice,
       });
 
       return apiSuccess(result.data, "Products fetched successfully", 200, result.meta);

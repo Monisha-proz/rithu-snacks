@@ -81,6 +81,7 @@ export default function AdminBannersPage() {
     return positions.map((p) => ({
       value: p.id,
       label: `${p.name} (${p.slug})`,
+      slug: p.slug,
     }));
   }, [positions]);
 

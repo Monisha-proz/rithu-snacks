@@ -191,7 +191,8 @@ export async function getStoreProducts(
   if (params) {
     Object.entries(params).forEach(([key, val]) => {
       if (val !== undefined && val !== null && val !== "") {
-        query.set(key, String(val));
+        // The public /api/products endpoint accepts "limit", not "pageSize"
+        query.set(key === "pageSize" ? "limit" : key, String(val));
       }
     });
   }
