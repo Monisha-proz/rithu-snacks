@@ -1,6 +1,9 @@
 import { db } from "@/lib/db/prisma";
 import type { Prisma } from "@/generated/prisma";
-import { formatVariantMeasurement } from "@/features/variants/utils/measurement.util";
+import {
+  formatVariantMeasurement,
+  formatMeasurementLabel,
+} from "@/features/variants/utils/measurement.util";
 import type {
   CustomerBrandListInput,
   CustomerCategoryListInput,
@@ -319,29 +322,53 @@ export const catalogRepository = {
       where.categoryId = { in: matchingCategories.map((c) => c.id) };
     }
 
+    // Filter by Product UUIDs
+    if (params.productIds && params.productIds.length > 0) {
+      where.uuid = { in: params.productIds };
+    }
+
     // Search filter
     if (params.search) {
       where.OR = [{ name: { contains: params.search } }];
     }
 
-    // Price range filter on active variants' unit prices
+    // Variant-level filters (inStock, vegType, price range)
+    const variantWhere: Prisma.ProductVariantWhereInput = {
+      isActive: true,
+      deleted_at: null,
+    };
+
+    if (params.inStock !== undefined) {
+      variantWhere.out_of_stock = !params.inStock;
+    }
+
+    if (params.vegType) {
+      const mappedVegType =
+        params.vegType === "non_veg" || params.vegType === "nonveg"
+          ? ("nonveg" as const)
+          : (params.vegType as "veg" | "vegan" | "na");
+      variantWhere.veg_type = mappedVegType;
+    }
+
     if (params.minPrice !== undefined || params.maxPrice !== undefined) {
       const minP = params.minPrice ?? 0;
       const maxP = params.maxPrice ?? Number.MAX_SAFE_INTEGER;
-
-      where.variants = {
+      variantWhere.variant_unit_prices = {
         some: {
-          isActive: true,
           deleted_at: null,
-          variant_unit_prices: {
-            some: {
-              deleted_at: null,
-              isActive: true,
-              base_price: { gte: minP, lte: maxP },
-            },
-          },
+          isActive: true,
+          base_price: { gte: minP, lte: maxP },
         },
       };
+    }
+
+    if (
+      params.inStock !== undefined ||
+      params.vegType ||
+      params.minPrice !== undefined ||
+      params.maxPrice !== undefined
+    ) {
+      where.variants = { some: variantWhere };
     }
 
     let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: "desc" };
@@ -397,6 +424,21 @@ export const catalogRepository = {
       const primaryVariant =
         p.variants.find((v) => v.is_default) ?? p.variants[0] ?? null;
 
+      // Extract all active unit prices from the primary variant or variants with unit prices
+      const variantWithPrices =
+        p.variants.find((v) => (v.variant_unit_prices || []).length > 0) ?? primaryVariant;
+
+      const unitPrices = (variantWithPrices?.variant_unit_prices || []).map((up) => {
+        const basePrice = Number(up.base_price);
+        const measurement = formatVariantMeasurement(up.product_units, up.unit_value ?? 0);
+        return {
+          id: up.uuid,
+          label: formatMeasurementLabel(measurement) || "Standard",
+          basePrice,
+          sellingPrice: computeSellingPrice(basePrice),
+        };
+      });
+
       return {
         id: p.uuid || String(p.id),
         name: p.name,
@@ -412,6 +454,7 @@ export const catalogRepository = {
         image: imgUrl,
         minPrice: minP,
         maxPrice: maxP,
+        unitPrices,
       };
     });
 

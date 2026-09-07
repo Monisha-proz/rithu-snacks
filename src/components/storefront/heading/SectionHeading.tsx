@@ -10,7 +10,7 @@ export interface SectionHeadingProps {
 
 export function SectionHeading({ title }: SectionHeadingProps) {
   return (
-    <div className="flex justify-center mb-12">
+    <div className="flex justify-center ">
       <div className="inline-flex flex-col items-center">
         <h2
           className="

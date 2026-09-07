@@ -19,7 +19,7 @@ export const customerBrandListSchema = z
 export const customerCategoryListSchema = z
   .object({
     page: z.number().int().min(1).optional().default(1),
-    pageSize: z.number().int().min(1).max(100).optional().default(20),
+    pageSize: z.number().int().min(1).max(500).optional().default(20),
     search: z.string().trim().optional(),
     sortBy: z.enum(["name", "createdAt"]).optional().default("name"),
     sortOrder: z.enum(["asc", "desc"]).optional().default("asc"),
@@ -33,8 +33,11 @@ export const customerProductListSchema = z
     search: z.string().trim().optional(),
     brandIds: z.array(z.string().trim().regex(uuidRegex, "Invalid brand UUID")).optional(),
     categoryIds: z.array(z.string().trim().regex(uuidRegex, "Invalid category UUID")).optional(),
+    productIds: z.array(z.string().trim().regex(uuidRegex, "Invalid product UUID")).optional(),
     minPrice: z.number().min(0, "minPrice cannot be negative").optional().nullable(),
     maxPrice: z.number().min(0, "maxPrice cannot be negative").optional().nullable(),
+    inStock: z.boolean().optional(),
+    vegType: z.enum(["veg", "non_veg", "nonveg", "vegan", "na"]).optional(),
     sortBy: z.enum(["name", "price", "createdAt"]).optional().default("createdAt"),
     sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
   })

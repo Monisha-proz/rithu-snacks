@@ -7,11 +7,13 @@ import type { CustomerProductListItemDto } from "../../types/catalog.types";
 interface CustomerProductGridProps {
   products: CustomerProductListItemDto[];
   onResetFilters?: () => void;
+  columns?: 3 | 4;
 }
 
 export function CustomerProductGrid({
   products,
   onResetFilters,
+  columns = 3,
 }: CustomerProductGridProps) {
   if (products.length === 0) {
     return (
@@ -38,8 +40,13 @@ export function CustomerProductGrid({
     );
   }
 
+  const gridColsClass =
+    columns === 4
+      ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+      : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 sm:gap-6">
+    <div className={`grid ${gridColsClass} gap-5 sm:gap-6`}>
       {products.map((product) => (
         <CustomerProductCard key={product.id} product={product} />
       ))}

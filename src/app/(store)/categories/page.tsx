@@ -155,7 +155,7 @@ export default function CategoriesPage() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8 sm:py-10 max-w-7xl">
+      <div className="container mx-auto px-4 py-8 sm:py-10 max-w-7xl bg-theme-bg">
         {/* Category Filter Chips */}
         {categories.length > 0 && (
           <div className="mb-8">
@@ -216,7 +216,7 @@ export default function CategoriesPage() {
           {/* Filters & Sorting */}
           <div className="flex flex-wrap sm:flex-nowrap items-center gap-3">
             {/* Brand Filter (if multiple brands exist) */}
-            {brands.length > 0 && (
+            {/* {brands.length > 0 && (
               <div className="min-w-[150px] flex-1 sm:flex-initial">
                 <Select
                   value={selectedBrand || ""}
@@ -233,7 +233,7 @@ export default function CategoriesPage() {
                   size="md"
                 />
               </div>
-            )}
+            )} */}
 
             {/* Sort Dropdown */}
             <div className="min-w-[190px] flex-1 sm:flex-initial">

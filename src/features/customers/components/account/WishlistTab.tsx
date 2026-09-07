@@ -130,16 +130,16 @@ export function WishlistTab() {
                 <div className="flex flex-col gap-1.5">
                   <button
                     type="button"
-                    onClick={() => handleMoveToCart(item.variantId || item.id)}
-                    disabled={movingId === (item.variantId || item.id)}
+                    onClick={() => handleMoveToCart(item.variantUnitPriceId || item.variantId || item.id)}
+                    disabled={movingId === (item.variantUnitPriceId || item.variantId || item.id)}
                     className="w-full bg-theme-secondary hover:bg-theme-secondary-hover text-theme-secondary-fg text-xs font-semibold uppercase tracking-wider py-2.5 rounded-md transition-colors cursor-pointer min-h-[40px] disabled:opacity-50"
                   >
-                    {movingId === (item.variantId || item.id) ? "Moving to Cart..." : "Move to Cart"}
+                    {movingId === (item.variantUnitPriceId || item.variantId || item.id) ? "Moving to Cart..." : "Move to Cart"}
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => removeMutation.mutate(item.variantId || item.id)}
+                    onClick={() => removeMutation.mutate(item.variantUnitPriceId || item.variantId || item.id)}
                     className="text-[11px] font-medium text-theme-text-muted hover:text-red-700 text-center py-1 transition-colors cursor-pointer"
                   >
                     Remove

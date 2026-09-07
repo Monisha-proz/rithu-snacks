@@ -4,8 +4,7 @@ import * as React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { ICONS, type StorefrontProduct } from "@/constants/storefront";
-import { ProductCard } from "./cards/ProductCard";
+import { SnackCard } from "./cards/SnackCard";
 import { ProductCardSkeleton } from "./cards/ProductCardSkeleton";
 import { SectionHeading } from "./heading/SectionHeading";
 import { PrimaryButton } from "./buttons/PrimaryButton";
@@ -18,6 +17,7 @@ import {
   useWishlistedUnitPriceIds,
 } from "@/features/wishlist/hooks/use-wishlist";
 import { mapVariantToStorefrontProduct } from "@/lib/storefront";
+import { ICONS, type StorefrontProduct } from "@/constants/storefront";
 
 export interface ProductSectionProps {
   selectedCategoryId?: string | null;
@@ -111,13 +111,16 @@ export function ProductSection({ selectedCategoryId }: ProductSectionProps) {
 
         {!isLoading &&
           visibleProducts.map((product) => (
-            <ProductCard
+            <SnackCard
               key={product.id}
-              type="product"
               product={product}
               isWishlisted={product.unitPrices.some((u) => wishlistedIds.has(u.id))}
-              onWishlistClick={(unitPriceId) => handleWishlistToggle(product, unitPriceId)}
-              onAddToCart={(unitPriceId) => handleAddToCart(product, unitPriceId)}
+              onWishlistToggle={(unitPriceId) =>
+                handleWishlistToggle(product, unitPriceId || product.unitPrices[0]?.id)
+              }
+              onAddToCart={(unitPriceId) =>
+                handleAddToCart(product, unitPriceId || product.unitPrices[0]?.id)
+              }
               disabled={addToCart.isPending}
             />
           ))}

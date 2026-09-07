@@ -11,6 +11,7 @@ import {
   useRemoveCustomerWishlist,
   useMoveCustomerWishlistToCart,
 } from "@/features/customers/hooks/use-customer-wishlist";
+import { toast } from "@/components/ui/Toast";
 
 function WishlistSkeleton() {
   return (
@@ -125,6 +126,12 @@ export default function WishlistPage() {
   const handleRemove = (variantUuid: string) => {
     setRemovingId(variantUuid);
     removeMutation.mutate(variantUuid, {
+      onSuccess: () => {
+        toast.success("Removed", "Item removed from your wishlist");
+      },
+      onError: (err: any) => {
+        toast.error("Error", err?.message || "Failed to remove item");
+      },
       onSettled: () => setRemovingId(null),
     });
   };
@@ -132,6 +139,12 @@ export default function WishlistPage() {
   const handleMoveToCart = (variantUuid: string) => {
     setMovingId(variantUuid);
     moveToCartMutation.mutate(variantUuid, {
+      onSuccess: () => {
+        toast.success("Moved to Cart", "Item added to your cart successfully");
+      },
+      onError: (err: any) => {
+        toast.error("Error", err?.message || "Failed to move item to cart");
+      },
       onSettled: () => setMovingId(null),
     });
   };

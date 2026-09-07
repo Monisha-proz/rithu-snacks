@@ -401,7 +401,7 @@ textarea:focus-visible {
   background-color: var(--yellow-500);
 }
 .btn-yellow:hover {
-  background-color: var(--yellow-300);
+  background-color: var(--yellow-400);
 }
 .btn-brown {
   background-color: var(--brown-600);
@@ -579,4 +579,4 @@ textarea:focus-visible {
   height: 0;
   pointer-events: none;
   color: var(--color-neutral-400, #a3a3a3);
-}
+}
