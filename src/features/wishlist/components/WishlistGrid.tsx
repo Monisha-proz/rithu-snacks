@@ -26,8 +26,16 @@ export function WishlistGrid({
           item={item}
           onRemove={onRemove}
           onMoveToCart={onMoveToCart}
-          isRemoving={removingId === item.variantId}
-          isMovingToCart={movingId === item.variantId}
+          isRemoving={
+            removingId === item.variantUnitPriceId ||
+            removingId === item.variantId ||
+            removingId === item.id
+          }
+          isMovingToCart={
+            movingId === item.variantUnitPriceId ||
+            movingId === item.variantId ||
+            movingId === item.id
+          }
         />
       ))}
     </div>

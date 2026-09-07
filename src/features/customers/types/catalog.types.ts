@@ -27,6 +27,12 @@ export interface CustomerProductListItemDto {
   image: string | null;
   minPrice: number;
   maxPrice: number;
+  unitPrices?: Array<{
+    id: string;
+    label: string;
+    basePrice: number;
+    sellingPrice: number;
+  }>;
 }
 
 /**

@@ -38,7 +38,7 @@ export function mapVariantToStorefrontProduct(
   return {
     id: variant.id,
     productId: variant.productId,
-    name: variant.variantName || variant.productName,
+    name: variant.productName || variant.variantName,
     image: imageUrl,
     outOfStock: variant.outOfStock,
     unitPrices: (variant.unitPrices ?? []).map((up) => ({

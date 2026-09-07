@@ -86,7 +86,7 @@ export function WishlistCard({
             <Button
               size="sm"
               className="flex-1 h-9 rounded-xl bg-theme-primary hover:bg-theme-primary-hover text-theme-primary-fg text-xs font-medium cursor-pointer"
-              onClick={() => onMoveToCart(item.variantId)}
+              onClick={() => onMoveToCart(item.variantUnitPriceId || item.variantId)}
               disabled={isRemoving || isMovingToCart || !item.isAvailable}
             >
               <ShoppingCart className="mr-1.5 h-3.5 w-3.5" />
@@ -97,7 +97,7 @@ export function WishlistCard({
             size="sm"
             variant="outline"
             className="h-9 w-9 p-0 rounded-xl border-theme-border-input hover:bg-theme-surface-alt text-theme-status-can-fg hover:text-theme-primary-hover cursor-pointer shrink-0"
-            onClick={() => onRemove(item.variantId)}
+            onClick={() => onRemove(item.variantUnitPriceId || item.variantId)}
             disabled={isRemoving || isMovingToCart}
             aria-label="Remove from wishlist"
           >
