@@ -29,8 +29,12 @@ import {
   BannerForm,
   ManageBannerPositionsModal,
 } from "@/features/banners/components";
+import {
+  getBannerTypeConfig,
+  getBannerTypeLabel,
+} from "@/features/banners/constants/banner-types";
 import type { BannerDto } from "@/features/banners/types";
-import { Settings2 } from "lucide-react";
+import { Settings2, Video } from "lucide-react";
 
 export default function AdminBannersPage() {
   const [search, setSearch] = useState("");
@@ -80,16 +84,13 @@ export default function AdminBannersPage() {
   const positionOptions = useMemo(() => {
     return positions.map((p) => ({
       value: p.id,
-      label: `${p.name} (${p.slug})`,
+      label: getBannerTypeLabel(p.slug, p.name),
       slug: p.slug,
     }));
   }, [positions]);
 
   const positionFilterOptions = useMemo(() => {
-    return [
-      { value: "", label: "All Positions" },
-      ...positionOptions,
-    ];
+    return [{ value: "", label: "All Banner Types" }, ...positionOptions];
   }, [positionOptions]);
 
   const formatDateDisplay = (dateVal: unknown): string => {
@@ -110,11 +111,25 @@ export default function AdminBannersPage() {
   const columns: ColumnDef<BannerDto>[] = [
     {
       accessorKey: "imageUrl",
-      header: "Banner (3:1)",
+      header: "Preview",
       cell: ({ row }) => {
-        const imageUrl = row.original.imageUrl;
+        const { imageUrl, mediaType, bannerPosition } = row.original;
+        const config = getBannerTypeConfig(bannerPosition?.slug);
+        const frameClassName =
+          config.image?.thumbnailClassName ?? "aspect-[3/1] w-28";
+
+        if (mediaType === "video" && !imageUrl) {
+          return (
+            <div className="flex aspect-[9/16] w-12 flex-shrink-0 items-center justify-center rounded-lg border border-[var(--color-neutral-200)] bg-[var(--color-neutral-100)]">
+              <Video className="h-4 w-4 text-[var(--color-neutral-400)]" />
+            </div>
+          );
+        }
+
         return (
-          <div className="relative aspect-[3/1] w-28 flex-shrink-0 overflow-hidden rounded-lg border border-[var(--color-neutral-200)] bg-[var(--color-neutral-100)] flex items-center justify-center">
+          <div
+            className={`relative ${frameClassName} flex flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--color-neutral-200)] bg-[var(--color-neutral-100)]`}
+          >
             {imageUrl ? (
               <Image
                 src={imageUrl}
@@ -162,10 +177,13 @@ export default function AdminBannersPage() {
     },
     {
       accessorKey: "bannerPosition",
-      header: "Position",
+      header: "Banner Type",
       cell: ({ row }) => (
         <span className="inline-flex items-center rounded-md bg-[var(--color-primary-50)] px-2 py-1 text-xs font-medium text-[var(--color-primary-700)] ring-1 ring-inset ring-[var(--color-primary-700)]/10">
-          {row.original.bannerPosition?.name || row.original.bannerPosition?.slug || "—"}
+          {getBannerTypeLabel(
+            row.original.bannerPosition?.slug,
+            row.original.bannerPosition?.name
+          )}
         </span>
       ),
     },
@@ -272,7 +290,7 @@ export default function AdminBannersPage() {
     <div className="flex flex-1 min-h-0 flex-col">
       <AdminPageHeader
         title="Banners"
-        description="Manage promotional, seasonal, and marketing hero banners with 3:1 aspect ratio."
+        description="Manage hero, offer, popup and reels banners shown across the storefront."
       />
 
       <AdminContent className="flex-1 min-h-0 overflow-hidden">
@@ -298,7 +316,7 @@ export default function AdminBannersPage() {
                     setPage(1);
                   }}
                   options={positionFilterOptions}
-                  placeholder="All Positions"
+                  placeholder="All Banner Types"
                   className="h-11 rounded-xl"
                 />
               </div>
@@ -352,13 +370,14 @@ export default function AdminBannersPage() {
         open={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         title="Add New Banner"
-        description="Upload a 3:1 banner image and configure its position and schedule."
+        description="Pick a banner type, then add the media and schedule it needs."
         size="lg"
       >
         <BannerForm
           bannerPositions={positionOptions}
           isLoading={createMutation.isPending}
-          submitLabel="Add Banner"
+          submitLabel="Save Banner"
+          onCancel={() => setIsCreateOpen(false)}
           onSubmit={async (formData) => {
             await createMutation.mutateAsync(formData);
             setIsCreateOpen(false);
@@ -374,7 +393,7 @@ export default function AdminBannersPage() {
           setSelectedBanner(null);
         }}
         title="Edit Banner"
-        description="Update banner image, link, position, or schedule."
+        description="Update the banner media, link, type or schedule."
         size="lg"
       >
         {selectedBanner && (
@@ -383,6 +402,10 @@ export default function AdminBannersPage() {
             bannerPositions={positionOptions}
             isLoading={updateMutation.isPending}
             submitLabel="Update Banner"
+            onCancel={() => {
+              setIsEditOpen(false);
+              setSelectedBanner(null);
+            }}
             onSubmit={async (formData) => {
               await updateMutation.mutateAsync({
                 uuid: selectedBanner.id,

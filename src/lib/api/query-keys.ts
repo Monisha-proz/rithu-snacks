@@ -31,6 +31,7 @@ export const orderKeys = createQueryKeyFactory("orders");
 export const reviewKeys = createQueryKeyFactory("reviews");
 export const blogKeys = createQueryKeyFactory("blogs");
 export const couponKeys = createQueryKeyFactory("coupons");
+export const offerKeys = createQueryKeyFactory("offers");
 export const userKeys = createQueryKeyFactory("users");
 export const addressKeys = createQueryKeyFactory("addresses");
 export const adminOrderKeys = createQueryKeyFactory("admin-orders");

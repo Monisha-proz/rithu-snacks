@@ -115,6 +115,20 @@ export const customerCatalogApi = {
   },
 
   /**
+   * Fetch related products for a given product (same category/brand)
+   * Postman: GET /api/customer/products/:productUuid/related
+   */
+  async getRelatedProducts(
+    productUuid: string,
+    limit?: number
+  ): Promise<CustomerProductListItemDto[]> {
+    const response = await apiClient.get<CustomerProductListItemDto[]>(
+      `/api/customer/products/${productUuid}/related${limit ? `?limit=${limit}` : ""}`
+    );
+    return response.data ?? [];
+  },
+
+  /**
    * Fetch variants of a specific product with min/max price filter
    * Postman: POST /api/customer/products/:productUuid/variants
    */

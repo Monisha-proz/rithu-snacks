@@ -2,7 +2,9 @@ export * from "./banner.types";
 export * from "./banner-position.types";
 export type {
   CreateBannerInput,
+  CreateBannerPayload,
   UpdateBannerInput,
+  UpdateBannerPayload,
   BannerListQueryInput,
   CustomerBannerQueryInput,
 } from "../validations/banner.schema";

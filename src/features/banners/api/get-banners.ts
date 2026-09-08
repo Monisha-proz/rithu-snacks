@@ -2,8 +2,8 @@ import { apiClient } from "@/lib/api/api-client";
 import type {
   BannerDto,
   BannerListResponse,
-  CreateBannerInput,
-  UpdateBannerInput,
+  CreateBannerPayload,
+  UpdateBannerPayload,
   BannerListQueryInput,
   BannerPositionDto,
   BannerPositionListResponse,
@@ -59,7 +59,7 @@ export const bannerApi = {
   },
 
   async createBanner(
-    data: CreateBannerInput
+    data: CreateBannerPayload
   ): Promise<BannerDto & { message?: string }> {
     const response = await apiClient.post<BannerDto>("/api/admin/banners", data);
     return {
@@ -70,7 +70,7 @@ export const bannerApi = {
 
   async updateBanner(
     uuid: string,
-    data: UpdateBannerInput
+    data: UpdateBannerPayload
   ): Promise<BannerDto & { message?: string }> {
     const response = await apiClient.put<BannerDto>(
       `/api/admin/banners/${uuid}`,

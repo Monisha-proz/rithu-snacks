@@ -22,11 +22,13 @@ export const createBannerSchema = z
       .nullable()
       .optional(),
     mediaType: bannerMediaTypeSchema.default("image"),
+    // Optional at the field level: video banners (e.g. home reels) have no
+    // image at all. The refinement below keeps it required for image banners.
     imageUrl: z
-      .string({ message: "Image URL is required" })
+      .string()
       .trim()
-      .min(1, "Image URL is required")
-      .max(500, "Image URL cannot exceed 500 characters"),
+      .max(500, "Image URL cannot exceed 500 characters")
+      .default(""),
     videoUrl: z
       .string()
       .trim()
@@ -71,9 +73,15 @@ export const createBannerSchema = z
   .refine((data) => data.mediaType !== "video" || Boolean(data.videoUrl), {
     message: "Video URL is required when media type is video",
     path: ["videoUrl"],
+  })
+  .refine((data) => data.mediaType !== "image" || Boolean(data.imageUrl), {
+    message: "Image URL is required when media type is image",
+    path: ["imageUrl"],
   });
 
 export type CreateBannerInput = z.infer<typeof createBannerSchema>;
+/** Shape sent over the wire, before dates are parsed into `Date`. */
+export type CreateBannerPayload = z.input<typeof createBannerSchema>;
 
 export const updateBannerSchema = z
   .object({
@@ -91,7 +99,6 @@ export const updateBannerSchema = z
     imageUrl: z
       .string()
       .trim()
-      .min(1, "Image URL cannot be empty")
       .max(500, "Image URL cannot exceed 500 characters")
       .optional(),
     videoUrl: z
@@ -134,9 +141,21 @@ export const updateBannerSchema = z
       message: "startsAt must be before or equal to endsAt",
       path: ["endsAt"],
     }
+  )
+  .refine(
+    (data) =>
+      data.mediaType !== "image" ||
+      data.imageUrl === undefined ||
+      Boolean(data.imageUrl),
+    {
+      message: "Image URL is required when media type is image",
+      path: ["imageUrl"],
+    }
   );
 
 export type UpdateBannerInput = z.infer<typeof updateBannerSchema>;
+/** Shape sent over the wire, before dates are parsed into `Date`. */
+export type UpdateBannerPayload = z.input<typeof updateBannerSchema>;
 
 export const bannerListQuerySchema = z
   .object({

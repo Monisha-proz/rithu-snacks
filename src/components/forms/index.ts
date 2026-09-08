@@ -10,5 +10,7 @@ export { FormPasswordInput } from "./FormPasswordInput";
 // export type { FormPasswordInput } from "./FormPasswordInput";
 export { FormError } from "./FormError";
 export type { FormErrorProps } from "./FormError";
+export { FormVideoUrl } from "./form-video-url";
+export type { FormVideoUrlProps } from "./form-video-url";
 export { FormSubmitButton } from "./form-submit-button";
 export { Label } from "./label";
