@@ -18,7 +18,7 @@ export function FooterLinks({
 
   return (
     <div className={className}>
-      <h3 className="text-[24px] sm:text-[28px] lg:text-3xl font-semibold mb-6">
+      <h3 className="text-[24px] sm:text-[28px] lg:text-xl font-semibold mb-6">
         {title}
       </h3>
 

@@ -1,6 +1,6 @@
-"use client";
-
 import React from "react";
+import Image from "next/image";
+import { Quote } from "lucide-react";
 
 export function AboutFounderSection() {
   return (
@@ -48,19 +48,21 @@ export function AboutFounderSection() {
             </div>
           </div>
 
-          {/* Right Column: Arch Shape with Monogram & Overlaid Quote Card */}
+          {/* Right Column: Arch Shape with Image & Overlaid Quote Card */}
           <div className="lg:col-span-5 flex flex-col items-center justify-center">
             <div className="relative flex flex-col items-center justify-end w-full max-w-[340px] sm:max-w-[370px]">
               {/* Outer Arch Frame */}
               <div className="w-full p-2.5 sm:p-3 rounded-t-full bg-white/40 border border-about-divider/60 shadow-sm">
-                {/* Inner Arch Body */}
-                <div className="w-full h-[360px] sm:h-[410px] rounded-t-full bg-gradient-to-b from-about-arch-from via-about-arch-via to-about-arch-to flex flex-col items-center justify-center p-8 relative overflow-hidden shadow-inner pb-20">
-                  {/* Monogram Initials */}
-                  <div className="text-5xl sm:text-6xl text-white font-bold tracking-[0.2em] select-none text-center pl-2">
-                    S A
-                  </div>
-                  {/* Centered Divider Under Initials */}
-                  <div className="w-14 h-[1.5px] bg-white/60 mt-3 mx-auto" />
+                {/* Inner Arch Body with Image */}
+                <div className="w-full h-[380px] sm:h-[430px] rounded-t-full relative overflow-hidden shadow-inner bg-neutral-100">
+                  {/* <Image
+                    src="/images/Aboutus_founder_img.jpg"
+                    alt="Rithu Snacks - Tradition in Every Bite"
+                    fill
+                    className="object-cover object-center"
+                    sizes="(max-width: 768px) 100vw, 400px"
+                    priority
+                  /> */}
                 </div>
               </div>
 
@@ -68,10 +70,10 @@ export function AboutFounderSection() {
               <div className="w-[96%] sm:w-[100%] bg-about-quote-bg text-white rounded-2xl p-5 sm:p-6 shadow-2xl border border-white/10 -mt-16 sm:-mt-20 relative z-10 text-left">
                 {/* Quote Icon */}
                 <span className="text-about-quote-accent text-3xl sm:text-4xl leading-none select-none block mb-2 font-bold">
-                  &ldquo;&ldquo;
+                  <Quote />
                 </span>
                 <p className="italic text-xs sm:text-sm text-neutral-200/95 leading-relaxed font-normal">
-                  &ldquo;Passion, dedication and tradition become the foundation of Rithanya Food Products and Exports.&rdquo;
+                  "Passion, dedication and tradition become the foundation of Rithanya Food Products and Exports."
                 </p>
               </div>
             </div>

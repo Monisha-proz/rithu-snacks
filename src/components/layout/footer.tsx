@@ -185,7 +185,7 @@ export function Footer() {
 
             {/* Column 3: Newsletter Sign Up */}
             <div>
-              <h3 className="text-[24px] sm:text-[28px] lg:text-3xl font-semibold mb-6">
+              <h3 className="text-[24px] sm:text-[28px] lg:text-xl font-semibold mb-6">
                 Sign Up and Save
               </h3>
 
