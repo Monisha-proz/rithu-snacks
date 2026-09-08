@@ -1,21 +1,30 @@
 "use client";
 
 import { CustomerProductCard } from "./CustomerProductCard";
+import { CustomerVariantCard } from "./CustomerVariantCard";
 import { Sparkles } from "lucide-react";
-import type { CustomerProductListItemDto } from "../../types/catalog.types";
+import type {
+  CustomerProductListItemDto,
+  CustomerVariantListItemDto,
+} from "../../types/catalog.types";
 
 interface CustomerProductGridProps {
-  products: CustomerProductListItemDto[];
+  products?: CustomerProductListItemDto[];
+  variants?: CustomerVariantListItemDto[];
   onResetFilters?: () => void;
   columns?: 3 | 4;
 }
 
 export function CustomerProductGrid({
   products,
+  variants,
   onResetFilters,
   columns = 3,
 }: CustomerProductGridProps) {
-  if (products.length === 0) {
+  const hasVariants = Boolean(variants && variants.length > 0);
+  const hasProducts = Boolean(products && products.length > 0);
+
+  if (!hasVariants && !hasProducts) {
     return (
       <div className="rounded-3xl border border-theme-border bg-theme-surface p-12 text-center max-w-md mx-auto my-8">
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-theme-surface-alt text-theme-text-muted">
@@ -47,9 +56,15 @@ export function CustomerProductGrid({
 
   return (
     <div className={`grid ${gridColsClass} gap-5 sm:gap-6`}>
-      {products.map((product) => (
-        <CustomerProductCard key={product.id} product={product} />
-      ))}
+      {hasVariants
+        ? variants!.map((variant) => (
+            <CustomerVariantCard key={variant.id} variant={variant} />
+          ))
+        : products!.map((product) => (
+            <CustomerProductCard key={product.id} product={product} />
+          ))}
     </div>
   );
 }
+
+export default CustomerProductGrid;

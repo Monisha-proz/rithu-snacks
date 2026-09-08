@@ -149,12 +149,11 @@ export function useCustomerVariant(
  */
 export function useCustomerGlobalVariants(
   params?: CustomerGlobalVariantListInput,
-  options?: { enabled?: boolean }
+  options?: { enabled?: boolean; placeholderData?: any }
 ) {
   return useQuery({
     queryKey: CUSTOMER_CATALOG_QUERY_KEYS.globalVariants(params),
     queryFn: () => customerCatalogApi.getAllVariants(params),
-    placeholderData: keepPreviousData,
     ...options,
   });
 }

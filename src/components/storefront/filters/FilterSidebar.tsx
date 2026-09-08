@@ -1,12 +1,14 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import {
   Search,
   RotateCcw,
   ChevronDown,
   ChevronUp,
   ChevronRight,
+  ChevronLeft,
   X,
   SlidersHorizontal,
   Loader2,
@@ -23,8 +25,13 @@ export interface CategoryOption {
 export interface FilterSidebarProps {
   // Categories (handles 200+ categories)
   categories: CategoryOption[];
+  isLoadingCategories?: boolean;
   selectedCategoryId: string | null;
   onSelectCategory: (categoryId: string | null) => void;
+
+  // Single category isolation mode (e.g. /categories/[id])
+  isSingleCategoryMode?: boolean;
+  viewAllCategoriesHref?: string;
 
   // Selected Product inside category
   selectedProductId?: string | null;
@@ -74,8 +81,11 @@ const SORT_OPTIONS = [
 
 export function FilterSidebar({
   categories,
+  isLoadingCategories = false,
   selectedCategoryId,
   onSelectCategory,
+  isSingleCategoryMode = false,
+  viewAllCategoriesHref = "/categories/all",
   selectedProductId = null,
   onSelectProduct,
   searchQuery,
@@ -104,7 +114,7 @@ export function FilterSidebar({
 
   // Nested Tree: Single expanded category ID (one open at a time) & cached products per category
   const [expandedCategoryId, setExpandedCategoryId] = React.useState<string | null>(
-    () => selectedCategoryId || null
+    () => selectedCategoryId || (isSingleCategoryMode ? categories[0]?.id || null : null)
   );
   const [categoryProducts, setCategoryProducts] = React.useState<
     Record<string, Array<{ id: string; name: string }>>
@@ -113,41 +123,53 @@ export function FilterSidebar({
 
   // Ref to prevent duplicate or runaway in-flight fetches for the same category
   const fetchingRef = React.useRef<Set<string>>(new Set());
+  const isMountedRef = React.useRef(false);
 
-  // Auto-expand selected category
   React.useEffect(() => {
-    if (selectedCategoryId) {
-      setExpandedCategoryId(selectedCategoryId);
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // Auto-expand selected category or single category
+  React.useEffect(() => {
+    const targetCatId = selectedCategoryId || (isSingleCategoryMode ? categories[0]?.id : null);
+    if (targetCatId) {
+      setExpandedCategoryId((prev) => (prev === targetCatId ? prev : targetCatId));
       if (
-        !categoryProducts[selectedCategoryId] &&
-        !fetchingRef.current.has(selectedCategoryId)
+        !categoryProducts[targetCatId] &&
+        !fetchingRef.current.has(targetCatId)
       ) {
-        fetchingRef.current.add(selectedCategoryId);
-        setLoadingCategoryIds((prev) => new Set(prev).add(selectedCategoryId));
+        fetchingRef.current.add(targetCatId);
+        setLoadingCategoryIds((prev) => new Set(prev).add(targetCatId));
 
         customerCatalogApi
           .getProducts({
-            categoryIds: [selectedCategoryId],
+            categoryIds: [targetCatId],
             pageSize: 50,
           })
           .then((res) => {
+            if (!isMountedRef.current) return;
             const prods = (res.data || []).map((p) => ({ id: p.id, name: p.name }));
-            setCategoryProducts((prev) => ({ ...prev, [selectedCategoryId]: prods }));
+            setCategoryProducts((prev) => ({ ...prev, [targetCatId]: prods }));
           })
           .catch((err) => {
-            console.error("Failed to load products for selected category", selectedCategoryId, err);
+            console.error("Failed to load products for category", targetCatId, err);
           })
           .finally(() => {
-            fetchingRef.current.delete(selectedCategoryId);
-            setLoadingCategoryIds((prev) => {
-              const next = new Set(prev);
-              next.delete(selectedCategoryId);
-              return next;
-            });
+            fetchingRef.current.delete(targetCatId);
+            if (isMountedRef.current) {
+              setLoadingCategoryIds((prev) => {
+                const next = new Set(prev);
+                next.delete(targetCatId);
+                return next;
+              });
+            }
           });
       }
     }
-  }, [selectedCategoryId, categoryProducts]);
+  }, [selectedCategoryId, isSingleCategoryMode, categories]);
 
   // Fetch products for a category when user clicks expand chevron (only one open at a time)
   const toggleCategoryExpand = React.useCallback(
@@ -171,17 +193,20 @@ export function FilterSidebar({
             categoryIds: [categoryId],
             pageSize: 50,
           });
+          if (!isMountedRef.current) return;
           const prods = (res.data || []).map((p) => ({ id: p.id, name: p.name }));
           setCategoryProducts((prev) => ({ ...prev, [categoryId]: prods }));
         } catch (err) {
           console.error("Failed to load products for category", categoryId, err);
         } finally {
           fetchingRef.current.delete(categoryId);
-          setLoadingCategoryIds((prev) => {
-            const next = new Set(prev);
-            next.delete(categoryId);
-            return next;
-          });
+          if (isMountedRef.current) {
+            setLoadingCategoryIds((prev) => {
+              const next = new Set(prev);
+              next.delete(categoryId);
+              return next;
+            });
+          }
         }
       }
     },
@@ -191,6 +216,11 @@ export function FilterSidebar({
   // Local state for instant slider responsiveness, debounced to parent
   const [localMinPrice, setLocalMinPrice] = React.useState(currentMinPrice);
   const [localMaxPrice, setLocalMaxPrice] = React.useState(currentMaxPrice);
+  const onPriceChangeRef = React.useRef(onPriceChange);
+  onPriceChangeRef.current = onPriceChange;
+
+  const onSearchChangeRef = React.useRef(onSearchChange);
+  onSearchChangeRef.current = onSearchChange;
 
   React.useEffect(() => {
     setLocalMinPrice(currentMinPrice);
@@ -200,11 +230,11 @@ export function FilterSidebar({
   React.useEffect(() => {
     const timer = setTimeout(() => {
       if (localMinPrice !== currentMinPrice || localMaxPrice !== currentMaxPrice) {
-        onPriceChange(localMinPrice, localMaxPrice);
+        onPriceChangeRef.current(localMinPrice, localMaxPrice);
       }
     }, 350);
     return () => clearTimeout(timer);
-  }, [localMinPrice, localMaxPrice, currentMinPrice, currentMaxPrice, onPriceChange]);
+  }, [localMinPrice, localMaxPrice, currentMinPrice, currentMaxPrice]);
 
   // Memoized category search for fast rendering of 200+ categories
   const filteredCategories = React.useMemo(() => {
@@ -222,11 +252,11 @@ export function FilterSidebar({
   React.useEffect(() => {
     const timer = setTimeout(() => {
       if (localSearch !== searchQuery) {
-        onSearchChange(localSearch);
+        onSearchChangeRef.current(localSearch);
       }
     }, 350);
     return () => clearTimeout(timer);
-  }, [localSearch, searchQuery, onSearchChange]);
+  }, [localSearch, searchQuery]);
 
   // Price slider math
   const priceMinPercent = Math.min(
@@ -420,8 +450,8 @@ export function FilterSidebar({
 
         {isCategoriesOpen && (
           <div className="flex flex-col gap-2 mt-1 animate-in fade-in duration-200">
-            {/* Inline search box for 200+ categories */}
-            {categories.length > 5 && (
+            {/* Inline search box for 200+ categories (only in multi-category mode) */}
+            {!isSingleCategoryMode && categories.length > 5 && (
               <div className="relative mb-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#9C8274]" />
                 <input
@@ -445,8 +475,8 @@ export function FilterSidebar({
 
             {/* Scrollable category list with expandable nested products */}
             <div className="max-h-72 overflow-y-auto flex flex-col gap-2 pr-1.5 scrollbar-thin scrollbar-thumb-[#DCC7B7] scrollbar-track-transparent">
-              {/* Option: All Snacks */}
-              {!categorySearch && (
+              {/* Option: All Snacks (only in multi-category mode) */}
+              {!isSingleCategoryMode && !categorySearch && (
                 <button
                   type="button"
                   onClick={() => {
@@ -482,139 +512,211 @@ export function FilterSidebar({
                 </button>
               )}
 
-              {/* Category Items with Expand/Collapse and Nested Products */}
-              {filteredCategories.map((cat) => {
-                const isSelected = selectedCategoryId === cat.id;
-                const isExpanded = expandedCategoryId === cat.id;
-                const products = categoryProducts[cat.id] || [];
-                const isLoadingProducts = loadingCategoryIds.has(cat.id);
-
-                return (
-                  <div key={cat.id} className="flex flex-col">
-                    {/* Category Row */}
-                    <div className="flex items-center justify-between group py-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onSelectCategory(isSelected ? null : cat.id);
-                          onSelectProduct?.(null);
-                          if (!isExpanded) toggleCategoryExpand(cat.id);
-                        }}
-                        className={`flex items-center gap-2.5 text-left cursor-pointer flex-1 min-w-0 select-none ${
-                          isSelected
-                            ? "text-[#1E4D3E] font-bold"
-                            : "text-[#3D2C24] hover:text-[#1E4D3E] font-medium"
-                        }`}
-                      >
-                        <span
-                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${
-                            isSelected && !selectedProductId
-                              ? "border-[#1E4D3E] bg-[#1E4D3E]/10"
-                              : isSelected
-                              ? "border-[#1E4D3E]"
-                              : "border-[#5A4338] group-hover:border-[#1E4D3E]"
-                          }`}
-                        >
-                          {isSelected && (
-                            <span className="w-2.5 h-2.5 rounded-full bg-[#1E4D3E]" />
-                          )}
-                        </span>
-                        <span
-                          className={`text-sm truncate ${
-                            isSelected && !selectedProductId
-                              ? "underline underline-offset-4 decoration-2 decoration-[#1E4D3E]"
-                              : ""
-                          }`}
-                          title={cat.name}
-                        >
-                          {cat.name}
-                        </span>
-                      </button>
-
-                      {/* Expand/Collapse Chevron Button */}
-                      <button
-                        type="button"
-                        onClick={(e) => toggleCategoryExpand(cat.id, e)}
-                        className="p-1 rounded-md text-[#7A6258] hover:text-[#2D1810] hover:bg-[#F5ECE1] transition-colors cursor-pointer"
-                        title={isExpanded ? "Collapse products" : "Expand products"}
-                        aria-label={isExpanded ? "Collapse products" : "Expand products"}
-                      >
-                        {isLoadingProducts ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin text-[#7A2224]" />
-                        ) : isExpanded ? (
-                          <ChevronDown className="w-4 h-4 text-[#7A2224]" />
-                        ) : (
-                          <ChevronRight className="w-4 h-4 text-[#9C8274]" />
-                        )}
-                      </button>
+              {/* Shimmer loading state when categories are being fetched from API */}
+              {isLoadingCategories ? (
+                <div className="flex flex-col gap-2.5 py-1">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="flex items-center justify-between py-1">
+                      <div className="flex items-center gap-2.5 flex-1">
+                        <div className="w-5 h-5 rounded-full bg-[#EADCCF]/80 skeleton-shimmer shrink-0" />
+                        <div
+                          className="h-3.5 rounded bg-[#EADCCF]/80 skeleton-shimmer"
+                          style={{ width: `${45 + (i % 3) * 20}%` }}
+                        />
+                      </div>
+                      {!isSingleCategoryMode && (
+                        <div className="w-3.5 h-3.5 rounded bg-[#EADCCF]/60 skeleton-shimmer" />
+                      )}
                     </div>
+                  ))}
+                </div>
+              ) : filteredCategories.length > 0 ? (
+                filteredCategories.map((cat) => {
+                  const isSelected = selectedCategoryId === cat.id || isSingleCategoryMode;
+                  const isExpanded = isSingleCategoryMode ? true : expandedCategoryId === cat.id;
+                  const products = categoryProducts[cat.id] || [];
+                  const isLoadingProducts = loadingCategoryIds.has(cat.id);
 
-                    {/* Nested Products List underneath this Category */}
-                    {isExpanded && (
-                      <div className="pl-6 pr-1 pt-1 pb-1.5 flex flex-col gap-1.5 border-l-2 border-[#EADCCF] ml-2.5 my-1 animate-in fade-in duration-150">
-                        {isLoadingProducts ? (
-                          <div className="flex items-center gap-2 py-1 text-xs text-[#9C8274]">
-                            <Loader2 className="w-3 h-3 animate-spin text-[#7A2224]" />
-                            Loading products...
-                          </div>
-                        ) : products.length > 0 ? (
-                          products.map((prod) => {
-                            const isProductActive = selectedProductId === prod.id;
-                            return (
-                              <button
-                                key={prod.id}
-                                type="button"
-                                onClick={() => {
-                                  if (selectedCategoryId !== cat.id) {
-                                    onSelectCategory(cat.id);
-                                  }
-                                  onSelectProduct?.(isProductActive ? null : prod.id);
-                                }}
-                                className={`flex items-center gap-2 py-0.5 text-left cursor-pointer group transition-colors select-none ${
-                                  isProductActive
-                                    ? "text-[#1E4D3E] font-bold"
-                                    : "text-[#5A4338] hover:text-[#1E4D3E] font-medium"
-                                }`}
-                              >
-                                <span
-                                  className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-all shrink-0 ${
-                                    isProductActive
-                                      ? "border-[#1E4D3E] bg-[#1E4D3E]/15"
-                                      : "border-[#9C8274] group-hover:border-[#1E4D3E]"
-                                  }`}
-                                >
-                                  {isProductActive && (
-                                    <span className="w-1.5 h-1.5 rounded-full bg-[#1E4D3E]" />
-                                  )}
-                                </span>
-                                <span
-                                  className={`text-xs truncate ${
-                                    isProductActive
-                                      ? "underline underline-offset-2 decoration-1 decoration-[#1E4D3E]"
-                                      : ""
-                                  }`}
-                                  title={prod.name}
-                                >
-                                  {prod.name}
-                                </span>
-                              </button>
-                            );
-                          })
-                        ) : (
-                          <span className="text-[11px] text-[#9C8274] italic py-0.5">
-                            No products found in this category
+                  return (
+                    <div key={cat.id} className="flex flex-col">
+                      {/* Category Row */}
+                      <div className="flex items-center justify-between group py-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (isSingleCategoryMode) {
+                              onSelectProduct?.(null);
+                            } else {
+                              onSelectCategory(isSelected ? null : cat.id);
+                              onSelectProduct?.(null);
+                              if (!isExpanded) toggleCategoryExpand(cat.id);
+                            }
+                          }}
+                          className={`flex items-center gap-2.5 text-left cursor-pointer flex-1 min-w-0 select-none ${
+                            isSelected
+                              ? "text-[#1E4D3E] font-bold"
+                              : "text-[#3D2C24] hover:text-[#1E4D3E] font-medium"
+                          }`}
+                        >
+                          <span
+                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${
+                              isSelected && !selectedProductId
+                                ? "border-[#1E4D3E] bg-[#1E4D3E]/10"
+                                : isSelected
+                                ? "border-[#1E4D3E]"
+                                : "border-[#5A4338] group-hover:border-[#1E4D3E]"
+                            }`}
+                          >
+                            {isSelected && (
+                              <span className="w-2.5 h-2.5 rounded-full bg-[#1E4D3E]" />
+                            )}
                           </span>
+                          <span
+                            className={`text-sm truncate ${
+                              isSelected && !selectedProductId
+                                ? "underline underline-offset-4 decoration-2 decoration-[#1E4D3E]"
+                                : ""
+                            }`}
+                            title={cat.name}
+                          >
+                            {cat.name}
+                          </span>
+                        </button>
+
+                        {/* Expand/Collapse Chevron Button (hidden in single category mode) */}
+                        {!isSingleCategoryMode && (
+                          <button
+                            type="button"
+                            onClick={(e) => toggleCategoryExpand(cat.id, e)}
+                            className="p-1 rounded-md text-[#7A6258] hover:text-[#2D1810] hover:bg-[#F5ECE1] transition-colors cursor-pointer"
+                            title={isExpanded ? "Collapse products" : "Expand products"}
+                            aria-label={isExpanded ? "Collapse products" : "Expand products"}
+                          >
+                            {isLoadingProducts ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#7A2224]" />
+                            ) : isExpanded ? (
+                              <ChevronDown className="w-4 h-4 text-[#7A2224]" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4 text-[#9C8274]" />
+                            )}
+                          </button>
                         )}
                       </div>
-                    )}
-                  </div>
-                );
-              })}
 
-              {filteredCategories.length === 0 && (
+                      {/* Nested Products List underneath this Category */}
+                      {isExpanded && (
+                        <div className="pl-6 pr-1 pt-1 pb-1.5 flex flex-col gap-1.5 border-l-2 border-[#EADCCF] ml-2.5 my-1 animate-in fade-in duration-150">
+                          {/* Option: All in this Category when in single category mode */}
+                          {isSingleCategoryMode && (
+                            <button
+                              type="button"
+                              onClick={() => onSelectProduct?.(null)}
+                              className={`flex items-center gap-2 py-0.5 text-left cursor-pointer group transition-colors select-none ${
+                                !selectedProductId
+                                  ? "text-[#1E4D3E] font-bold"
+                                  : "text-[#5A4338] hover:text-[#1E4D3E] font-medium"
+                              }`}
+                            >
+                              <span
+                                className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-all shrink-0 ${
+                                  !selectedProductId
+                                    ? "border-[#1E4D3E] bg-[#1E4D3E]/15"
+                                    : "border-[#9C8274] group-hover:border-[#1E4D3E]"
+                                }`}
+                              >
+                                {!selectedProductId && (
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#1E4D3E]" />
+                                )}
+                              </span>
+                              <span
+                                className={`text-xs truncate ${
+                                  !selectedProductId
+                                    ? "underline underline-offset-2 decoration-1 decoration-[#1E4D3E]"
+                                    : ""
+                                }`}
+                              >
+                                All in {cat.name}
+                              </span>
+                            </button>
+                          )}
+
+                          {isLoadingProducts ? (
+                            <div className="flex items-center gap-2 py-1 text-xs text-[#9C8274]">
+                              <Loader2 className="w-3 h-3 animate-spin text-[#7A2224]" />
+                              Loading products...
+                            </div>
+                          ) : products.length > 0 ? (
+                            products.map((prod) => {
+                              const isProductActive = selectedProductId === prod.id;
+                              return (
+                                <button
+                                  key={prod.id}
+                                  type="button"
+                                  onClick={() => {
+                                    if (selectedCategoryId !== cat.id) {
+                                      onSelectCategory(cat.id);
+                                    }
+                                    onSelectProduct?.(isProductActive ? null : prod.id);
+                                  }}
+                                  className={`flex items-center gap-2 py-0.5 text-left cursor-pointer group transition-colors select-none ${
+                                    isProductActive
+                                      ? "text-[#1E4D3E] font-bold"
+                                      : "text-[#5A4338] hover:text-[#1E4D3E] font-medium"
+                                  }`}
+                                >
+                                  <span
+                                    className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-all shrink-0 ${
+                                      isProductActive
+                                        ? "border-[#1E4D3E] bg-[#1E4D3E]/15"
+                                        : "border-[#9C8274] group-hover:border-[#1E4D3E]"
+                                    }`}
+                                  >
+                                    {isProductActive && (
+                                      <span className="w-1.5 h-1.5 rounded-full bg-[#1E4D3E]" />
+                                    )}
+                                  </span>
+                                  <span
+                                    className={`text-xs truncate ${
+                                      isProductActive
+                                        ? "underline underline-offset-2 decoration-1 decoration-[#1E4D3E]"
+                                        : ""
+                                    }`}
+                                    title={prod.name}
+                                  >
+                                    {prod.name}
+                                  </span>
+                                </button>
+                              );
+                            })
+                          ) : (
+                            <span className="text-[11px] text-[#9C8274] italic py-0.5">
+                              No products found in this category
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
                 <p className="text-xs text-[#9C8274] py-2 text-center">
-                  No matching categories
+                  {categorySearch.trim()
+                    ? `No categories matching "${categorySearch}"`
+                    : "No categories found"}
                 </p>
+              )}
+
+              {/* View All Categories Link when in single category mode */}
+              {isSingleCategoryMode && (
+                <div className="pt-2 mt-2 border-t border-[#F0E4D8]">
+                  <Link
+                    href={viewAllCategoriesHref}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-[#7A2224] hover:text-[#5A1911] hover:underline transition-colors py-1"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                    <span>View All Categories</span>
+                  </Link>
+                </div>
               )}
             </div>
           </div>

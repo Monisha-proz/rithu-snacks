@@ -13,6 +13,13 @@ const nextConfig: NextConfig = {
     ],
   },
   serverExternalPackages: ["@prisma/adapter-mariadb", "mariadb"],
+  experimental: {
+    optimizePackageImports: [
+      "lucide-react",
+      "@tanstack/react-table",
+      "@tanstack/react-query",
+    ],
+  },
 };
 
 export default nextConfig;

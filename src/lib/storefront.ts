@@ -10,15 +10,30 @@ import type { CustomerWishlistItemDto } from "@/features/wishlist/types";
  * yet. Purely cosmetic - never affects pricing, cart, or wishlist behavior.
  */
 export function resolveSnackFallbackImage(name: string): string {
-  const lower = name.toLowerCase();
-  if (lower.includes("murukku") && lower.includes("kai")) return SNACKSLOGOS.kai_murukku;
-  if (lower.includes("murukku") && lower.includes("thenkuzhal")) return SNACKSLOGOS.thenkuzhal_murukku;
-  if (lower.includes("murukku") || lower.includes("butter")) return SNACKSLOGOS.special_butter_murukku;
-  if (lower.includes("chip")) return SNACKSLOGOS.special_spicy_chips;
-  if (lower.includes("mixture") || lower.includes("namkeen")) return SNACKSLOGOS.mixture;
+  const lower = (name || "").toLowerCase();
+  if (lower.includes("kai") && lower.includes("murukku")) return SNACKSLOGOS.kai_murukku;
+  if (lower.includes("thenkuzhal")) return SNACKSLOGOS.thenkuzhal_murukku;
+  if (lower.includes("chip") || lower.includes("crisp")) return SNACKSLOGOS.special_spicy_chips;
+  if (
+    lower.includes("mixture") ||
+    lower.includes("namkeen") ||
+    lower.includes("pakoda") ||
+    lower.includes("omapodi") ||
+    lower.includes("sev") ||
+    lower.includes("ola")
+  ) {
+    return SNACKSLOGOS.mixture;
+  }
   if (lower.includes("laddu")) return SNACKSLOGOS.laddu;
   if (lower.includes("jalebi")) return SNACKSLOGOS.jalebi;
-  if (lower.includes("palkova")) return SNACKSLOGOS.palkova;
+  if (
+    lower.includes("palkova") ||
+    lower.includes("halwa") ||
+    lower.includes("mysore") ||
+    lower.includes("sweet")
+  ) {
+    return SNACKSLOGOS.palkova;
+  }
   return SNACKSLOGOS.special_butter_murukku;
 }
 
@@ -31,7 +46,10 @@ export function resolveSnackFallbackImage(name: string): string {
 export function mapVariantToStorefrontProduct(
   variant: CustomerVariantListItemDto
 ): StorefrontProduct {
-  const imageUrl = variant.primaryImage
+  const isDummyImage =
+    variant.primaryImage?.startsWith("/logos/") && variant.primaryImage?.endsWith(".png");
+
+  const imageUrl = !isDummyImage && variant.primaryImage
     ? getImageUrl(variant.primaryImage)
     : resolveSnackFallbackImage(variant.productName || variant.variantName);
 
@@ -57,11 +75,14 @@ export function mapVariantToStorefrontProduct(
  * the shape ProductCard's "cart" mode renders.
  */
 export function mapCartItemToStorefrontProduct(item: CartItemResponse): StorefrontProduct {
+  const isDummyImage =
+    item.primaryImage?.startsWith("/logos/") && item.primaryImage?.endsWith(".png");
+
   return {
     id: item.variantId,
     productId: item.productId,
     name: item.variantName || item.productName,
-    image: item.primaryImage
+    image: !isDummyImage && item.primaryImage
       ? getImageUrl(item.primaryImage)
       : resolveSnackFallbackImage(item.productName || item.variantName),
     unitPrices: [

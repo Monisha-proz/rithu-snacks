@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
@@ -116,6 +116,24 @@ export function SnackFallbackIllustration({
   );
 }
 
+// Global cache of URLs that failed to load, preventing repeated slow network timeouts across cards
+const FAILED_IMAGE_URLS = new Set<string>();
+
+function isUnresolvableImageSrc(src?: string | null): boolean {
+  if (!src) return true;
+  const trimmed = src.trim();
+  if (
+    trimmed === "" ||
+    trimmed === "null" ||
+    trimmed === "undefined" ||
+    trimmed === "/images/placeholder.png" ||
+    (trimmed.startsWith("/logos/") && trimmed.endsWith(".png"))
+  ) {
+    return true;
+  }
+  return FAILED_IMAGE_URLS.has(trimmed);
+}
+
 export function ProductImage({
   src,
   alt,
@@ -130,12 +148,32 @@ export function ProductImage({
   badge,
   fallbackText,
 }: ProductImageProps) {
-  const [hasError, setHasError] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const isInvalidSrc = isUnresolvableImageSrc(src);
+  const [hasError, setHasError] = useState(isInvalidSrc);
+  const [isLoading, setIsLoading] = useState(!isInvalidSrc);
+
+  const isMountedRef = useRef(false);
+  const hasLoadedBeforeMountRef = useRef(false);
+  const prevSrcRef = useRef(src);
 
   useEffect(() => {
-    setHasError(false);
-    setIsLoading(true);
+    isMountedRef.current = true;
+    if (hasLoadedBeforeMountRef.current) {
+      setIsLoading(false);
+    }
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (prevSrcRef.current !== src) {
+      prevSrcRef.current = src;
+      const invalid = isUnresolvableImageSrc(src);
+      setHasError(invalid);
+      setIsLoading(!invalid);
+      hasLoadedBeforeMountRef.current = false;
+    }
   }, [src]);
 
   const aspectClass =
@@ -147,7 +185,23 @@ export function ProductImage({
       ? "aspect-4/3"
       : "";
 
-  const isInvalidSrc = !src || src.trim() === "" || src === "null" || src === "undefined";
+  const handleImageLoad = () => {
+    if (isMountedRef.current) {
+      setIsLoading(false);
+    } else {
+      hasLoadedBeforeMountRef.current = true;
+    }
+  };
+
+  const handleImageError = () => {
+    if (src) {
+      FAILED_IMAGE_URLS.add(src.trim());
+    }
+    if (isMountedRef.current) {
+      setHasError(true);
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div
@@ -172,16 +226,13 @@ export function ProductImage({
 
           {fill ? (
             <Image
-              src={src}
+              src={src!}
               alt={alt || "Rithu Snack Product"}
               fill
               sizes={sizes}
               priority={priority}
-              onLoad={() => setIsLoading(false)}
-              onError={() => {
-                setHasError(true);
-                setIsLoading(false);
-              }}
+              onLoad={handleImageLoad}
+              onError={handleImageError}
               className={cn(
                 "object-cover transition-opacity duration-300",
                 isLoading ? "opacity-0" : "opacity-100",
@@ -190,17 +241,14 @@ export function ProductImage({
             />
           ) : (
             <Image
-              src={src}
+              src={src!}
               alt={alt || "Rithu Snack Product"}
               width={width || 400}
               height={height || 400}
               sizes={sizes}
               priority={priority}
-              onLoad={() => setIsLoading(false)}
-              onError={() => {
-                setHasError(true);
-                setIsLoading(false);
-              }}
+              onLoad={handleImageLoad}
+              onError={handleImageError}
               className={cn(
                 "object-cover transition-opacity duration-300",
                 isLoading ? "opacity-0" : "opacity-100",

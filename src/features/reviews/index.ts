@@ -7,5 +7,7 @@ export * from "./components/ReviewStatusBadge";
 export * from "./components/ReviewStatusTabs";
 export * from "./components/AdminReviewDetailModal";
 export * from "./components/AdminReviewListTable";
+export * from "./components/ProductReviewsSection";
+export * from "./hooks/use-public-reviews";
 export * from "./repositories/review.repository";
 export * from "./services/review.service";

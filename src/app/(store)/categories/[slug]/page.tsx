@@ -6,13 +6,13 @@ import { useRouter } from "next/navigation";
 import { Sparkles, ChevronRight, SlidersHorizontal, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui";
 import {
-  useCustomerProducts,
+  useCustomerGlobalVariants,
   useCustomerCategories,
 } from "@/features/customers/hooks/use-customer-catalog";
 import { CustomerProductGrid } from "@/features/customers/components/catalog/CustomerProductGrid";
 import { FilterSidebar } from "@/components/storefront/filters/FilterSidebar";
-import type { CustomerProductListInput } from "@/features/customers/validations/catalog.schema";
-import type { CustomerProductListItemDto } from "@/features/customers/types/catalog.types";
+import type { CustomerGlobalVariantListInput } from "@/features/customers/validations/catalog.schema";
+import type { CustomerVariantListItemDto } from "@/features/customers/types/catalog.types";
 
 interface CategoryProductsPageProps {
   params: Promise<{ slug: string }>;
@@ -21,34 +21,44 @@ interface CategoryProductsPageProps {
 const SORT_OPTIONS: {
   value: string;
   label: string;
-  sortBy: CustomerProductListInput["sortBy"];
-  sortOrder: CustomerProductListInput["sortOrder"];
+  sortBy: CustomerGlobalVariantListInput["sortBy"];
+  sortOrder: CustomerGlobalVariantListInput["sortOrder"];
 }[] = [
   { value: "createdAt_desc", label: "Newest First", sortBy: "createdAt", sortOrder: "desc" },
-  { value: "price_asc", label: "Price: Low to High", sortBy: "price", sortOrder: "asc" },
-  { value: "price_desc", label: "Price: High to Low", sortBy: "price", sortOrder: "desc" },
-  { value: "name_asc", label: "Name: A to Z", sortBy: "name", sortOrder: "asc" },
-  { value: "name_desc", label: "Name: Z to A", sortBy: "name", sortOrder: "desc" },
+  { value: "price_asc", label: "Price: Low to High", sortBy: "basePrice", sortOrder: "asc" },
+  { value: "price_desc", label: "Price: High to Low", sortBy: "basePrice", sortOrder: "desc" },
+  { value: "name_asc", label: "Name: A to Z", sortBy: "variantName", sortOrder: "asc" },
+  { value: "name_desc", label: "Name: Z to A", sortBy: "variantName", sortOrder: "desc" },
 ];
 
 function ProductCatalogSkeleton() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 animate-pulse">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 animate-in fade-in duration-200">
       {[1, 2, 3, 4, 5, 6].map((n) => (
         <div
           key={n}
-          className="rounded-2xl border border-theme-border bg-theme-surface p-4 space-y-4 overflow-hidden"
+          className="bg-white rounded-2xl border border-[#E8D9CD]/80 p-3.5 flex flex-col justify-between overflow-hidden shadow-2xs space-y-3"
         >
-          <div className="aspect-square w-full rounded-xl skeleton-shimmer" />
-          <div className="space-y-2">
-            <div className="h-4 w-20 rounded-md skeleton-shimmer" />
-            <div className="h-5 w-3/4 rounded-md skeleton-shimmer" />
-            <div className="h-3 w-full rounded-md skeleton-shimmer" />
+          {/* Image skeleton with shimmer */}
+          <div className="relative aspect-square w-full rounded-xl skeleton-shimmer overflow-hidden bg-stone-100" />
+
+          {/* Info row: Category, title & pack size pills */}
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center justify-between gap-2">
+              <div className="h-3 w-20 rounded skeleton-shimmer bg-stone-100" />
+              <div className="flex gap-1">
+                <div className="h-4.5 w-10 rounded skeleton-shimmer bg-stone-100" />
+                <div className="h-4.5 w-10 rounded skeleton-shimmer bg-stone-100" />
+              </div>
+            </div>
+            <div className="flex items-baseline justify-between gap-2">
+              <div className="h-4.5 w-36 rounded skeleton-shimmer bg-stone-100" />
+              <div className="h-4.5 w-14 rounded skeleton-shimmer bg-stone-100" />
+            </div>
           </div>
-          <div className="pt-2 border-t border-theme-border-subtle flex items-center justify-between">
-            <div className="h-6 w-16 rounded-md skeleton-shimmer" />
-            <div className="h-4 w-20 rounded-md skeleton-shimmer" />
-          </div>
+
+          {/* Golden CTA button skeleton */}
+          <div className="h-10 w-full rounded-xl skeleton-shimmer bg-[#F8BE15]/20" />
         </div>
       ))}
     </div>
@@ -71,13 +81,24 @@ export default function CategoryProductsPage({
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(1000);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const [isFilterSwitching, setIsFilterSwitching] = useState(false);
 
-  // Accumulated products for Infinite Scroll
-  const [accumulatedProducts, setAccumulatedProducts] = useState<CustomerProductListItemDto[]>([]);
+  // Accumulated variants for Infinite Scroll
+  const [accumulatedVariants, setAccumulatedVariants] = useState<CustomerVariantListItemDto[]>([]);
 
   // Fetch all categories (pageSize 250 supported)
-  const { data: categoriesData } = useCustomerCategories({ pageSize: 250 });
+  const { data: categoriesData, isLoading: isLoadingCategories } = useCustomerCategories({ pageSize: 250 });
   const categories = categoriesData?.data ?? [];
+
+  // Isolate to single category mode if slug is not "all"
+  const isSingleCategoryMode = slug !== "all";
+
+  // Reset internal state when the route slug changes
+  useEffect(() => {
+    setActiveCategoryOverride(null);
+    setSelectedProductId(null);
+    setPage(1);
+  }, [slug]);
 
   // Resolve current active category (from URL slug or in-page selection)
   const activeSlug = activeCategoryOverride ?? slug;
@@ -106,58 +127,75 @@ export default function CategoryProductsPage({
     return activeSlug.charAt(0).toUpperCase() + activeSlug.slice(1);
   }, [currentCategory, activeSlug, activeCategoryId]);
 
+  // When in single category mode, FilterSidebar only displays this single selected category
+  const categoriesForSidebar = useMemo(() => {
+    if (!isSingleCategoryMode) return categories;
+    if (currentCategory) return [currentCategory];
+    if (activeCategoryId) {
+      return [
+        {
+          id: activeCategoryId,
+          name: categoryTitle,
+          slug: activeSlug,
+          description: null,
+          image: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ];
+    }
+    return [];
+  }, [isSingleCategoryMode, categories, currentCategory, activeCategoryId, categoryTitle, activeSlug]);
+
   // Find active sort config
   const activeSort = useMemo(() => {
     return SORT_OPTIONS.find((s) => s.value === sortKey) ?? SORT_OPTIONS[0];
   }, [sortKey]);
 
-  // Query products with database-level filters (optimized for scale)
+  // Query variants with database-level filters (POST /api/customer/variants)
   const {
-    data: productsResponse,
+    data: variantsResponse,
     isLoading,
     isFetching,
     error,
     refetch,
-  } = useCustomerProducts({
+  } = useCustomerGlobalVariants({
     page,
-    pageSize: 12,
+    pageSize: 18,
     search: search.trim() ? search.trim() : undefined,
     categoryIds: activeCategoryId ? [activeCategoryId] : undefined,
     productIds: selectedProductId ? [selectedProductId] : undefined,
     minPrice: minPrice > 0 ? minPrice : undefined,
     maxPrice: maxPrice < 1000 ? maxPrice : undefined,
-    inStock: stockStatus === "all" ? undefined : stockStatus === "in_stock",
-    vegType: vegType === "all" ? undefined : vegType,
     sortBy: activeSort.sortBy,
     sortOrder: activeSort.sortOrder,
   });
 
-  const meta = productsResponse?.meta;
+  const meta = variantsResponse?.meta;
 
   // Infinite Scroll accumulation logic
   useEffect(() => {
-    if (!productsResponse?.data) return;
+    if (!variantsResponse?.data) return;
 
     if (page === 1) {
-      setAccumulatedProducts(productsResponse.data);
+      setAccumulatedVariants(variantsResponse.data);
     } else {
-      setAccumulatedProducts((prev) => {
+      setAccumulatedVariants((prev) => {
         const existingIds = new Set(prev.map((p) => p.id));
-        const newItems = productsResponse.data.filter((p) => !existingIds.has(p.id));
+        const newItems = variantsResponse.data.filter((p) => !existingIds.has(p.id));
         return [...prev, ...newItems];
       });
     }
-  }, [productsResponse?.data, page]);
+  }, [variantsResponse?.data, page]);
 
-  // Derive displayed products: on page 1 always prioritize productsResponse.data directly,
-  // falling back to accumulatedProducts (for infinite scroll pages 2+).
-  // This guarantees products never get wiped to an empty screen when clearing filters!
-  const displayedProducts = useMemo(() => {
-    if (page === 1 && productsResponse?.data) {
-      return productsResponse.data;
+  // Derive displayed variants: on page 1 always prioritize variantsResponse.data directly,
+  // falling back to accumulatedVariants (for infinite scroll pages 2+).
+  const displayedVariants = useMemo(() => {
+    if (page === 1 && variantsResponse?.data) {
+      return variantsResponse.data;
     }
-    return accumulatedProducts;
-  }, [page, productsResponse?.data, accumulatedProducts]);
+    return accumulatedVariants;
+  }, [page, variantsResponse?.data, accumulatedVariants]);
 
   // Infinite Scroll IntersectionObserver sentinel
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -190,8 +228,25 @@ export default function CategoryProductsPage({
     };
   }, [meta, page, isFetching, isLoading]);
 
+  // Turn off filter switching once query fetching completes
+  useEffect(() => {
+    if (!isFetching) {
+      setIsFilterSwitching(false);
+    }
+  }, [isFetching]);
+
   // Category Selection
   const handleCategorySelect = (categoryId: string | null) => {
+    if (isSingleCategoryMode) {
+      setIsFilterSwitching(true);
+      setAccumulatedVariants([]);
+      setSelectedProductId(null);
+      setPage(1);
+      return;
+    }
+
+    setIsFilterSwitching(true);
+    setAccumulatedVariants([]);
     setSelectedProductId(null);
     if (!categoryId) {
       setActiveCategoryOverride("all");
@@ -206,12 +261,16 @@ export default function CategoryProductsPage({
 
   // Product Selection under Category
   const handleProductSelect = (productId: string | null) => {
+    setIsFilterSwitching(true);
+    setAccumulatedVariants([]);
     setSelectedProductId(productId);
     setPage(1);
   };
 
   // Reset Filters - safely clears all filters and refetches
   const handleResetFilters = () => {
+    setIsFilterSwitching(true);
+    setAccumulatedVariants([]);
     setSearch("");
     setSortKey("createdAt_desc");
     setStockStatus("all");
@@ -219,7 +278,9 @@ export default function CategoryProductsPage({
     setMinPrice(0);
     setMaxPrice(1000);
     setSelectedProductId(null);
-    setActiveCategoryOverride(null);
+    if (!isSingleCategoryMode) {
+      setActiveCategoryOverride(null);
+    }
     setPage(1);
     refetch();
   };
@@ -231,7 +292,8 @@ export default function CategoryProductsPage({
     vegType !== "all" ||
     minPrice > 0 ||
     maxPrice < 1000 ||
-    sortKey !== "createdAt_desc";
+    sortKey !== "createdAt_desc" ||
+    (!isSingleCategoryMode && Boolean(activeCategoryId));
 
   const activeFilterCount = [
     Boolean(search),
@@ -240,6 +302,7 @@ export default function CategoryProductsPage({
     vegType !== "all",
     minPrice > 0 || maxPrice < 1000,
     sortKey !== "createdAt_desc",
+    !isSingleCategoryMode && Boolean(activeCategoryId),
   ].filter(Boolean).length;
 
   const hasMorePages = meta ? page < meta.totalPages : false;
@@ -254,11 +317,21 @@ export default function CategoryProductsPage({
             <Link href="/" className="hover:text-[#7A2224] transition-colors">
               Home
             </Link>
-
             <ChevronRight className="w-3.5 h-3.5" />
-            <span className="font-bold text-[#2D1810]">
-              {categoryTitle}
-            </span>
+            {isSingleCategoryMode ? (
+              <>
+                <Link
+                  href="/categories/all"
+                  className="hover:text-[#7A2224] transition-colors"
+                >
+                  Categories
+                </Link>
+                <ChevronRight className="w-3.5 h-3.5" />
+                <span className="font-bold text-[#2D1810]">{categoryTitle}</span>
+              </>
+            ) : (
+              <span className="font-bold text-[#2D1810]">All Categories</span>
+            )}
           </nav>
 
           <div className="text-center max-w-3xl mx-auto">
@@ -295,7 +368,7 @@ export default function CategoryProductsPage({
           </button>
 
           <span className="text-xs text-[#7A6258] font-medium">
-            Showing <strong className="text-[#2D1810]">{meta?.total ?? displayedProducts.length}</strong> snacks
+            Showing <strong className="text-[#2D1810]">{meta?.total ?? displayedVariants.length}</strong> snacks
           </span>
         </div>
 
@@ -303,28 +376,39 @@ export default function CategoryProductsPage({
         <div className="flex flex-col lg:flex-row items-start gap-8">
           {/* Left Sticky FilterSidebar */}
           <FilterSidebar
-            categories={categories}
+            categories={categoriesForSidebar}
+            isLoadingCategories={isLoadingCategories && categories.length === 0}
             selectedCategoryId={activeCategoryId}
             onSelectCategory={handleCategorySelect}
             selectedProductId={selectedProductId}
             onSelectProduct={handleProductSelect}
+            isSingleCategoryMode={isSingleCategoryMode}
+            viewAllCategoriesHref="/categories/all"
             searchQuery={search}
             onSearchChange={(val) => {
+              setIsFilterSwitching(true);
+              setAccumulatedVariants([]);
               setSearch(val);
               setPage(1);
             }}
             sortKey={sortKey}
             onSortChange={(val) => {
+              setIsFilterSwitching(true);
+              setAccumulatedVariants([]);
               setSortKey(val);
               setPage(1);
             }}
             stockStatus={stockStatus}
             onStockStatusChange={(val) => {
+              setIsFilterSwitching(true);
+              setAccumulatedVariants([]);
               setStockStatus(val);
               setPage(1);
             }}
             vegType={vegType}
             onVegTypeChange={(val) => {
+              setIsFilterSwitching(true);
+              setAccumulatedVariants([]);
               setVegType(val);
               setPage(1);
             }}
@@ -333,6 +417,8 @@ export default function CategoryProductsPage({
             currentMinPrice={minPrice}
             currentMaxPrice={maxPrice}
             onPriceChange={(min, max) => {
+              setIsFilterSwitching(true);
+              setAccumulatedVariants([]);
               setMinPrice(min);
               setMaxPrice(max);
               setPage(1);
@@ -351,7 +437,7 @@ export default function CategoryProductsPage({
               <p className="text-sm text-[#7A6258]">
                 Showing{" "}
                 <strong className="text-[#2D1810]">
-                  {meta?.total ?? displayedProducts.length}
+                  {meta?.total ?? displayedVariants.length}
                 </strong>{" "}
                 authentic {meta?.total === 1 ? "snack" : "snacks"} in{" "}
                 <strong className="text-[#7A2224] font-bold">
@@ -393,16 +479,38 @@ export default function CategoryProductsPage({
               </div>
             )}
 
-            {/* Content Area: Skeleton vs Accumulated Products with Infinite Scroll (3 per row) */}
-            {isLoading && page === 1 ? (
+            {/* Content Area: Full Skeleton ONLY on initial load, filter changes, or empty query */}
+            {(isFilterSwitching || (page === 1 && (isLoading || isFetching)) || (displayedVariants.length === 0 && (isLoading || isFetching))) ? (
               <ProductCatalogSkeleton />
             ) : (
               <>
                 <CustomerProductGrid
-                  products={displayedProducts}
+                  variants={displayedVariants}
                   columns={3}
                   onResetFilters={hasActiveFilters ? handleResetFilters : undefined}
                 />
+
+                {/* Shimmer cards appended at the bottom while next infinite scroll page loads */}
+                {isFetching && page > 1 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 mt-6 animate-in fade-in duration-200">
+                    {[1, 2, 3].map((n) => (
+                      <div
+                        key={`append-skel-${n}`}
+                        className="bg-white rounded-2xl border border-[#E8D9CD]/80 p-3.5 flex flex-col justify-between overflow-hidden shadow-2xs space-y-3"
+                      >
+                        <div className="relative aspect-square w-full rounded-xl skeleton-shimmer overflow-hidden bg-stone-100" />
+                        <div className="space-y-2 pt-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="h-3 w-20 rounded skeleton-shimmer bg-stone-100" />
+                            <div className="h-4.5 w-10 rounded skeleton-shimmer bg-stone-100" />
+                          </div>
+                          <div className="h-4.5 w-36 rounded skeleton-shimmer bg-stone-100" />
+                        </div>
+                        <div className="h-10 w-full rounded-xl skeleton-shimmer bg-[#F8BE15]/20" />
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {/* Infinite Scroll Sentinel & Loading Indicator */}
                 <div
@@ -416,9 +524,9 @@ export default function CategoryProductsPage({
                     </div>
                   )}
 
-                  {!hasMorePages && displayedProducts.length > 0 && !isFetching && (
+                  {!hasMorePages && displayedVariants.length > 0 && !isFetching && (
                     <p className="text-xs font-semibold text-[#9C8274] select-none">
-                      ✦ You have viewed all {displayedProducts.length} snacks ✦
+                      ✦ You have viewed all {displayedVariants.length} snacks ✦
                     </p>
                   )}
                 </div>
