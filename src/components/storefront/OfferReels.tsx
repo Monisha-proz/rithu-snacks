@@ -84,7 +84,7 @@ export function OfferReels() {
         fixed z-40 isolate
         right-3 bottom-[calc(env(safe-area-inset-bottom)+5.25rem)]
         lg:right-5 lg:bottom-5
-        w-[9.5rem] sm:w-[11rem] lg:w-[13rem]
+        w-[7.5rem] sm:w-[8.5rem] lg:w-[10rem]
         animate-in fade-in slide-in-from-bottom-4 duration-300
       "
       role="complementary"
@@ -96,9 +96,9 @@ export function OfferReels() {
         type="button"
         onClick={() => setIsClosed(true)}
         aria-label="Close offer reel"
-        className="absolute -right-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-neutral-900)] text-white shadow-lg ring-2 ring-white transition-colors hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-secondary-500)] cursor-pointer"
+        className="absolute -right-1.5 -top-1.5 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-neutral-900)] text-white shadow-lg ring-2 ring-white transition-colors hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-secondary-500)] cursor-pointer"
       >
-        <X className="h-4 w-4" />
+        <X className="h-3.5 w-3.5" />
       </button>
 
       <div className="relative aspect-[9/16] w-full overflow-hidden rounded-2xl bg-black shadow-xl shadow-black/25 ring-1 ring-black/10">
