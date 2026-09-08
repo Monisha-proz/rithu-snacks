@@ -6,6 +6,7 @@ import type {
   CustomerProductListInput,
   CustomerVariantListInput,
   CustomerGlobalVariantListInput,
+  CustomerRelatedVariantsQueryInput,
 } from "../validations/catalog.schema";
 
 export const catalogService = {
@@ -77,6 +78,19 @@ export const catalogService = {
       throw ApiError.notFound("Variant not found");
     }
     return variant;
+  },
+
+  /**
+   * Related items for a variant, resolved through the product's
+   * category/subcategory and brand relationships. Returns an empty page rather
+   * than a 404 when the variant exists but nothing relates to it.
+   */
+  async getRelatedVariants(variantId: string, params: CustomerRelatedVariantsQueryInput) {
+    const result = await catalogRepository.findRelatedVariantsByVariantId(variantId, params);
+    if (result === null) {
+      throw ApiError.notFound("Variant not found");
+    }
+    return result;
   },
 
   async getGlobalVariants(params: CustomerGlobalVariantListInput) {

@@ -133,9 +133,37 @@ export const customerRelatedProductsQuerySchema = z
   })
   .strict();
 
+/**
+ * Public identifier for a variant. Catalog resources are addressed by UUID
+ * across the storefront, but the legacy `/api/products` routes still expose
+ * numeric primary keys, so the related-products route accepts either form and
+ * the repository resolves whichever was given.
+ */
+export const variantIdParamSchema = z
+  .string()
+  .trim()
+  .min(1, "Variant ID is required")
+  .refine((value) => uuidRegex.test(value) || /^\d+$/.test(value), {
+    message: "Invalid variant ID - expected a UUID or a numeric ID",
+  });
+
+export const customerRelatedVariantsQuerySchema = z
+  .object({
+    page: z.coerce.number().int().min(1, "page must be at least 1").optional().default(1),
+    limit: z.coerce
+      .number()
+      .int()
+      .min(1, "limit must be at least 1")
+      .max(50, "limit cannot exceed 50")
+      .optional()
+      .default(10),
+  })
+  .strict();
+
 export type CustomerBrandListInput = z.input<typeof customerBrandListSchema>;
 export type CustomerCategoryListInput = z.input<typeof customerCategoryListSchema>;
 export type CustomerProductListInput = z.input<typeof customerProductListSchema>;
 export type CustomerVariantListInput = z.input<typeof customerVariantListSchema>;
 export type CustomerGlobalVariantListInput = z.input<typeof customerGlobalVariantListSchema>;
 export type CustomerRelatedProductsQueryInput = z.infer<typeof customerRelatedProductsQuerySchema>;
+export type CustomerRelatedVariantsQueryInput = z.infer<typeof customerRelatedVariantsQuerySchema>;
