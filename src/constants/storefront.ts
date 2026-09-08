@@ -198,6 +198,7 @@ export const footerSocialIcons = [
 ];
 
 export const readyToAssist = [
+  "Contact Us",
   "Track My Order",
   "Terms & Condition",
   "Privacy Policy",

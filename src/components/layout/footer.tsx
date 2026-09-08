@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
   LOGOS,
   ICONS,
@@ -13,12 +14,15 @@ import {
 import { ContactCard, ContactItem } from "@/components/storefront/cards/ContactCard";
 import { FooterLinks } from "@/components/storefront/footer/FooterLinks";
 import { IconButton } from "@/components/storefront/buttons/IconButton";
+import { ContactFormModal } from "@/features/contact/components/ContactFormModal";
 import { useCustomerCompany } from "@/features/customers/hooks/use-customer-company";
 import { getImageUrl } from "@/lib/utils";
 
 export function Footer() {
+  const router = useRouter();
   const [email, setEmail] = React.useState("");
   const [isSubscribed, setIsSubscribed] = React.useState(false);
+  const [isContactModalOpen, setIsContactModalOpen] = React.useState(false);
 
   const { data: company } = useCustomerCompany();
 
@@ -154,6 +158,58 @@ export function Footer() {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(formattedLocation)}`;
   }, [company, formattedLocation]);
 
+  // Handle clicks on "Ready to Assist" links
+  const handleReadyToAssistClick = (item: string) => {
+    if (item === "Contact Us") {
+      setIsContactModalOpen(true);
+      return;
+    }
+    if (item === "Track My Order") {
+      router.push("/orders");
+      return;
+    }
+    if (item === "Terms & Condition") {
+      router.push("/terms");
+      return;
+    }
+    if (item === "Privacy Policy") {
+      router.push("/privacy");
+      return;
+    }
+    if (item === "Return & Refund Policy") {
+      router.push("/refund-policy");
+      return;
+    }
+    if (item === "FAQ's") {
+      router.push("/faq");
+      return;
+    }
+  };
+
+  // Handle clicks on "Main Menu" links
+  const handleMainMenuClick = (item: string) => {
+    if (item === "Shop All") {
+      router.push("/products");
+      return;
+    }
+    if (item === "Our Snacks") {
+      router.push("/categories");
+      return;
+    }
+    if (item === "Festive Gifting") {
+      router.push("/festive-gifting");
+      return;
+    }
+    if (item === "Bulk Order") {
+      router.push("/bulk-order");
+      return;
+    }
+    if (item === "About Us") {
+      router.push("/about");
+      return;
+    }
+  };
+
   return (
     <footer className="relative pt-12">
       {/* Floating Contact Cards */}
@@ -173,6 +229,7 @@ export function Footer() {
             <FooterLinks
               title="Ready to Assist"
               items={readyToAssist}
+              onItemClick={handleReadyToAssistClick}
               className="mb-2"
             />
 
@@ -180,6 +237,7 @@ export function Footer() {
             <FooterLinks
               title="Main Menu"
               items={mainMenu}
+              onItemClick={handleMainMenuClick}
               className="mb-2"
             />
 
@@ -293,6 +351,12 @@ export function Footer() {
           </p>
         </div>
       </div>
+
+      {/* Contact Form Modal */}
+      <ContactFormModal
+        open={isContactModalOpen}
+        onClose={() => setIsContactModalOpen(false)}
+      />
     </footer>
   );
 }
