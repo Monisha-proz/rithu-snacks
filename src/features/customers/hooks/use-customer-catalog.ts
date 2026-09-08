@@ -18,6 +18,8 @@ export const CUSTOMER_CATALOG_QUERY_KEYS = {
     [...CUSTOMER_CATALOG_QUERY_KEYS.all, "product", uuid] as const,
   productVariants: (uuid: string, params?: CustomerVariantListInput) =>
     [...CUSTOMER_CATALOG_QUERY_KEYS.all, "product-variants", uuid, params ?? {}] as const,
+  relatedProducts: (uuid: string, limit?: number) =>
+    [...CUSTOMER_CATALOG_QUERY_KEYS.all, "related-products", uuid, limit ?? null] as const,
   variant: (productUuid: string, variantUuid: string) =>
     [...CUSTOMER_CATALOG_QUERY_KEYS.all, "variant", productUuid, variantUuid] as const,
   categories: (params?: CustomerCategoryListInput) =>
@@ -60,6 +62,22 @@ export function useCustomerProduct(
   return useQuery({
     queryKey: CUSTOMER_CATALOG_QUERY_KEYS.product(productUuid ?? ""),
     queryFn: () => customerCatalogApi.getProduct(productUuid!),
+    enabled: !!productUuid && (options?.enabled ?? true),
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+/**
+ * Fetch related products (same category/brand) for a given product
+ */
+export function useCustomerRelatedProducts(
+  productUuid: string | null,
+  limit?: number,
+  options?: { enabled?: boolean }
+) {
+  return useQuery({
+    queryKey: CUSTOMER_CATALOG_QUERY_KEYS.relatedProducts(productUuid ?? "", limit),
+    queryFn: () => customerCatalogApi.getRelatedProducts(productUuid!, limit),
     enabled: !!productUuid && (options?.enabled ?? true),
     staleTime: 1000 * 60 * 5,
   });

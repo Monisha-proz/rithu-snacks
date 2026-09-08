@@ -10,8 +10,8 @@ import { toast } from "@/components/ui/Toast";
 import { bannerApi } from "../api/get-banners";
 import type {
   BannerListQueryInput,
-  CreateBannerInput,
-  UpdateBannerInput,
+  CreateBannerPayload,
+  UpdateBannerPayload,
   BannerPositionListQueryInput,
   CreateBannerPositionInput,
   UpdateBannerPositionInput,
@@ -74,7 +74,7 @@ export function useCreateBanner() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: CreateBannerInput) => bannerApi.createBanner(data),
+    mutationFn: (data: CreateBannerPayload) => bannerApi.createBanner(data),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: BANNER_KEYS.all });
       toast.success("Success", result.message || "Banner created successfully");
@@ -89,7 +89,7 @@ export function useUpdateBanner() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ uuid, data }: { uuid: string; data: UpdateBannerInput }) =>
+    mutationFn: ({ uuid, data }: { uuid: string; data: UpdateBannerPayload }) =>
       bannerApi.updateBanner(uuid, data),
     onSuccess: (result, variables) => {
       queryClient.invalidateQueries({ queryKey: BANNER_KEYS.all });

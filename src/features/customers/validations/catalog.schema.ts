@@ -127,8 +127,15 @@ export const customerGlobalVariantListSchema = z
     }
   );
 
+export const customerRelatedProductsQuerySchema = z
+  .object({
+    limit: z.coerce.number().int().min(1).max(50).optional().default(8),
+  })
+  .strict();
+
 export type CustomerBrandListInput = z.input<typeof customerBrandListSchema>;
 export type CustomerCategoryListInput = z.input<typeof customerCategoryListSchema>;
 export type CustomerProductListInput = z.input<typeof customerProductListSchema>;
 export type CustomerVariantListInput = z.input<typeof customerVariantListSchema>;
 export type CustomerGlobalVariantListInput = z.input<typeof customerGlobalVariantListSchema>;
+export type CustomerRelatedProductsQueryInput = z.infer<typeof customerRelatedProductsQuerySchema>;

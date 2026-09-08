@@ -48,6 +48,14 @@ export const catalogService = {
     return product;
   },
 
+  async getRelatedProducts(uuid: string, limit: number) {
+    const related = await catalogRepository.findRelatedProducts(uuid, limit);
+    if (related === null) {
+      throw ApiError.notFound("Product not found");
+    }
+    return related;
+  },
+
   // Variant Methods
   async getVariants(productUuid: string, params: CustomerVariantListInput) {
     const result = await catalogRepository.findCustomerVariantsByProductUuid(

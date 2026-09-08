@@ -1,6 +1,7 @@
 import { db } from "@/lib/db/prisma";
 import { ApiError } from "@/lib/api/api-error";
 import { userRepository } from "@/features/users/repositories/user.repository";
+import { offerService } from "@/features/offers/services/offer.service";
 import { orderRepository } from "../repositories/order.repository";
 import type {
   OrderDetailResponse,
@@ -536,11 +537,19 @@ export const orderService = {
       subtotal += Number(it.price_at_add || 0) * it.quantity;
     });
     const deliveryCharge = deliveryMethod === "EXPRESS" ? 100 : 0;
+    const discount = await offerService.calculateCartDiscount(
+      (cart?.items ?? []).map((it) => ({
+        productId: it.productId,
+        quantity: it.quantity,
+        lineTotal: Number(it.price_at_add || 0) * it.quantity,
+      })),
+      subtotal
+    );
     return {
       subtotal,
       deliveryCharge,
-      discount: 0,
-      total: subtotal + deliveryCharge,
+      discount,
+      total: subtotal + deliveryCharge - discount,
     };
   },
 };

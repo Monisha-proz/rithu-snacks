@@ -2,12 +2,14 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { AdminBreadcrumb, type BreadcrumbItem } from "./AdminBreadcrumb";
 
 interface AdminPageHeaderProps {
   title: string;
   description?: string;
+  subtitle?: string;
   actions?: React.ReactNode;
-  breadcrumbs?: React.ReactNode;
+  breadcrumbs?: React.ReactNode | BreadcrumbItem[];
   children?: React.ReactNode;
   className?: string;
 }
@@ -15,19 +17,27 @@ interface AdminPageHeaderProps {
 function AdminPageHeader({
   title,
   description,
+  subtitle,
   actions,
   breadcrumbs,
   children,
   className,
 }: AdminPageHeaderProps) {
+  const renderedBreadcrumbs = Array.isArray(breadcrumbs) ? (
+    <AdminBreadcrumb items={breadcrumbs} />
+  ) : (
+    breadcrumbs
+  );
+  const displayDescription = description || subtitle;
+
   return (
     <div className={cn("space-y-4 flex-shrink-0", className)}>
-      {breadcrumbs}
+      {renderedBreadcrumbs}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-          {description && (
-            <p className="mt-1 text-sm text-gray-500">{description}</p>
+          {displayDescription && (
+            <p className="mt-1 text-sm text-gray-500">{displayDescription}</p>
           )}
         </div>
         {actions && <div className="flex items-center gap-2">{actions}</div>}

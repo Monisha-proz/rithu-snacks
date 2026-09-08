@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
-import { Plus, Pencil, Trash2, Calendar, ExternalLink } from "lucide-react";
+import { Plus, Pencil, Trash2, Calendar } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,12 +25,17 @@ import {
   useUpdateBanner,
   useDeleteBanner,
 } from "@/features/banners/hooks";
+import { BannerForm } from "@/features/banners/components";
 import {
-  BannerForm,
-  ManageBannerPositionsModal,
-} from "@/features/banners/components";
+  parseVideoUrl,
+  getVideoThumbnailUrl,
+} from "@/lib/utils/video-url.util";
+import {
+  getBannerTypeConfig,
+  getBannerTypeLabel,
+} from "@/features/banners/constants/banner-types";
 import type { BannerDto } from "@/features/banners/types";
-import { Settings2 } from "lucide-react";
+import { Video } from "lucide-react";
 
 export default function AdminBannersPage() {
   const [search, setSearch] = useState("");
@@ -40,7 +45,6 @@ export default function AdminBannersPage() {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isManagePositionsOpen, setIsManagePositionsOpen] = useState(false);
   const [selectedBanner, setSelectedBanner] = useState<BannerDto | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{
     uuid: string;
@@ -80,15 +84,13 @@ export default function AdminBannersPage() {
   const positionOptions = useMemo(() => {
     return positions.map((p) => ({
       value: p.id,
-      label: `${p.name} (${p.slug})`,
+      label: getBannerTypeLabel(p.slug, p.name),
+      slug: p.slug,
     }));
   }, [positions]);
 
   const positionFilterOptions = useMemo(() => {
-    return [
-      { value: "", label: "All Positions" },
-      ...positionOptions,
-    ];
+    return [{ value: "", label: "All Banner Types" }, ...positionOptions];
   }, [positionOptions]);
 
   const formatDateDisplay = (dateVal: unknown): string => {
@@ -109,11 +111,58 @@ export default function AdminBannersPage() {
   const columns: ColumnDef<BannerDto>[] = [
     {
       accessorKey: "imageUrl",
-      header: "Banner (3:1)",
+      header: "Preview",
       cell: ({ row }) => {
-        const imageUrl = row.original.imageUrl;
+        const { imageUrl, videoUrl, thumbnailUrl, mediaType, bannerPosition } =
+          row.original;
+        const config = getBannerTypeConfig(bannerPosition?.slug);
+        const frameClassName =
+          config.image?.thumbnailClassName ?? "aspect-[3/1] w-28";
+
+        if (mediaType === "video") {
+          // Reels can be an uploaded file or a link to a hosted video. Only a
+          // file plays in a <video> tag; providers like YouTube are previewed
+          // through their poster image instead.
+          const parsedVideo = parseVideoUrl(videoUrl);
+          const posterUrl =
+            thumbnailUrl ||
+            imageUrl ||
+            getVideoThumbnailUrl(videoUrl) ||
+            undefined;
+          const isPlayableFile = parsedVideo?.kind === "file";
+
+          return (
+            <div className="relative flex aspect-[9/16] w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--color-neutral-200)] bg-[var(--color-neutral-100)]">
+              {isPlayableFile && videoUrl ? (
+                <video
+                  // Seek a fraction in so browsers paint a real first frame
+                  // instead of a blank box when there is no poster image.
+                  src={posterUrl ? videoUrl : `${videoUrl}#t=0.1`}
+                  poster={posterUrl}
+                  muted
+                  playsInline
+                  preload="metadata"
+                  className="h-full w-full object-cover"
+                />
+              ) : posterUrl ? (
+                <Image
+                  src={posterUrl}
+                  alt={row.original.title || "Banner"}
+                  fill
+                  className="object-cover"
+                  sizes="48px"
+                />
+              ) : (
+                <Video className="h-4 w-4 text-[var(--color-neutral-400)]" />
+              )}
+            </div>
+          );
+        }
+
         return (
-          <div className="relative aspect-[3/1] w-28 flex-shrink-0 overflow-hidden rounded-lg border border-[var(--color-neutral-200)] bg-[var(--color-neutral-100)] flex items-center justify-center">
+          <div
+            className={`relative ${frameClassName} flex flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--color-neutral-200)] bg-[var(--color-neutral-100)]`}
+          >
             {imageUrl ? (
               <Image
                 src={imageUrl}
@@ -133,47 +182,24 @@ export default function AdminBannersPage() {
     },
     {
       accessorKey: "title",
-      header: "Title & Link",
+      header: "Title",
       cell: ({ row }) => (
         <div className="min-w-[160px]">
           <p className="font-semibold text-[var(--color-neutral-900)]">
             {row.original.title || "Untitled Banner"}
           </p>
-          {row.original.linkUrl ? (
-            <a
-              href={row.original.linkUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-[var(--color-primary-600)] hover:underline mt-0.5"
-            >
-              <ExternalLink className="h-3 w-3" />
-              <span className="truncate max-w-[200px]">
-                {row.original.linkUrl}
-              </span>
-            </a>
-          ) : (
-            <p className="text-xs text-[var(--color-neutral-400)] mt-0.5">
-              No link attached
-            </p>
-          )}
         </div>
       ),
     },
     {
       accessorKey: "bannerPosition",
-      header: "Position",
+      header: "Banner Type",
       cell: ({ row }) => (
         <span className="inline-flex items-center rounded-md bg-[var(--color-primary-50)] px-2 py-1 text-xs font-medium text-[var(--color-primary-700)] ring-1 ring-inset ring-[var(--color-primary-700)]/10">
-          {row.original.bannerPosition?.name || row.original.bannerPosition?.slug || "—"}
-        </span>
-      ),
-    },
-    {
-      accessorKey: "sortOrder",
-      header: "Order",
-      cell: ({ row }) => (
-        <span className="text-sm font-medium text-[var(--color-neutral-700)]">
-          {row.original.sortOrder}
+          {getBannerTypeLabel(
+            row.original.bannerPosition?.slug,
+            row.original.bannerPosition?.name
+          )}
         </span>
       ),
     },
@@ -271,7 +297,7 @@ export default function AdminBannersPage() {
     <div className="flex flex-1 min-h-0 flex-col">
       <AdminPageHeader
         title="Banners"
-        description="Manage promotional, seasonal, and marketing hero banners with 3:1 aspect ratio."
+        description="Manage hero, offer, popup and reels banners shown across the storefront."
       />
 
       <AdminContent className="flex-1 min-h-0 overflow-hidden">
@@ -297,7 +323,7 @@ export default function AdminBannersPage() {
                     setPage(1);
                   }}
                   options={positionFilterOptions}
-                  placeholder="All Positions"
+                  placeholder="All Banner Types"
                   className="h-11 rounded-xl"
                 />
               </div>
@@ -306,15 +332,6 @@ export default function AdminBannersPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setIsManagePositionsOpen(true)}
-                className="h-11 rounded-xl px-4 text-sm font-semibold"
-              >
-                <Settings2 className="mr-2 h-4 w-4" />
-                Manage Positions
-              </Button>
-
               <Button
                 onClick={() => setIsCreateOpen(true)}
                 className="h-11 rounded-xl bg-[var(--color-secondary-600)] px-5 text-sm font-semibold text-white hover:bg-[var(--color-secondary-700)]"
@@ -351,13 +368,14 @@ export default function AdminBannersPage() {
         open={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         title="Add New Banner"
-        description="Upload a 3:1 banner image and configure its position and schedule."
+        description="Pick a banner type, then add the media and schedule it needs."
         size="lg"
       >
         <BannerForm
           bannerPositions={positionOptions}
           isLoading={createMutation.isPending}
-          submitLabel="Add Banner"
+          submitLabel="Save Banner"
+          onCancel={() => setIsCreateOpen(false)}
           onSubmit={async (formData) => {
             await createMutation.mutateAsync(formData);
             setIsCreateOpen(false);
@@ -373,7 +391,7 @@ export default function AdminBannersPage() {
           setSelectedBanner(null);
         }}
         title="Edit Banner"
-        description="Update banner image, link, position, or schedule."
+        description="Update the banner media, link, type or schedule."
         size="lg"
       >
         {selectedBanner && (
@@ -382,6 +400,10 @@ export default function AdminBannersPage() {
             bannerPositions={positionOptions}
             isLoading={updateMutation.isPending}
             submitLabel="Update Banner"
+            onCancel={() => {
+              setIsEditOpen(false);
+              setSelectedBanner(null);
+            }}
             onSubmit={async (formData) => {
               await updateMutation.mutateAsync({
                 uuid: selectedBanner.id,
@@ -409,12 +431,6 @@ export default function AdminBannersPage() {
         confirmText="Delete Banner"
         variant="destructive"
         isLoading={deleteMutation.isPending}
-      />
-
-      {/* MANAGE POSITIONS MODAL */}
-      <ManageBannerPositionsModal
-        open={isManagePositionsOpen}
-        onClose={() => setIsManagePositionsOpen(false)}
       />
     </div>
   );

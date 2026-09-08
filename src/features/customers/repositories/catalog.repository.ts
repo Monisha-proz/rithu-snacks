@@ -575,6 +575,110 @@ export const catalogRepository = {
     };
   },
 
+  async findRelatedProducts(
+    productUuid: string,
+    limit: number
+  ): Promise<CustomerProductListItemDto[] | null> {
+    const product = await db.product.findFirst({
+      where: { uuid: productUuid, isActive: true, deleted_at: null },
+      select: { id: true, categoryId: true, brandId: true },
+    });
+
+    if (!product) return null;
+
+    const where: Prisma.ProductWhereInput = {
+      isActive: true,
+      deleted_at: null,
+      id: { not: product.id },
+      OR: [
+        ...(product.categoryId ? [{ categoryId: product.categoryId }] : []),
+        ...(product.brandId ? [{ brandId: product.brandId }] : []),
+      ],
+    };
+
+    // No category/brand to relate on - nothing to return.
+    if (!where.OR || where.OR.length === 0) return [];
+
+    const related = await db.product.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      include: {
+        brand: { select: { id: true, uuid: true, name: true } },
+        images: {
+          where: { is_active: true },
+          orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }],
+          take: 1,
+        },
+        variants: {
+          where: { isActive: true, deleted_at: null },
+          include: {
+            product_variant_images: {
+              where: { is_active: true },
+              orderBy: [{ is_primary: "desc" }, { sort_order: "asc" }],
+              take: 1,
+            },
+            variant_unit_prices: unitPriceListArgs,
+          },
+        },
+      },
+    });
+
+    const categoryIds = related
+      .map((p) => p.categoryId)
+      .filter((id): id is bigint => id !== null && id !== undefined);
+
+    const categories = categoryIds.length
+      ? await db.productCategory.findMany({
+          where: { id: { in: categoryIds } },
+          select: { id: true, uuid: true, name: true },
+        })
+      : [];
+    const catMap = new Map(categories.map((c) => [c.id.toString(), c]));
+
+    return related.map((p) => {
+      const allPrices = p.variants.flatMap((v) =>
+        (v.variant_unit_prices || []).map((up) => Number(up.base_price))
+      );
+      const minP = allPrices.length > 0 ? Math.min(...allPrices) : 0;
+      const maxP = allPrices.length > 0 ? Math.max(...allPrices) : 0;
+
+      let imgUrl: string | null = p.images[0]?.image_url ?? null;
+      if (!imgUrl && p.variants.length > 0) {
+        imgUrl = p.variants[0].product_variant_images[0]?.image_url ?? null;
+      }
+
+      const primaryVariant = p.variants.find((v) => v.is_default) ?? p.variants[0] ?? null;
+      const variantWithPrices =
+        p.variants.find((v) => (v.variant_unit_prices || []).length > 0) ?? primaryVariant;
+
+      const unitPrices = (variantWithPrices?.variant_unit_prices || []).map((up) => {
+        const basePrice = Number(up.base_price);
+        const measurement = formatVariantMeasurement(up.product_units, up.unit_value ?? 0);
+        return {
+          id: up.uuid,
+          label: formatMeasurementLabel(measurement) || "Standard",
+          basePrice,
+          sellingPrice: computeSellingPrice(basePrice),
+        };
+      });
+
+      const cat = p.categoryId ? catMap.get(p.categoryId.toString()) : undefined;
+
+      return {
+        id: p.uuid || String(p.id),
+        name: p.name,
+        description: primaryVariant?.short_description || primaryVariant?.description || null,
+        brand: p.brand ? { id: p.brand.uuid || String(p.brand.id), name: p.brand.name } : null,
+        category: cat ? { id: cat.uuid || String(cat.id), name: cat.name } : null,
+        image: imgUrl,
+        minPrice: minP,
+        maxPrice: maxP,
+        unitPrices,
+      };
+    });
+  },
+
   // ----------------------------------------------------
   // VARIANT REPOSITORY METHODS
   // ----------------------------------------------------

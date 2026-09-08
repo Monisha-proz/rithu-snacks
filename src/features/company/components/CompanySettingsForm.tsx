@@ -84,20 +84,71 @@ export function CompanySettingsForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const payload: UpdateCompanyInput = {
-      companyName: formData.companyName?.trim() || undefined,
-      email: formData.email?.trim() || null,
-      phone: formData.phone?.trim() || null,
-      address: formData.address?.trim() || null,
-      city: formData.city?.trim() || null,
-      state: formData.state?.trim() || null,
-      country: formData.country?.trim() || "India",
-      pincode: formData.pincode?.trim() || null,
-      gstNumber: formData.gstNumber?.trim() || null,
-      panNumber: formData.panNumber?.trim() || null,
-      website: formData.website?.trim() || null,
-      isActive: formData.isActive,
+    const payload: UpdateCompanyInput = {};
+
+    // Helper to compare string fields (handling null vs empty string)
+    const getChangedString = (
+      newVal: string | undefined | null,
+      oldVal: string | undefined | null
+    ) => {
+      const trimmedNew = (newVal ?? "").trim();
+      const trimmedOld = (oldVal ?? "").trim();
+      if (trimmedNew !== trimmedOld) {
+        return trimmedNew || null;
+      }
+      return undefined;
     };
+
+    if (formData.companyName !== undefined) {
+      const trimmedName = formData.companyName.trim();
+      const currentName = (company?.companyName || "").trim();
+      if (trimmedName && trimmedName !== currentName) {
+        payload.companyName = trimmedName;
+      }
+    }
+
+    const changedEmail = getChangedString(formData.email, company?.email);
+    if (changedEmail !== undefined) payload.email = changedEmail;
+
+    const changedPhone = getChangedString(formData.phone, company?.phone);
+    if (changedPhone !== undefined) payload.phone = changedPhone;
+
+    const changedAddress = getChangedString(formData.address, company?.address);
+    if (changedAddress !== undefined) payload.address = changedAddress;
+
+    const changedCity = getChangedString(formData.city, company?.city);
+    if (changedCity !== undefined) payload.city = changedCity;
+
+    const changedState = getChangedString(formData.state, company?.state);
+    if (changedState !== undefined) payload.state = changedState;
+
+    const changedCountry = getChangedString(formData.country, company?.country || "India");
+    if (changedCountry !== undefined) payload.country = changedCountry;
+
+    const changedPincode = getChangedString(formData.pincode, company?.pincode);
+    if (changedPincode !== undefined) payload.pincode = changedPincode;
+
+    const changedGst = getChangedString(formData.gstNumber, company?.gstNumber);
+    if (changedGst !== undefined) payload.gstNumber = changedGst;
+
+    const changedPan = getChangedString(formData.panNumber, company?.panNumber);
+    if (changedPan !== undefined) payload.panNumber = changedPan;
+
+    const changedWebsite = getChangedString(formData.website, company?.website);
+    if (changedWebsite !== undefined) payload.website = changedWebsite;
+
+    if (
+      formData.isActive !== undefined &&
+      company?.isActive !== undefined &&
+      Boolean(formData.isActive) !== Boolean(company.isActive)
+    ) {
+      payload.isActive = Boolean(formData.isActive);
+    }
+
+    // If no fields changed, avoid sending an empty/redundant network request
+    if (Object.keys(payload).length === 0) {
+      return;
+    }
 
     await updateMutation.mutateAsync(payload);
   };
@@ -115,7 +166,7 @@ export function CompanySettingsForm() {
   const isSaving = updateMutation.isPending || uploadLogoMutation.isPending;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-5xl mx-auto pb-12">
+    <form onSubmit={handleSubmit} className="space-y-6 mx-auto pb-12">
       {/* 1. General Profile & Logo */}
       <Card className="p-6 border border-neutral-200 shadow-sm rounded-xl bg-white space-y-6">
         <div className="flex items-center gap-3 pb-4 border-b border-neutral-100">

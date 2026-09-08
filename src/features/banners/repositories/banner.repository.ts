@@ -100,7 +100,7 @@ export const bannerRepository = {
         banner_position_id: data.positionInternalId,
         title: data.title ? data.title.trim() : null,
         media_type: data.mediaType ?? "image",
-        image_url: data.imageUrl.trim(),
+        image_url: data.imageUrl?.trim() ?? "",
         video_url: data.videoUrl ? data.videoUrl.trim() : null,
         thumbnail_url: data.thumbnailUrl ? data.thumbnailUrl.trim() : null,
         link_url: data.linkUrl ? data.linkUrl.trim() : null,
