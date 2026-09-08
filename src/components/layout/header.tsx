@@ -5,14 +5,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, LogIn } from "lucide-react";
 import { LOGOS, ICONS, navigation, desktopIcons, mobileBottomIcons } from "@/constants/storefront";
 import { NavButton } from "@/components/storefront/buttons/NavButton";
 import { IconButton } from "@/components/storefront/buttons/IconButton";
 import { useClickOutside } from "@/hooks/useClickOutside";
+import { getInitials } from "@/lib/utils";
 import { useCustomerWishlistCount } from "@/features/customers/hooks/use-customer-wishlist";
 import { useCustomerCartCount } from "@/features/customers/hooks/use-customer-cart";
 import { useCustomerCategories } from "@/features/customers/hooks/use-customer-catalog";
+import { useCustomerProfile } from "@/features/customers/hooks/use-customer-profile";
 import { CategoryNavDropdown, resolveCategoryIcon } from "./CategoryNavDropdown";
 
 export function Header() {
@@ -20,8 +22,21 @@ export function Header() {
   const [isMobileCategoriesOpen, setIsMobileCategoriesOpen] = React.useState(false);
   const router = useRouter();
   const pathname = usePathname();
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const isAuthenticated = status === "authenticated";
+  const { data: profile } = useCustomerProfile();
+
+  // Get user name and initials for authenticated header state
+  const userName = profile?.name || session?.user?.name || "";
+  const userInitials = React.useMemo(() => {
+    if (userName && userName.trim().length > 0) {
+      return getInitials(userName) || "U";
+    }
+    if (session?.user?.email) {
+      return session.user.email.slice(0, 2).toUpperCase();
+    }
+    return "U";
+  }, [userName, session?.user?.email]);
 
   // Real-time badge counts from customer endpoints (only enabled when authenticated)
   const { data: wishlistCount = 0 } = useCustomerWishlistCount();
@@ -150,6 +165,8 @@ export function Header() {
         <div className="flex items-center gap-2 sm:gap-3 md:gap-5">
           <div className="hidden lg:flex items-center gap-5">
             {desktopIcons.map((item) => {
+              const isUser =
+                item.alt === "user" || item.path === "/profile";
               const targetPath = resolvePath(item);
               const badge =
                 item.alt === "cart"
@@ -157,6 +174,40 @@ export function Header() {
                   : item.alt === "wishlist"
                   ? wishlistCount
                   : undefined;
+
+              if (isUser) {
+                if (!isAuthenticated) {
+                  return (
+                    <Link
+                      key={item.id}
+                      href="/login"
+                      onClick={() => router.push("/login")}
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-sm bg-theme-primary hover:bg-theme-primary-hover text-theme-primary-fg border border-theme-primary text-xs sm:text-sm font-semibold transition-all duration-150 shadow-xs hover:shadow-sm active:scale-95 cursor-pointer"
+                      aria-label="Login"
+                    >
+                      <span>Login</span>
+                      <LogIn
+                        className="w-4 h-4 text-inherit shrink-0"
+                        strokeWidth={2}
+                      />
+                    </Link>
+                  );
+                }
+
+                return (
+                  <IconButton
+                    key={item.id}
+                    alt={userName ? `${userName}'s profile` : "Profile"}
+                    href="/profile"
+                    onClick={() => router.push("/profile")}
+                    customIcon={
+                      <div className="w-[26px] h-[26px] rounded-full bg-theme-primary text-theme-primary-fg text-[11px] font-bold flex items-center justify-center border border-theme-border-accent shadow-2xs select-none leading-none">
+                        {userInitials}
+                      </div>
+                    }
+                  />
+                );
+              }
 
               return (
                 <IconButton
@@ -372,6 +423,8 @@ export function Header() {
         "
       >
         {mobileBottomIcons.map((item) => {
+          const isUser =
+            item.text === "Account" || item.path === "/profile";
           const targetPath = resolvePath(item);
           const badge =
             item.text === "Cart"
@@ -379,6 +432,43 @@ export function Header() {
               : item.text === "Wishlist"
               ? wishlistCount
               : undefined;
+
+          if (isUser) {
+            if (!isAuthenticated) {
+              return (
+                <NavButton
+                  key={item.id}
+                  variant="bottom"
+                  customIcon={
+                    <LogIn
+                      className="w-[18px] h-[18px] text-theme-text-primary"
+                      strokeWidth={1.75}
+                    />
+                  }
+                  text="Login"
+                  href="/login"
+                  onClick={() => router.push("/login")}
+                  isActive={pathname === "/login"}
+                />
+              );
+            }
+
+            return (
+              <NavButton
+                key={item.id}
+                variant="bottom"
+                customIcon={
+                  <div className="w-5 h-5 rounded-full bg-theme-primary text-theme-primary-fg text-[10px] font-bold flex items-center justify-center select-none leading-none">
+                    {userInitials}
+                  </div>
+                }
+                text="Account"
+                href="/profile"
+                onClick={() => router.push("/profile")}
+                isActive={pathname === "/profile"}
+              />
+            );
+          }
 
           return (
             <NavButton

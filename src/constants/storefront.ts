@@ -319,16 +319,16 @@ export const navigation = [
 
 export const desktopIcons = [
   { id: 1, icon: ICONS.search, alt: "search", path: "/search" },
-  { id: 2, icon: ICONS.user, alt: "user", path: "/profile" },
-  { id: 3, icon: ICONS.wishlist, alt: "wishlist", path: "/wishlist" },
-  { id: 4, icon: ICONS.cart, alt: "cart", path: "/cart" },
+  { id: 2, icon: ICONS.wishlist, alt: "wishlist", path: "/wishlist" },
+  { id: 3, icon: ICONS.cart, alt: "cart", path: "/cart" },
+  { id: 4, icon: ICONS.user, alt: "user", path: "/profile" },
 ];
 
 export const mobileBottomIcons = [
   { id: 1, icon: ICONS.search, text: "Search", path: "/search" },
-  { id: 2, icon: ICONS.user, text: "Account", path: "/profile" },
-  { id: 3, icon: ICONS.wishlist, text: "Wishlist", path: "/wishlist" },
-  { id: 4, icon: ICONS.cart, text: "Cart", path: "/cart" },
+  { id: 2, icon: ICONS.wishlist, text: "Wishlist", path: "/wishlist" },
+  { id: 3, icon: ICONS.cart, text: "Cart", path: "/cart" },
+  { id: 4, icon: ICONS.user, text: "Account", path: "/profile" },
 ];
 
 /**

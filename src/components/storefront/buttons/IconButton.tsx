@@ -7,7 +7,8 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export interface IconButtonProps {
-  icon: string;
+  icon?: string;
+  customIcon?: React.ReactNode;
   alt: string;
   href?: string;
   onClick?: () => void;
@@ -16,10 +17,12 @@ export interface IconButtonProps {
   imageClassName?: string;
   width?: number;
   height?: number;
+  children?: React.ReactNode;
 }
 
 export function IconButton({
   icon,
+  customIcon,
   alt,
   href,
   onClick,
@@ -28,16 +31,21 @@ export function IconButton({
   imageClassName = "",
   width = 18,
   height = 18,
+  children,
 }: IconButtonProps) {
   const content = (
     <>
-      <Image
-        src={icon}
-        alt={alt}
-        width={width}
-        height={height}
-        className={imageClassName}
-      />
+      {customIcon || children ? (
+        customIcon || children
+      ) : icon ? (
+        <Image
+          src={icon}
+          alt={alt}
+          width={width}
+          height={height}
+          className={imageClassName}
+        />
+      ) : null}
       {badge !== undefined && badge !== null && badge > 0 ? (
         <span className="absolute -top-2 -right-2 bg-theme-status-can-fg text-theme-primary-fg text-xs font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center shadow-xs pointer-events-none">
           {badge > 99 ? "99+" : badge}

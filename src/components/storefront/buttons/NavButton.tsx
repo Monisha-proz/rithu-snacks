@@ -7,21 +7,25 @@ import Link from "next/link";
 export interface NavButtonProps {
   text?: string;
   icon?: string;
+  customIcon?: React.ReactNode;
   href?: string;
   onClick?: () => void;
   variant?: "desktop" | "drawer" | "bottom";
   isActive?: boolean;
   badge?: number | null;
+  children?: React.ReactNode;
 }
 
 export function NavButton({
   text,
   icon,
+  customIcon,
   href,
   onClick,
   variant = "desktop",
   isActive = false,
   badge,
+  children,
 }: NavButtonProps) {
   const variants = {
     desktop:
@@ -38,23 +42,29 @@ export function NavButton({
       : "text-theme-primary font-semibold"
     : "";
 
+  const iconElement = customIcon || children;
+
   const content = (
     <>
       {text && <span>{text}</span>}
 
-      {icon && (
+      {(iconElement || icon) && (
         <div className="relative inline-flex items-center justify-center">
-          <Image
-            src={icon}
-            alt={text || "nav icon"}
-            width={variant === "bottom" ? 18 : variant === "drawer" ? 16 : 12}
-            height={variant === "bottom" ? 18 : variant === "drawer" ? 16 : 12}
-            className={`transition-transform duration-300 ${
-              variant === "bottom"
-                ? "group-hover:scale-110"
-                : "group-hover:rotate-180"
-            }`}
-          />
+          {iconElement ? (
+            iconElement
+          ) : icon ? (
+            <Image
+              src={icon}
+              alt={text || "nav icon"}
+              width={variant === "bottom" ? 18 : variant === "drawer" ? 16 : 12}
+              height={variant === "bottom" ? 18 : variant === "drawer" ? 16 : 12}
+              className={`transition-transform duration-300 ${
+                variant === "bottom"
+                  ? "group-hover:scale-110"
+                  : "group-hover:rotate-180"
+              }`}
+            />
+          ) : null}
           {badge !== undefined && badge !== null && badge > 0 ? (
             <span className="absolute -top-1.5 -right-2 bg-theme-status-can-fg text-theme-primary-fg text-xs font-bold rounded-full min-w-[15px] h-[15px] px-0.5 flex items-center justify-center pointer-events-none">
               {badge > 99 ? "99+" : badge}

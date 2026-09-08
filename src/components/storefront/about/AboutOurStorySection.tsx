@@ -41,7 +41,7 @@ export function AboutOurStorySection() {
             <div className="relative w-full max-w-lg mx-auto">
               <div className="relative rounded-3xl overflow-hidden shadow-xl aspect-square sm:aspect-[4/3] lg:aspect-square w-full">
                 <Image
-                  src="/images/Aboutus_ourstory_img.jpg"
+                  src="/images/Aboutus_ourstory_img1.jpg"
                   alt="Our Story - Rithu's Snacks"
                   fill
                   className="object-cover"
