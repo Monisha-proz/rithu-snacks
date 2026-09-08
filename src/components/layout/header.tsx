@@ -182,13 +182,13 @@ export function Header() {
                       key={item.id}
                       href="/login"
                       onClick={() => router.push("/login")}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-theme-border hover:border-theme-primary/60 text-theme-text-primary hover:text-theme-primary text-xs sm:text-sm font-medium transition-all duration-150 hover:bg-theme-surface-alt shadow-2xs active:scale-95 cursor-pointer"
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-sm bg-theme-primary hover:bg-theme-primary-hover text-theme-primary-fg border border-theme-primary text-xs sm:text-sm font-semibold transition-all duration-150 shadow-xs hover:shadow-sm active:scale-95 cursor-pointer"
                       aria-label="Login"
                     >
                       <span>Login</span>
                       <LogIn
                         className="w-4 h-4 text-inherit shrink-0"
-                        strokeWidth={1.75}
+                        strokeWidth={2}
                       />
                     </Link>
                   );
