@@ -1,4 +1,5 @@
 import { db } from "@/lib/db/prisma";
+import type { PaginationMeta } from "@/lib/api/api-response";
 import type { Prisma } from "@/generated/prisma";
 import {
   formatVariantMeasurement,
@@ -10,6 +11,7 @@ import type {
   CustomerProductListInput,
   CustomerVariantListInput,
   CustomerGlobalVariantListInput,
+  CustomerRelatedVariantsQueryInput,
 } from "../validations/catalog.schema";
 import type {
   CustomerBrandDto,
@@ -20,6 +22,7 @@ import type {
   CustomerVariantDetailDto,
   CustomerVariantImageDto,
   CustomerVariantUnitPriceDto,
+  CustomerRelatedVariantDto,
 } from "../types/catalog.types";
 
 /**
@@ -959,5 +962,308 @@ export const catalogRepository = {
         totalPages: Math.ceil(total / pageSize),
       },
     };
+  },
+
+  // ----------------------------------------------------
+  // RELATED PRODUCTS (BY VARIANT)
+  // ----------------------------------------------------
+
+  /**
+   * Related items for a single variant.
+   *
+   * Relatedness comes from the catalog tree already in the database: products
+   * hang off `product_categories`, which is a self-referencing tree, so the
+   * source product's category is either a subcategory (it has a parent) or a
+   * top-level category. Candidates are ranked closest-first:
+   *   0 - same subcategory/category as the source product
+   *   1 - sibling subcategory under the same parent category
+   *   2 - same brand only
+   *
+   * The source product is excluded entirely, which also guarantees the source
+   * variant is never returned. One representative variant (the default one,
+   * else the oldest active one) is emitted per product, so neither a product
+   * nor a variant can appear twice.
+   *
+   * Ranking cannot be expressed as a Prisma `orderBy`, so candidates are first
+   * read as id-only rows (cheap), ranked and paginated in memory, and only the
+   * page's variants are then loaded with their images, prices and stock.
+   */
+  async findRelatedVariantsByVariantId(
+    variantId: string,
+    params: CustomerRelatedVariantsQueryInput
+  ): Promise<{ data: CustomerRelatedVariantDto[]; meta: PaginationMeta } | null> {
+    const page = params.page ?? 1;
+    const limit = params.limit ?? 10;
+
+    // Storefront resources are addressed by UUID, but the legacy product
+    // routes still expose numeric primary keys - accept whichever was given.
+    const isNumericId = /^\d+$/.test(variantId);
+
+    const sourceVariant = await db.productVariant.findFirst({
+      where: {
+        ...(isNumericId ? { id: BigInt(variantId) } : { uuid: variantId }),
+        isActive: true,
+        deleted_at: null,
+        product: { isActive: true, deleted_at: null },
+      },
+      select: {
+        id: true,
+        product: { select: { id: true, categoryId: true, brandId: true } },
+      },
+    });
+
+    if (!sourceVariant?.product) return null;
+
+    const sourceProduct = sourceVariant.product;
+
+    const emptyResult = {
+      data: [] as CustomerRelatedVariantDto[],
+      meta: { page, limit, pageSize: limit, total: 0, totalPages: 0 },
+    };
+
+    // Resolve the source category's siblings (same parent) so "related" widens
+    // from the exact subcategory out to the rest of the parent category.
+    let siblingCategoryIds: bigint[] = [];
+    if (sourceProduct.categoryId !== null && sourceProduct.categoryId !== undefined) {
+      const sourceCategory = await db.productCategory.findFirst({
+        where: { id: sourceProduct.categoryId, isActive: true, deleted_at: null },
+        select: { id: true, parentId: true },
+      });
+
+      if (sourceCategory?.parentId) {
+        const siblings = await db.productCategory.findMany({
+          where: {
+            parentId: sourceCategory.parentId,
+            isActive: true,
+            deleted_at: null,
+            id: { not: sourceCategory.id },
+          },
+          select: { id: true },
+        });
+        siblingCategoryIds = siblings.map((c) => c.id);
+      }
+    }
+
+    const categoryIdsToMatch = [
+      ...(sourceProduct.categoryId ? [sourceProduct.categoryId] : []),
+      ...siblingCategoryIds,
+    ];
+
+    const relatedOr: Prisma.ProductWhereInput[] = [
+      ...(categoryIdsToMatch.length ? [{ categoryId: { in: categoryIdsToMatch } }] : []),
+      ...(sourceProduct.brandId ? [{ brandId: sourceProduct.brandId }] : []),
+    ];
+
+    // Nothing to relate on - the source product has neither category nor brand.
+    if (relatedOr.length === 0) return emptyResult;
+
+    const candidateWhere: Prisma.ProductVariantWhereInput = {
+      isActive: true,
+      deleted_at: null,
+      product: {
+        isActive: true,
+        deleted_at: null,
+        id: { not: sourceProduct.id },
+        OR: relatedOr,
+      },
+    };
+
+    // Id-only pass: enough to rank and to collapse to one variant per product,
+    // without pulling images/prices for rows that will not be on this page.
+    const candidates = await db.productVariant.findMany({
+      where: candidateWhere,
+      orderBy: [{ is_default: "desc" }, { createdAt: "asc" }],
+      select: {
+        id: true,
+        productId: true,
+        product: { select: { categoryId: true, brandId: true, createdAt: true } },
+      },
+    });
+
+    if (candidates.length === 0) return emptyResult;
+
+    type RankedProduct = {
+      productId: bigint;
+      variantId: bigint;
+      rank: number;
+      createdAt: Date;
+    };
+
+    // First hit per product wins - the orderBy above puts the default variant
+    // first, so each product is represented by its default (or oldest) variant.
+    const byProduct = new Map<string, RankedProduct>();
+    const siblingIdSet = new Set(siblingCategoryIds.map((id) => id.toString()));
+
+    for (const candidate of candidates) {
+      const key = candidate.productId.toString();
+      if (byProduct.has(key)) continue;
+
+      const categoryId = candidate.product?.categoryId ?? null;
+      let rank = 2;
+      if (
+        categoryId !== null &&
+        sourceProduct.categoryId !== null &&
+        categoryId === sourceProduct.categoryId
+      ) {
+        rank = 0;
+      } else if (categoryId !== null && siblingIdSet.has(categoryId.toString())) {
+        rank = 1;
+      }
+
+      byProduct.set(key, {
+        productId: candidate.productId,
+        variantId: candidate.id,
+        rank,
+        createdAt: candidate.product?.createdAt ?? new Date(0),
+      });
+    }
+
+    const ranked = Array.from(byProduct.values()).sort((a, b) => {
+      if (a.rank !== b.rank) return a.rank - b.rank;
+      // Newest product first within a rank, then id so page boundaries are
+      // stable across requests.
+      const byDate = b.createdAt.getTime() - a.createdAt.getTime();
+      if (byDate !== 0) return byDate;
+      return a.productId < b.productId ? -1 : a.productId > b.productId ? 1 : 0;
+    });
+
+    const total = ranked.length;
+    const totalPages = Math.ceil(total / limit);
+    const pageSlice = ranked.slice((page - 1) * limit, page * limit);
+
+    if (pageSlice.length === 0) {
+      return { data: [], meta: { page, limit, pageSize: limit, total, totalPages } };
+    }
+
+    // Detail pass: only the variants on this page.
+    const variants = await db.productVariant.findMany({
+      where: { id: { in: pageSlice.map((r) => r.variantId) } },
+      select: {
+        id: true,
+        uuid: true,
+        variant_name: true,
+        out_of_stock: true,
+        product: {
+          select: {
+            id: true,
+            uuid: true,
+            name: true,
+            categoryId: true,
+            brand: { select: { id: true, uuid: true, name: true } },
+            images: {
+              where: { is_active: true },
+              orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }],
+              take: 1,
+              select: { image_url: true },
+            },
+          },
+        },
+        product_variant_images: {
+          where: { is_active: true },
+          orderBy: [{ is_primary: "desc" }, { sort_order: "asc" }],
+          take: 1,
+          select: { image_url: true },
+        },
+        variant_unit_prices: {
+          where: { deleted_at: null, isActive: true },
+          orderBy: [{ is_default: "desc" }, { createdAt: "asc" }],
+          select: {
+            uuid: true,
+            sku: true,
+            base_price: true,
+            unit_value: true,
+            is_default: true,
+            product_units: {
+              select: { id: true, uuid: true, name: true, code: true, type: true },
+            },
+            inventories: { select: { quantity_available: true, quantity_reserved: true } },
+          },
+        },
+      },
+    });
+
+    // Categories for the page's products, loaded with their parents so each
+    // row can report both `category` and `subcategory`.
+    const pageCategoryIds = Array.from(
+      new Map(
+        variants
+          .map((v) => v.product?.categoryId)
+          .filter((id): id is bigint => id !== null && id !== undefined)
+          .map((id) => [id.toString(), id] as const)
+      ).values()
+    );
+
+    const pageCategories = pageCategoryIds.length
+      ? await db.productCategory.findMany({
+          where: { id: { in: pageCategoryIds } },
+          select: {
+            id: true,
+            uuid: true,
+            name: true,
+            parent: { select: { id: true, uuid: true, name: true } },
+          },
+        })
+      : [];
+    const categoryMap = new Map(pageCategories.map((c) => [c.id.toString(), c]));
+    const variantMap = new Map(variants.map((v) => [v.id.toString(), v]));
+
+    const data: CustomerRelatedVariantDto[] = [];
+
+    // Walk pageSlice (not `variants`) so the ranked order is preserved.
+    for (const entry of pageSlice) {
+      const variant = variantMap.get(entry.variantId.toString());
+      if (!variant?.product) continue;
+
+      const product = variant.product;
+      const defaultUnitPrice = pickDefaultUnitPrice(variant.variant_unit_prices);
+      const basePrice = defaultUnitPrice ? Number(defaultUnitPrice.base_price) : 0;
+      const sellingPrice = computeSellingPrice(basePrice);
+
+      // Stock is tracked per unit price row (inventories key off them), so a
+      // variant is available when any of its pack sizes has unreserved stock.
+      const stockQuantity = variant.variant_unit_prices.reduce((sum, up) => {
+        const inventory = up.inventories;
+        if (!inventory) return sum;
+        return sum + Math.max(inventory.quantity_available - inventory.quantity_reserved, 0);
+      }, 0);
+
+      const categoryRow = product.categoryId
+        ? categoryMap.get(product.categoryId.toString())
+        : undefined;
+      // A category with a parent IS the subcategory; its parent is the category.
+      const parentCategory = categoryRow?.parent ?? null;
+
+      data.push({
+        productId: product.uuid || String(product.id),
+        productName: product.name,
+        variantId: variant.uuid || String(variant.id),
+        variantName: variant.variant_name || "",
+        measurement: formatVariantMeasurement(
+          defaultUnitPrice?.product_units,
+          defaultUnitPrice?.unit_value ?? 0
+        ),
+        sku: defaultUnitPrice?.sku ?? "",
+        price: basePrice,
+        offerPrice: sellingPrice < basePrice ? sellingPrice : null,
+        image:
+          variant.product_variant_images[0]?.image_url ?? product.images[0]?.image_url ?? null,
+        category: parentCategory
+          ? { id: parentCategory.uuid || String(parentCategory.id), name: parentCategory.name }
+          : categoryRow
+            ? { id: categoryRow.uuid || String(categoryRow.id), name: categoryRow.name }
+            : null,
+        subcategory:
+          parentCategory && categoryRow
+            ? { id: categoryRow.uuid || String(categoryRow.id), name: categoryRow.name }
+            : null,
+        brand: product.brand
+          ? { id: product.brand.uuid || String(product.brand.id), name: product.brand.name }
+          : null,
+        inStock: !variant.out_of_stock && stockQuantity > 0,
+        stockQuantity,
+      });
+    }
+
+    return { data, meta: { page, limit, pageSize: limit, total, totalPages } };
   },
 };

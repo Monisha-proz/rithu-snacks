@@ -99,3 +99,38 @@ export interface CustomerProductDetailDto {
   image: string | null;
   variants: CustomerVariantListItemDto[];
 }
+
+/**
+ * One related item returned by the related-products API. It is variant-level
+ * (a single representative variant per related product) so the storefront can
+ * link/add straight to a sellable item, while still carrying the product,
+ * category and brand context the card needs.
+ */
+export interface CustomerRelatedVariantDto {
+  productId: string; // Product UUID
+  productName: string;
+  variantId: string; // Variant UUID
+  variantName: string;
+  measurement: VariantMeasurement;
+  sku: string;
+  // basePrice; `offerPrice` is basePrice minus any active offer/discount
+  // (see computeSellingPrice in the catalog repository) and is null when no
+  // offer applies.
+  price: number;
+  offerPrice: number | null;
+  image: string | null;
+  category: {
+    id: string;
+    name: string;
+  } | null;
+  subcategory: {
+    id: string;
+    name: string;
+  } | null;
+  brand: {
+    id: string;
+    name: string;
+  } | null;
+  inStock: boolean;
+  stockQuantity: number;
+}
