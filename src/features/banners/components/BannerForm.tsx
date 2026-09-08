@@ -29,32 +29,14 @@ const bannerFormSchema = z
       .string({ message: "Banner type is required" })
       .min(1, "Please select a banner type"),
     title: z
-      .string()
+      .string({ message: "Title is required" })
       .trim()
-      .max(150, "Title cannot exceed 150 characters")
-      .optional()
-      .nullable(),
+      .min(1, "Title is required")
+      .max(150, "Title cannot exceed 150 characters"),
     // Derived from the selected banner type; never edited directly.
     mediaType: z.enum(["image", "video"]).default("image"),
     imageUrl: z.string().optional().nullable(),
     videoUrl: z.string().optional().nullable(),
-    linkUrl: z
-      .string()
-      .trim()
-      .max(500, "Link URL cannot exceed 500 characters")
-      .optional()
-      .nullable(),
-    sortOrder: z.preprocess(
-      (value) =>
-        value === "" || value === null || value === undefined
-          ? Number.NaN
-          : Number(value),
-      z
-        .number({ message: "Display order is required" })
-        .int("Display order must be a whole number")
-        .min(0, "Display order cannot be negative")
-        .max(100, "Display order cannot exceed 100")
-    ),
     isActive: z.boolean().default(true),
     startsAt: z.string().optional().nullable(),
     endsAt: z.string().optional().nullable(),
@@ -106,12 +88,10 @@ export interface BannerPositionOption {
 
 export interface BannerFormPayload {
   bannerPositionId: string;
-  title: string | null;
+  title: string;
   mediaType: "image" | "video";
   imageUrl: string;
   videoUrl: string | null;
-  linkUrl: string | null;
-  sortOrder: number;
   isActive: boolean;
   startsAt: string | null;
   endsAt: string | null;
@@ -174,8 +154,6 @@ export function BannerForm({
       mediaType: initialData?.mediaType ?? "image",
       imageUrl: initialData?.imageUrl ?? "",
       videoUrl: initialData?.videoUrl ?? "",
-      linkUrl: initialData?.linkUrl ?? "",
-      sortOrder: initialData?.sortOrder ?? 0,
       isActive: initialData?.isActive ?? true,
       startsAt: formatDateForInput(initialData?.startsAt),
       endsAt: formatDateForInput(initialData?.endsAt),
@@ -260,14 +238,12 @@ export function BannerForm({
 
     await onSubmit({
       bannerPositionId: values.bannerPositionId,
-      title: values.title?.trim() ? values.title.trim() : null,
+      title: values.title.trim(),
       mediaType: isVideo ? "video" : "image",
       // Video slots have no image field, but a legacy poster on an existing
       // banner is preserved rather than silently wiped on save.
       imageUrl: trimmedImageUrl,
       videoUrl: isVideo && trimmedVideoUrl ? trimmedVideoUrl : null,
-      linkUrl: values.linkUrl?.trim() ? values.linkUrl.trim() : null,
-      sortOrder: Number(values.sortOrder) || 0,
       isActive: Boolean(values.isActive),
       startsAt: values.startsAt?.trim()
         ? new Date(values.startsAt).toISOString()
@@ -312,8 +288,9 @@ export function BannerForm({
             <FormInput
               name="title"
               label="Title"
+              required
               placeholder="e.g. Diwali Special Offer"
-              description="Optional. Shown in the admin list and as image alt text."
+              description="Shown in the admin list and as image alt text."
               maxLength={150}
             />
           </div>
@@ -376,29 +353,6 @@ export function BannerForm({
           <h3 className="text-sm font-semibold text-theme-text-primary">
             Placement &amp; visibility
           </h3>
-
-          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div className="md:col-span-2">
-              <FormInput
-                name="linkUrl"
-                label="Target Link URL"
-                placeholder="e.g. /products/diwali-special"
-                description="Optional. Where shoppers land when they tap the banner."
-              />
-            </div>
-
-            <FormInput
-              name="sortOrder"
-              type="number"
-              label="Display Order"
-              required
-              step="1"
-              min="0"
-              max="100"
-              placeholder="0"
-              description="Lower numbers appear first."
-            />
-          </div>
 
           <div className="mt-1 flex items-center justify-between gap-4 rounded-xl border border-theme-border bg-theme-surface-alt p-4">
             <div>

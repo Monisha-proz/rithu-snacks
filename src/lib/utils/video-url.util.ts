@@ -148,3 +148,17 @@ export function isValidVideoUrl(raw: string | null | undefined): boolean {
 export function isValidHttpUrl(raw: string | null | undefined): boolean {
   return raw ? toUrl(raw) !== null : false;
 }
+
+/**
+ * Static poster image for a video link, when the provider exposes one at a
+ * predictable URL. YouTube does; Vimeo needs an API call, so it returns null.
+ */
+export function getVideoThumbnailUrl(
+  raw: string | null | undefined
+): string | null {
+  const parsed = parseVideoUrl(raw);
+  if (parsed?.kind === "youtube" && parsed.id) {
+    return `https://i.ytimg.com/vi/${parsed.id}/hqdefault.jpg`;
+  }
+  return null;
+}

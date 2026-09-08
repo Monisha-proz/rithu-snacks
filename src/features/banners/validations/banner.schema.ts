@@ -16,11 +16,10 @@ export const createBannerSchema = z
       .string({ message: "Banner position ID is required" })
       .uuid("Invalid banner position UUID"),
     title: z
-      .string()
+      .string({ message: "Title is required" })
       .trim()
-      .max(150, "Title cannot exceed 150 characters")
-      .nullable()
-      .optional(),
+      .min(1, "Title is required")
+      .max(150, "Title cannot exceed 150 characters"),
     mediaType: bannerMediaTypeSchema.default("image"),
     // Optional at the field level: video banners (e.g. home reels) have no
     // image at all. The refinement below keeps it required for image banners.
@@ -92,8 +91,8 @@ export const updateBannerSchema = z
     title: z
       .string()
       .trim()
+      .min(1, "Title is required")
       .max(150, "Title cannot exceed 150 characters")
-      .nullable()
       .optional(),
     mediaType: bannerMediaTypeSchema.optional(),
     imageUrl: z

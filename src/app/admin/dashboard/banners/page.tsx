@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
-import { Plus, Pencil, Trash2, Calendar, ExternalLink } from "lucide-react";
+import { Plus, Pencil, Trash2, Calendar } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,16 +25,17 @@ import {
   useUpdateBanner,
   useDeleteBanner,
 } from "@/features/banners/hooks";
+import { BannerForm } from "@/features/banners/components";
 import {
-  BannerForm,
-  ManageBannerPositionsModal,
-} from "@/features/banners/components";
+  parseVideoUrl,
+  getVideoThumbnailUrl,
+} from "@/lib/utils/video-url.util";
 import {
   getBannerTypeConfig,
   getBannerTypeLabel,
 } from "@/features/banners/constants/banner-types";
 import type { BannerDto } from "@/features/banners/types";
-import { Settings2, Video } from "lucide-react";
+import { Video } from "lucide-react";
 
 export default function AdminBannersPage() {
   const [search, setSearch] = useState("");
@@ -44,7 +45,6 @@ export default function AdminBannersPage() {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isManagePositionsOpen, setIsManagePositionsOpen] = useState(false);
   const [selectedBanner, setSelectedBanner] = useState<BannerDto | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{
     uuid: string;
@@ -113,15 +113,48 @@ export default function AdminBannersPage() {
       accessorKey: "imageUrl",
       header: "Preview",
       cell: ({ row }) => {
-        const { imageUrl, mediaType, bannerPosition } = row.original;
+        const { imageUrl, videoUrl, thumbnailUrl, mediaType, bannerPosition } =
+          row.original;
         const config = getBannerTypeConfig(bannerPosition?.slug);
         const frameClassName =
           config.image?.thumbnailClassName ?? "aspect-[3/1] w-28";
 
-        if (mediaType === "video" && !imageUrl) {
+        if (mediaType === "video") {
+          // Reels can be an uploaded file or a link to a hosted video. Only a
+          // file plays in a <video> tag; providers like YouTube are previewed
+          // through their poster image instead.
+          const parsedVideo = parseVideoUrl(videoUrl);
+          const posterUrl =
+            thumbnailUrl ||
+            imageUrl ||
+            getVideoThumbnailUrl(videoUrl) ||
+            undefined;
+          const isPlayableFile = parsedVideo?.kind === "file";
+
           return (
-            <div className="flex aspect-[9/16] w-12 flex-shrink-0 items-center justify-center rounded-lg border border-[var(--color-neutral-200)] bg-[var(--color-neutral-100)]">
-              <Video className="h-4 w-4 text-[var(--color-neutral-400)]" />
+            <div className="relative flex aspect-[9/16] w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--color-neutral-200)] bg-[var(--color-neutral-100)]">
+              {isPlayableFile && videoUrl ? (
+                <video
+                  // Seek a fraction in so browsers paint a real first frame
+                  // instead of a blank box when there is no poster image.
+                  src={posterUrl ? videoUrl : `${videoUrl}#t=0.1`}
+                  poster={posterUrl}
+                  muted
+                  playsInline
+                  preload="metadata"
+                  className="h-full w-full object-cover"
+                />
+              ) : posterUrl ? (
+                <Image
+                  src={posterUrl}
+                  alt={row.original.title || "Banner"}
+                  fill
+                  className="object-cover"
+                  sizes="48px"
+                />
+              ) : (
+                <Video className="h-4 w-4 text-[var(--color-neutral-400)]" />
+              )}
             </div>
           );
         }
@@ -149,29 +182,12 @@ export default function AdminBannersPage() {
     },
     {
       accessorKey: "title",
-      header: "Title & Link",
+      header: "Title",
       cell: ({ row }) => (
         <div className="min-w-[160px]">
           <p className="font-semibold text-[var(--color-neutral-900)]">
             {row.original.title || "Untitled Banner"}
           </p>
-          {row.original.linkUrl ? (
-            <a
-              href={row.original.linkUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-[var(--color-primary-600)] hover:underline mt-0.5"
-            >
-              <ExternalLink className="h-3 w-3" />
-              <span className="truncate max-w-[200px]">
-                {row.original.linkUrl}
-              </span>
-            </a>
-          ) : (
-            <p className="text-xs text-[var(--color-neutral-400)] mt-0.5">
-              No link attached
-            </p>
-          )}
         </div>
       ),
     },
@@ -184,15 +200,6 @@ export default function AdminBannersPage() {
             row.original.bannerPosition?.slug,
             row.original.bannerPosition?.name
           )}
-        </span>
-      ),
-    },
-    {
-      accessorKey: "sortOrder",
-      header: "Order",
-      cell: ({ row }) => (
-        <span className="text-sm font-medium text-[var(--color-neutral-700)]">
-          {row.original.sortOrder}
         </span>
       ),
     },
@@ -326,15 +333,6 @@ export default function AdminBannersPage() {
 
             <div className="flex items-center gap-2">
               <Button
-                variant="outline"
-                onClick={() => setIsManagePositionsOpen(true)}
-                className="h-11 rounded-xl px-4 text-sm font-semibold"
-              >
-                <Settings2 className="mr-2 h-4 w-4" />
-                Manage Positions
-              </Button>
-
-              <Button
                 onClick={() => setIsCreateOpen(true)}
                 className="h-11 rounded-xl bg-[var(--color-secondary-600)] px-5 text-sm font-semibold text-white hover:bg-[var(--color-secondary-700)]"
               >
@@ -433,12 +431,6 @@ export default function AdminBannersPage() {
         confirmText="Delete Banner"
         variant="destructive"
         isLoading={deleteMutation.isPending}
-      />
-
-      {/* MANAGE POSITIONS MODAL */}
-      <ManageBannerPositionsModal
-        open={isManagePositionsOpen}
-        onClose={() => setIsManagePositionsOpen(false)}
       />
     </div>
   );
