@@ -81,7 +81,6 @@ export default function CategoryProductsPage({
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(1000);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
-  const [isFilterSwitching, setIsFilterSwitching] = useState(false);
 
   // Accumulated variants for Infinite Scroll
   const [accumulatedVariants, setAccumulatedVariants] = useState<CustomerVariantListItemDto[]>([]);
@@ -223,20 +222,8 @@ export default function CategoryProductsPage({
     return () => observer.disconnect();
   }, [meta, page, isFetching, isLoading]);
 
-  // When switching filters: smoothly transition
-  useEffect(() => {
-    if (isFilterSwitching && !isFetching) {
-      const timer = setTimeout(() => {
-        setIsFilterSwitching(false);
-      }, 150);
-      return () => clearTimeout(timer);
-    }
-  }, [isFilterSwitching, isFetching]);
-
   // Category Selection
   const handleCategorySelect = (categoryId: string | null) => {
-    setIsFilterSwitching(true);
-    setAccumulatedVariants([]);
     setSelectedProductIds([]);
     if (!categoryId) {
       setActiveCategoryOverride("all");
@@ -251,16 +238,12 @@ export default function CategoryProductsPage({
 
   // Product Selection under Category (Multi-select)
   const handleProductSelect = (productIds: string[]) => {
-    setIsFilterSwitching(true);
-    setAccumulatedVariants([]);
     setSelectedProductIds(productIds);
     setPage(1);
   };
 
   // Reset Filters - safely clears all filters and refetches
   const handleResetFilters = () => {
-    setIsFilterSwitching(true);
-    setAccumulatedVariants([]);
     setSearch("");
     setSortKey("createdAt_desc");
     setStockStatus("all");
@@ -376,29 +359,21 @@ export default function CategoryProductsPage({
             viewAllCategoriesHref="/categories/all"
             searchQuery={search}
             onSearchChange={(val) => {
-              setIsFilterSwitching(true);
-              setAccumulatedVariants([]);
               setSearch(val);
               setPage(1);
             }}
             sortKey={sortKey}
             onSortChange={(val) => {
-              setIsFilterSwitching(true);
-              setAccumulatedVariants([]);
               setSortKey(val);
               setPage(1);
             }}
             stockStatus={stockStatus}
             onStockStatusChange={(val) => {
-              setIsFilterSwitching(true);
-              setAccumulatedVariants([]);
               setStockStatus(val);
               setPage(1);
             }}
             vegType={vegType}
             onVegTypeChange={(val) => {
-              setIsFilterSwitching(true);
-              setAccumulatedVariants([]);
               setVegType(val);
               setPage(1);
             }}
@@ -407,8 +382,6 @@ export default function CategoryProductsPage({
             currentMinPrice={minPrice}
             currentMaxPrice={maxPrice}
             onPriceChange={(min, max) => {
-              setIsFilterSwitching(true);
-              setAccumulatedVariants([]);
               setMinPrice(min);
               setMaxPrice(max);
               setPage(1);
@@ -471,11 +444,11 @@ export default function CategoryProductsPage({
               </div>
             )}
 
-            {/* Content Area: Full Skeleton ONLY on initial load, filter changes, or empty query */}
-            {(isFilterSwitching || (page === 1 && (isLoading || isFetching)) || (displayedVariants.length === 0 && (isLoading || isFetching))) ? (
+            {/* Content Area: Skeleton only while initial load or empty and fetching */}
+            {(isLoading && displayedVariants.length === 0) ? (
               <ProductCatalogSkeleton />
             ) : (
-              <>
+              <div className={isFetching && page === 1 ? "opacity-60 transition-opacity duration-200" : "transition-opacity duration-200"}>
                 <CustomerProductGrid
                   variants={displayedVariants}
                   columns={3}
@@ -522,7 +495,7 @@ export default function CategoryProductsPage({
                     </p>
                   )}
                 </div>
-              </>
+              </div>
             )}
           </div>
         </div>

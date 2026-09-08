@@ -71,7 +71,6 @@ export default function ShopAllPage() {
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(1000);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
-  const [isFilterSwitching, setIsFilterSwitching] = useState(false);
 
   // Accumulated variants for Infinite Scroll
   const [accumulatedVariants, setAccumulatedVariants] = useState<CustomerVariantListItemDto[]>([]);
@@ -171,33 +170,20 @@ export default function ShopAllPage() {
     };
   }, [meta, page, isFetching, isLoading]);
 
-  // Turn off filter switching once query fetching completes
-  useEffect(() => {
-    if (!isFetching) {
-      setIsFilterSwitching(false);
-    }
-  }, [isFetching]);
-
   // Category Selection (Multi-select)
   const handleCategorySelect = (categoryIds: string[]) => {
-    setIsFilterSwitching(true);
-    setAccumulatedVariants([]);
     setSelectedCategoryIds(categoryIds);
     setPage(1);
   };
 
   // Product Selection under Category (Multi-select)
   const handleProductSelect = (productIds: string[]) => {
-    setIsFilterSwitching(true);
-    setAccumulatedVariants([]);
     setSelectedProductIds(productIds);
     setPage(1);
   };
 
   // Reset Filters
   const handleResetFilters = () => {
-    setIsFilterSwitching(true);
-    setAccumulatedVariants([]);
     setSearch("");
     setSortKey("createdAt_desc");
     setSelectedCategoryIds([]);
@@ -314,29 +300,21 @@ export default function ShopAllPage() {
               onSelectProducts={handleProductSelect}
               searchQuery={search}
               onSearchChange={(val) => {
-                setIsFilterSwitching(true);
-                setAccumulatedVariants([]);
                 setSearch(val);
                 setPage(1);
               }}
               sortKey={sortKey}
               onSortChange={(val) => {
-                setIsFilterSwitching(true);
-                setAccumulatedVariants([]);
                 setSortKey(val);
                 setPage(1);
               }}
               stockStatus={stockStatus}
               onStockStatusChange={(val) => {
-                setIsFilterSwitching(true);
-                setAccumulatedVariants([]);
                 setStockStatus(val);
                 setPage(1);
               }}
               vegType={vegType}
               onVegTypeChange={(val) => {
-                setIsFilterSwitching(true);
-                setAccumulatedVariants([]);
                 setVegType(val);
                 setPage(1);
               }}
@@ -345,8 +323,6 @@ export default function ShopAllPage() {
               currentMinPrice={minPrice}
               currentMaxPrice={maxPrice}
               onPriceChange={(min, max) => {
-                setIsFilterSwitching(true);
-                setAccumulatedVariants([]);
                 setMinPrice(min);
                 setMaxPrice(max);
                 setPage(1);
@@ -411,11 +387,11 @@ export default function ShopAllPage() {
                 </div>
               )}
 
-              {/* Content Area: Full Skeleton ONLY on initial load, filter changes, or empty query */}
-              {(isFilterSwitching || (page === 1 && (isLoading || isFetching)) || (displayedVariants.length === 0 && (isLoading || isFetching))) ? (
+              {/* Content Area: Skeleton only while initial load or empty and fetching */}
+              {(isLoading && displayedVariants.length === 0) ? (
                 <ProductCatalogSkeleton />
               ) : (
-                <>
+                <div className={isFetching && page === 1 ? "opacity-60 transition-opacity duration-200" : "transition-opacity duration-200"}>
                   <CustomerProductGrid
                     variants={displayedVariants}
                     columns={3}
@@ -462,7 +438,7 @@ export default function ShopAllPage() {
                       </p>
                     )}
                   </div>
-                </>
+                </div>
               )}
             </div>
           </div>
