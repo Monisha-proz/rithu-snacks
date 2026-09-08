@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 
+
 interface ProductDetailPageProps {
   params: Promise<{ slug: string }>;
 }

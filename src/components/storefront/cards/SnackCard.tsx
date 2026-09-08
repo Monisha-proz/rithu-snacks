@@ -20,6 +20,8 @@ export interface SnackCardProps {
   id?: string;
   /** Title / Name of the snack (e.g. "THENKUZHAL MURUKKU") */
   name?: string;
+  /** Subtitle (e.g. Product or Category name) */
+  subtitle?: string;
   /** Image URL (relative or absolute) */
   image?: string | null;
   /** Optional link href (defaults to `/products/${id}`) */
@@ -55,6 +57,7 @@ export interface SnackCardProps {
 export function SnackCard({
   id,
   name,
+  subtitle,
   image,
   href,
   discountPercent: explicitDiscount,
@@ -169,12 +172,19 @@ export function SnackCard({
 
       {/* 2. Middle Info Row: Title on Left, Variants + Price on Right */}
       <div className="mt-3.5 sm:mt-4 flex items-start justify-between gap-3 px-0.5">
-        {/* Left Column: Product Title using global brown typography */}
-        <Link href={resolvedHref} className="flex-1 pr-1 min-w-0">
-          <h3 className="font-extrabold text-[var(--brown-900)] uppercase text-sm sm:text-base md:text-[17px] tracking-tight leading-tight line-clamp-2 text-hover-primary transition-colors">
-            {resolvedName}
-          </h3>
-        </Link>
+        {/* Left Column: Product/Variant Title using global brown typography */}
+        <div className="flex-1 pr-1 min-w-0">
+          {subtitle && (
+            <p className="text-[11px] sm:text-xs text-stone-500 font-medium truncate mb-0.5">
+              {subtitle}
+            </p>
+          )}
+          <Link href={resolvedHref} className="block">
+            <h3 className="font-extrabold text-[var(--brown-900)] uppercase text-sm sm:text-base md:text-[17px] tracking-tight leading-tight line-clamp-2 text-hover-primary transition-colors">
+              {resolvedName}
+            </h3>
+          </Link>
+        </div>
 
         {/* Right Column: Variant Selector & Prices */}
         <div className="flex flex-col items-end shrink-0">
@@ -194,7 +204,11 @@ export function SnackCard({
                         : "bg-white text-[var(--brown-700)] border border-[var(--brown-700)] hover:bg-[var(--cream-50)]"
                     }`}
                   >
-                    {v.label}
+                    {typeof v.label === "string"
+                      ? v.label
+                      : typeof v.label === "object" && v.label !== null
+                      ? `${(v.label as any).value ?? ""} ${(v.label as any).unit ?? ""}`.trim() || "Standard"
+                      : String(v.label || "")}
                   </button>
                 );
               })}

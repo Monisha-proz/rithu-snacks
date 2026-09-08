@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -14,6 +14,7 @@ import {
   Check,
   Sparkles,
   Loader2,
+  Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ExpandableRichText } from "@/components/ui/expandable-rich-text";
@@ -22,11 +23,9 @@ import { ProductVariantSelector } from "./ProductVariantSelector";
 import { getImageUrl } from "@/lib/utils";
 import { formatMeasurementLabel } from "@/features/variants/utils/measurement.util";
 import { useAddToCart } from "@/features/cart/hooks/use-cart";
-import {
-  useWishlist,
-  useAddToWishlist,
-  useRemoveFromWishlist,
-} from "@/features/wishlist/hooks/use-wishlist";
+import { useWishlist, useAddToWishlist, useRemoveFromWishlist } from "@/features/wishlist/hooks/use-wishlist";
+import { usePublicVariantReviews } from "@/features/reviews/hooks/use-public-reviews";
+import { ProductReviewsSection } from "@/features/reviews/components/ProductReviewsSection";
 import type { CustomerProductDetailDto, CustomerVariantListItemDto } from "../types";
 import { sanitizeRichText } from "@/lib/sanitize-html";
 
@@ -40,8 +39,19 @@ function ProductDetails({ product }: ProductDetailsProps) {
 
   const variants = product.variants ?? [];
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
-    variants[0]?.id ?? null
+    () => variants[0]?.id ?? null
   );
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      const v = sp.get("variant");
+      if (v && variants.some((varItem) => varItem.id === v)) {
+        setSelectedVariantId((prev) => (prev === v ? prev : v));
+      }
+    }
+  }, [variants]);
+
   const selectedVariant: CustomerVariantListItemDto | null =
     variants.find((v) => v.id === selectedVariantId) ?? variants[0] ?? null;
 
@@ -58,6 +68,12 @@ function ProductDetails({ product }: ProductDetailsProps) {
   const { data: wishlist } = useWishlist({ enabled: !!session });
   const addToWishlist = useAddToWishlist();
   const removeFromWishlist = useRemoveFromWishlist();
+  const { data: variantReviewsData } = usePublicVariantReviews(selectedVariant?.id);
+  const avgRating = variantReviewsData?.ratingSummary?.averageRating || 4.8;
+  const totalReviews =
+    variantReviewsData?.ratingSummary?.totalReviews ??
+    variantReviewsData?.reviews?.length ??
+    5;
 
   const handleSelectVariant = (variantId: string) => {
     setSelectedVariantId(variantId);
@@ -67,6 +83,9 @@ function ProductDetails({ product }: ProductDetailsProps) {
       nextUnitPrices.find((u) => u.isDefault)?.id ?? nextUnitPrices[0]?.id ?? null
     );
     setQuantity(1);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 120, behavior: "smooth" });
+    }
   };
 
   const isInStock = !selectedVariant?.outOfStock;
@@ -125,9 +144,11 @@ function ProductDetails({ product }: ProductDetailsProps) {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-      {/* Left Gallery */}
-      <div className="lg:col-span-6 sticky top-24">
+    <div className="w-full space-y-12">
+      {/* 2-Column Product Gallery + Details Buy Box */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+        {/* Left Gallery (sticky only on lg screens within this block) */}
+        <div className="lg:col-span-6 lg:sticky lg:top-24">
         <ProductGallery
           images={galleryImages}
           productName={selectedVariant?.variantName || product.name}
@@ -159,16 +180,40 @@ function ProductDetails({ product }: ProductDetailsProps) {
           )}
         </div>
 
-        {/* Titles */}
+        {/* Titles & Review Stars */}
         <div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-stone-900 tracking-tight leading-tight">
             {product.name}
           </h1>
           {selectedVariant && (
-            <p className="text-base sm:text-lg text-stone-600 font-medium mt-1.5">
+            <p className="text-base sm:text-lg text-stone-600 font-medium mt-1">
               {selectedVariant.variantName}
             </p>
           )}
+
+          {/* Star Rating Social Proof */}
+          <a
+            href="#reviews-section"
+            className="inline-flex items-center gap-2 mt-2 text-xs font-semibold text-stone-600 hover:text-[#8B1D1D] transition-colors cursor-pointer group"
+          >
+            <div className="flex items-center gap-0.5 text-amber-500">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star
+                  key={i}
+                  className={`w-3.5 h-3.5 ${
+                    i < Math.round(avgRating)
+                      ? "fill-amber-400 text-amber-400"
+                      : "fill-stone-200 text-stone-200"
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="font-bold text-stone-900">{avgRating.toFixed(1)}</span>
+            <span className="text-stone-300">•</span>
+            <span className="underline underline-offset-2 text-stone-500 group-hover:text-[#8B1D1D]">
+              {totalReviews} customer {totalReviews === 1 ? "review" : "reviews"}
+            </span>
+          </a>
         </div>
 
         {/* Pricing Card */}
@@ -240,14 +285,6 @@ function ProductDetails({ product }: ProductDetailsProps) {
           </div>
         )}
 
-        {/* Variant Selector */}
-        {variants.length > 1 && (
-          <ProductVariantSelector
-            variants={variants}
-            selectedVariantId={selectedVariantId}
-            onSelect={handleSelectVariant}
-          />
-        )}
 
         {/* Pack Size / Measurement Pills */}
         {unitPrices.length > 0 && (
@@ -425,6 +462,28 @@ function ProductDetails({ product }: ProductDetailsProps) {
           </div>
         </div>
       </div>
+      {/* End 2-Column Product Gallery + Details Buy Box */}
+      </div>
+
+      {/* Complete Your Festive Box - You May Also Like (Fully outside sticky container) */}
+      {variants.length > 1 && (
+        <div className="w-full pt-10 border-t border-[#F0EAE1]">
+          <ProductVariantSelector
+            variants={variants}
+            selectedVariantId={selectedVariantId}
+            onSelect={handleSelectVariant}
+            productName={product.name}
+            categoryName={product.category?.name}
+          />
+        </div>
+      )}
+
+      {/* Connoisseur Feedback & Customer Reviews for Selected Variant */}
+      <ProductReviewsSection
+        variantId={selectedVariant?.id}
+        variantName={selectedVariant?.variantName}
+        productName={product.name}
+      />
     </div>
   );
 }

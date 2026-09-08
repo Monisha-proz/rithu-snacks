@@ -7,43 +7,53 @@ import { Button } from "@/components/ui/button";
 import { FilterSidebar } from "@/components/storefront/filters/FilterSidebar";
 import { CustomerProductGrid } from "@/features/customers/components/catalog/CustomerProductGrid";
 import {
-  useCustomerProducts,
+  useCustomerGlobalVariants,
   useCustomerCategories,
 } from "@/features/customers/hooks/use-customer-catalog";
-import type { CustomerProductListItemDto } from "@/features/customers/types/catalog.types";
-import type { CustomerProductListInput } from "@/features/customers/validations/catalog.schema";
+import type { CustomerVariantListItemDto } from "@/features/customers/types/catalog.types";
+import type { CustomerGlobalVariantListInput } from "@/features/customers/validations/catalog.schema";
 
 const SORT_OPTIONS: {
   value: string;
   label: string;
-  sortBy: CustomerProductListInput["sortBy"];
-  sortOrder: CustomerProductListInput["sortOrder"];
+  sortBy: CustomerGlobalVariantListInput["sortBy"];
+  sortOrder: CustomerGlobalVariantListInput["sortOrder"];
 }[] = [
   { value: "createdAt_desc", label: "Newest First", sortBy: "createdAt", sortOrder: "desc" },
-  { value: "price_asc", label: "Price: Low to High", sortBy: "price", sortOrder: "asc" },
-  { value: "price_desc", label: "Price: High to Low", sortBy: "price", sortOrder: "desc" },
-  { value: "name_asc", label: "Name: A to Z", sortBy: "name", sortOrder: "asc" },
-  { value: "name_desc", label: "Name: Z to A", sortBy: "name", sortOrder: "desc" },
+  { value: "price_asc", label: "Price: Low to High", sortBy: "basePrice", sortOrder: "asc" },
+  { value: "price_desc", label: "Price: High to Low", sortBy: "basePrice", sortOrder: "desc" },
+  { value: "name_asc", label: "Name: A to Z", sortBy: "variantName", sortOrder: "asc" },
+  { value: "name_desc", label: "Name: Z to A", sortBy: "variantName", sortOrder: "desc" },
 ];
 
 function ProductCatalogSkeleton() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 animate-pulse">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 animate-in fade-in duration-200">
       {[1, 2, 3, 4, 5, 6].map((n) => (
         <div
           key={n}
-          className="rounded-2xl border border-[#E8D9CD] bg-[#FFFDF9] p-4 space-y-4 overflow-hidden"
+          className="bg-white rounded-2xl border border-[#E8D9CD]/80 p-3.5 flex flex-col justify-between overflow-hidden shadow-2xs space-y-3"
         >
-          <div className="aspect-square w-full rounded-xl bg-[#F0E4D8]/60" />
-          <div className="space-y-2">
-            <div className="h-4 w-20 rounded-md bg-[#F0E4D8]/60" />
-            <div className="h-5 w-3/4 rounded-md bg-[#F0E4D8]/60" />
-            <div className="h-3 w-full rounded-md bg-[#F0E4D8]/60" />
+          {/* Image skeleton with shimmer */}
+          <div className="relative aspect-square w-full rounded-xl skeleton-shimmer overflow-hidden bg-stone-100" />
+
+          {/* Info row: Category, title & pack size pills */}
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center justify-between gap-2">
+              <div className="h-3 w-20 rounded skeleton-shimmer bg-stone-100" />
+              <div className="flex gap-1">
+                <div className="h-4.5 w-10 rounded skeleton-shimmer bg-stone-100" />
+                <div className="h-4.5 w-10 rounded skeleton-shimmer bg-stone-100" />
+              </div>
+            </div>
+            <div className="flex items-baseline justify-between gap-2">
+              <div className="h-4.5 w-36 rounded skeleton-shimmer bg-stone-100" />
+              <div className="h-4.5 w-14 rounded skeleton-shimmer bg-stone-100" />
+            </div>
           </div>
-          <div className="pt-2 border-t border-[#F0E4D8] flex items-center justify-between">
-            <div className="h-6 w-16 rounded-md bg-[#F0E4D8]/60" />
-            <div className="h-4 w-20 rounded-md bg-[#F0E4D8]/60" />
-          </div>
+
+          {/* Golden CTA button skeleton */}
+          <div className="h-10 w-full rounded-xl skeleton-shimmer bg-[#F8BE15]/20" />
         </div>
       ))}
     </div>
@@ -61,12 +71,13 @@ export default function ShopAllPage() {
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(1000);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const [isFilterSwitching, setIsFilterSwitching] = useState(false);
 
-  // Accumulated products for Infinite Scroll
-  const [accumulatedProducts, setAccumulatedProducts] = useState<CustomerProductListItemDto[]>([]);
+  // Accumulated variants for Infinite Scroll
+  const [accumulatedVariants, setAccumulatedVariants] = useState<CustomerVariantListItemDto[]>([]);
 
   // Fetch all categories (supports 250 categories)
-  const { data: categoriesData } = useCustomerCategories({ pageSize: 250 });
+  const { data: categoriesData, isLoading: isLoadingCategories } = useCustomerCategories({ pageSize: 250 });
   const categories = categoriesData?.data ?? [];
 
   const currentCategory = useMemo(() => {
@@ -84,51 +95,49 @@ export default function ShopAllPage() {
     return SORT_OPTIONS.find((s) => s.value === sortKey) ?? SORT_OPTIONS[0];
   }, [sortKey]);
 
-  // Query products with filters
+  // Query variants with filters (Postman: POST /api/customer/variants)
   const {
-    data: productsResponse,
+    data: variantsResponse,
     isLoading,
     isFetching,
     error,
     refetch,
-  } = useCustomerProducts({
+  } = useCustomerGlobalVariants({
     page,
-    pageSize: 12,
+    pageSize: 18,
     search: search.trim() ? search.trim() : undefined,
     categoryIds: selectedCategory ? [selectedCategory] : undefined,
     productIds: selectedProductId ? [selectedProductId] : undefined,
     minPrice: minPrice > 0 ? minPrice : undefined,
     maxPrice: maxPrice < 1000 ? maxPrice : undefined,
-    inStock: stockStatus === "all" ? undefined : stockStatus === "in_stock",
-    vegType: vegType === "all" ? undefined : vegType,
     sortBy: activeSort.sortBy,
     sortOrder: activeSort.sortOrder,
   });
 
-  const meta = productsResponse?.meta;
+  const meta = variantsResponse?.meta;
 
   // Infinite Scroll accumulation logic
   useEffect(() => {
-    if (!productsResponse?.data) return;
+    if (!variantsResponse?.data) return;
 
     if (page === 1) {
-      setAccumulatedProducts(productsResponse.data);
+      setAccumulatedVariants(variantsResponse.data);
     } else {
-      setAccumulatedProducts((prev) => {
+      setAccumulatedVariants((prev) => {
         const existingIds = new Set(prev.map((p) => p.id));
-        const newItems = productsResponse.data.filter((p) => !existingIds.has(p.id));
+        const newItems = variantsResponse.data.filter((p) => !existingIds.has(p.id));
         return [...prev, ...newItems];
       });
     }
-  }, [productsResponse?.data, page]);
+  }, [variantsResponse?.data, page]);
 
-  // Derive displayed products: on page 1 always prioritize productsResponse.data directly
-  const displayedProducts = useMemo(() => {
-    if (page === 1 && productsResponse?.data) {
-      return productsResponse.data;
+  // Derive displayed variants: on page 1 always prioritize variantsResponse.data directly
+  const displayedVariants = useMemo(() => {
+    if (page === 1 && variantsResponse?.data) {
+      return variantsResponse.data;
     }
-    return accumulatedProducts;
-  }, [page, productsResponse?.data, accumulatedProducts]);
+    return accumulatedVariants;
+  }, [page, variantsResponse?.data, accumulatedVariants]);
 
   // Infinite Scroll IntersectionObserver sentinel
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -161,8 +170,17 @@ export default function ShopAllPage() {
     };
   }, [meta, page, isFetching, isLoading]);
 
+  // Turn off filter switching once query fetching completes
+  useEffect(() => {
+    if (!isFetching) {
+      setIsFilterSwitching(false);
+    }
+  }, [isFetching]);
+
   // Category Selection
   const handleCategorySelect = (categoryId: string | null) => {
+    setIsFilterSwitching(true);
+    setAccumulatedVariants([]);
     setSelectedProductId(null);
     setSelectedCategory(categoryId);
     setPage(1);
@@ -170,12 +188,16 @@ export default function ShopAllPage() {
 
   // Product Selection under Category
   const handleProductSelect = (productId: string | null) => {
+    setIsFilterSwitching(true);
+    setAccumulatedVariants([]);
     setSelectedProductId(productId);
     setPage(1);
   };
 
   // Reset Filters
   const handleResetFilters = () => {
+    setIsFilterSwitching(true);
+    setAccumulatedVariants([]);
     setSearch("");
     setSortKey("createdAt_desc");
     setSelectedCategory(null);
@@ -268,7 +290,7 @@ export default function ShopAllPage() {
             </button>
 
             <span className="text-xs text-[#7A6258] font-medium">
-              Showing <strong className="text-[#2D1810]">{meta?.total ?? displayedProducts.length}</strong> snacks
+              Showing <strong className="text-[#2D1810]">{meta?.total ?? displayedVariants.length}</strong> snacks
             </span>
           </div>
 
@@ -277,27 +299,36 @@ export default function ShopAllPage() {
             {/* Left Sticky FilterSidebar */}
             <FilterSidebar
               categories={categories}
+              isLoadingCategories={isLoadingCategories && categories.length === 0}
               selectedCategoryId={selectedCategory}
               onSelectCategory={handleCategorySelect}
               selectedProductId={selectedProductId}
               onSelectProduct={handleProductSelect}
               searchQuery={search}
               onSearchChange={(val) => {
+                setIsFilterSwitching(true);
+                setAccumulatedVariants([]);
                 setSearch(val);
                 setPage(1);
               }}
               sortKey={sortKey}
               onSortChange={(val) => {
+                setIsFilterSwitching(true);
+                setAccumulatedVariants([]);
                 setSortKey(val);
                 setPage(1);
               }}
               stockStatus={stockStatus}
               onStockStatusChange={(val) => {
+                setIsFilterSwitching(true);
+                setAccumulatedVariants([]);
                 setStockStatus(val);
                 setPage(1);
               }}
               vegType={vegType}
               onVegTypeChange={(val) => {
+                setIsFilterSwitching(true);
+                setAccumulatedVariants([]);
                 setVegType(val);
                 setPage(1);
               }}
@@ -306,6 +337,8 @@ export default function ShopAllPage() {
               currentMinPrice={minPrice}
               currentMaxPrice={maxPrice}
               onPriceChange={(min, max) => {
+                setIsFilterSwitching(true);
+                setAccumulatedVariants([]);
                 setMinPrice(min);
                 setMaxPrice(max);
                 setPage(1);
@@ -324,7 +357,7 @@ export default function ShopAllPage() {
                 <p className="text-sm text-[#7A6258]">
                   Showing{" "}
                   <strong className="text-[#2D1810]">
-                    {meta?.total ?? displayedProducts.length}
+                    {meta?.total ?? displayedVariants.length}
                   </strong>{" "}
                   authentic {meta?.total === 1 ? "snack" : "snacks"}
                   {currentCategory && (
@@ -368,16 +401,38 @@ export default function ShopAllPage() {
                 </div>
               )}
 
-              {/* Content Area: Skeleton vs Accumulated Products with Infinite Scroll (3 per row) */}
-              {isLoading && page === 1 ? (
+              {/* Content Area: Full Skeleton ONLY on initial load, filter changes, or empty query */}
+              {(isFilterSwitching || (page === 1 && (isLoading || isFetching)) || (displayedVariants.length === 0 && (isLoading || isFetching))) ? (
                 <ProductCatalogSkeleton />
               ) : (
                 <>
                   <CustomerProductGrid
-                    products={displayedProducts}
+                    variants={displayedVariants}
                     columns={3}
                     onResetFilters={hasActiveFilters ? handleResetFilters : undefined}
                   />
+
+                  {/* Shimmer cards appended at the bottom while next infinite scroll page loads */}
+                  {isFetching && page > 1 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 mt-6 animate-in fade-in duration-200">
+                      {[1, 2, 3].map((n) => (
+                        <div
+                          key={`append-skel-${n}`}
+                          className="bg-white rounded-2xl border border-[#E8D9CD]/80 p-3.5 flex flex-col justify-between overflow-hidden shadow-2xs space-y-3"
+                        >
+                          <div className="relative aspect-square w-full rounded-xl skeleton-shimmer overflow-hidden bg-stone-100" />
+                          <div className="space-y-2 pt-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="h-3 w-20 rounded skeleton-shimmer bg-stone-100" />
+                              <div className="h-4.5 w-10 rounded skeleton-shimmer bg-stone-100" />
+                            </div>
+                            <div className="h-4.5 w-36 rounded skeleton-shimmer bg-stone-100" />
+                          </div>
+                          <div className="h-10 w-full rounded-xl skeleton-shimmer bg-[#F8BE15]/20" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Infinite Scroll Sentinel & Loading Indicator */}
                   <div
@@ -391,9 +446,9 @@ export default function ShopAllPage() {
                       </div>
                     )}
 
-                    {!hasMorePages && displayedProducts.length > 0 && !isFetching && (
+                    {!hasMorePages && displayedVariants.length > 0 && !isFetching && (
                       <p className="text-xs font-semibold text-[#9C8274] select-none">
-                        ✦ You have viewed all {displayedProducts.length} snacks ✦
+                        ✦ You have viewed all {displayedVariants.length} snacks ✦
                       </p>
                     )}
                   </div>

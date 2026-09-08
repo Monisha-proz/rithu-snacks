@@ -81,8 +81,7 @@ export const PHOTOS = {
 
 export const banners = [
   LOGOS.hero_banner,
-  LOGOS.banner,
-  LOGOS.hero_banner,
+
 ];
 
 export const categories = [

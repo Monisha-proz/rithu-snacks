@@ -7,4 +7,5 @@ export { CustomerCartSection } from "./profile/CustomerCartSection";
 export { CustomerWishlistSection } from "./profile/CustomerWishlistSection";
 export { CustomerActivityCard } from "./profile/CustomerActivityCard";
 export { CustomerProductCard } from "./catalog/CustomerProductCard";
+export { CustomerVariantCard } from "./catalog/CustomerVariantCard";
 export { CustomerProductGrid } from "./catalog/CustomerProductGrid";
