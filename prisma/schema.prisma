@@ -1433,6 +1433,7 @@ model delivery_slots {
 model faq {
   id                          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
   category                    String?  @db.VarChar(100)
+  icon                        String?  @db.VarChar(50)
   question                    String   @db.VarChar(255)
   answer                      String   @db.Text
   sort_order                  Int      @default(0)
@@ -1446,6 +1447,8 @@ model faq {
 
   @@index([created_by], map: "fk_faq_created_by")
   @@index([updated_by], map: "fk_faq_updated_by")
+  @@index([is_active, sort_order], map: "idx_faq_active_sort")
+  @@index([category], map: "idx_faq_category")
 }
 
 model login_logs {

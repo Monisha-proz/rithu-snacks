@@ -426,7 +426,9 @@ export function OrdersTab({
 
                   <button
                     type="button"
-                    onClick={() => window.print()}
+                    onClick={() =>
+                      window.open(`/invoice/${order.id}`, "_blank", "noopener")
+                    }
                     className="border border-theme-border hover:bg-theme-surface-alt text-theme-text-subtle text-xs font-semibold uppercase tracking-wider py-2.5 px-4 rounded-lg transition-colors cursor-pointer min-h-[40px]"
                   >
                     Invoice

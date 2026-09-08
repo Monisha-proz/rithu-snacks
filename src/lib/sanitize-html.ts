@@ -35,3 +35,15 @@ export function sanitizeRichText(html: string): string {
     ALLOWED_ATTR: RICH_TEXT_ALLOWED_ATTR,
   });
 }
+
+/**
+ * Strips every tag and entity-escapes what is left. Use it for values that are
+ * authored and rendered as plain text (e.g. FAQ questions and answers), so a
+ * pasted `<script>` is stored as inert text rather than markup.
+ */
+export function sanitizePlainText(value: string): string {
+  return DOMPurify.sanitize(value, {
+    ALLOWED_TAGS: [],
+    ALLOWED_ATTR: [],
+  });
+}
