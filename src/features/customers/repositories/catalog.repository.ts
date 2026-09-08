@@ -33,6 +33,11 @@ import type {
  * to customers (list, detail, cart, wishlist) flows through this single
  * function instead of reading base_price directly.
  */
+/**
+ * The repository deals in catalog prices only. Offers are applied one layer
+ * up, in `catalogOffers`, because resolving them needs a database round trip
+ * and is done once per page of results rather than once per row.
+ */
 function computeSellingPrice(basePrice: number): number {
   return basePrice;
 }
@@ -1243,6 +1248,7 @@ export const catalogRepository = {
           defaultUnitPrice?.unit_value ?? 0
         ),
         sku: defaultUnitPrice?.sku ?? "",
+        unitPriceId: defaultUnitPrice?.uuid ?? null,
         price: basePrice,
         offerPrice: sellingPrice < basePrice ? sellingPrice : null,
         image:

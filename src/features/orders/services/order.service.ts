@@ -74,8 +74,10 @@ export const orderService = {
       sku: string;
       quantity: number;
       unitPrice: number;
+      discountAmount: number;
       taxAmount: number;
       totalPrice: number;
+      itemUuid: string;
     }> = [];
 
     let subtotal = 0;
@@ -100,10 +102,10 @@ export const orderService = {
         );
       }
 
-      // Selling price = base_price minus any active offer/discount. Offer
-      // application is intentionally not duplicated here; this uses the
-      // stored base_price as-is (matching pre-existing behavior when no
-      // sale_price override was set).
+      // The stored base price is the only price trusted here - never a value
+      // that came in with the request. Offers are applied below, once every
+      // line is known, because a minimum-cart-value offer depends on the
+      // subtotal of the whole cart.
       const unitPrice = Number(unitPriceRow.base_price);
 
       const totalPrice = unitPrice * item.quantity;
@@ -118,10 +120,32 @@ export const orderService = {
         sku: unitPriceRow.sku,
         quantity: item.quantity,
         unitPrice,
+        discountAmount: 0,
         taxAmount: 0,
         totalPrice,
+        itemUuid: unitPriceRow.uuid,
       });
     }
+
+    // 2b. Apply offers. This is the same engine the storefront, cart and
+    // checkout quote from, so the price the customer was shown is the price
+    // the order is written at.
+    const pricing = await offerService.priceCartItems(
+      orderItemsData.map((item) => ({
+        itemId: item.itemUuid,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+      }))
+    );
+
+    for (const [index, line] of pricing.lines.entries()) {
+      const orderItem = orderItemsData[index];
+      orderItem.discountAmount = line.discountAmount;
+      orderItem.totalPrice = line.finalLineTotal;
+    }
+
+    const offerDiscount = pricing.totalDiscount;
+    subtotal = pricing.subtotal;
 
     // 3. Validate shipping address
     const isShippingNumeric = /^\d+$/.test(input.shippingAddressId);
@@ -173,15 +197,17 @@ export const orderService = {
     const paymentStatus: "paid" | "pending" = isPaid ? "paid" : "pending";
     const orderStatus: "confirmed" | "pending" = isPaid ? "confirmed" : "pending";
 
-    // Free delivery on orders ₹499 and above, otherwise ₹49
-    const shippingCharge = subtotal >= 499 ? 0 : 49;
-    const totalAmount = subtotal + shippingCharge;
+    // Free delivery is judged on what the customer actually pays, after offers.
+    const payableBeforeShipping = subtotal - offerDiscount;
+    const shippingCharge = payableBeforeShipping >= 499 ? 0 : 49;
+    const totalAmount = payableBeforeShipping + shippingCharge;
 
     // 5. Execute creation transaction
     return orderRepository.createCustomerOrderTransaction({
       userId,
       cartId: cart.id,
       subtotal,
+      discountAmount: offerDiscount,
       shippingCharge,
       totalAmount,
       orderStatus,
@@ -532,24 +558,27 @@ export const orderService = {
         },
       },
     });
-    let subtotal = 0;
-    cart?.items.forEach((it) => {
-      subtotal += Number(it.price_at_add || 0) * it.quantity;
-    });
-    const deliveryCharge = deliveryMethod === "EXPRESS" ? 100 : 0;
-    const discount = await offerService.calculateCartDiscount(
-      (cart?.items ?? []).map((it) => ({
-        productId: it.productId,
+
+    // Priced from the live `base_price`, not the price captured when the item
+    // was added, so the summary reflects today's catalog and today's offers.
+    const lines = (cart?.items ?? [])
+      .filter((it) => it.variant_unit_price)
+      .map((it) => ({
+        itemId: it.variant_unit_price!.uuid,
         quantity: it.quantity,
-        lineTotal: Number(it.price_at_add || 0) * it.quantity,
-      })),
-      subtotal
-    );
+        unitPrice: Number(it.variant_unit_price!.base_price ?? 0),
+      }));
+
+    const pricing = await offerService.priceCartItems(lines);
+    const deliveryCharge = deliveryMethod === "EXPRESS" ? 100 : 0;
+
     return {
-      subtotal,
+      subtotal: pricing.subtotal,
       deliveryCharge,
-      discount,
-      total: subtotal + deliveryCharge - discount,
+      discount: pricing.totalDiscount,
+      totalSavings: pricing.totalSavings,
+      items: pricing.lines,
+      total: pricing.total + deliveryCharge,
     };
   },
 };

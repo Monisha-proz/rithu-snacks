@@ -90,7 +90,9 @@ export function mapCartItemToStorefrontProduct(item: CartItemResponse): Storefro
         id: item.variantUnitPriceId,
         label: formatMeasurementLabel(item.measurement),
         sku: "",
-        basePrice: item.priceAtAdd,
+        // The struck-through price is today's catalog price, so the card
+        // shows the offer saving rather than a stale add-to-cart price.
+        basePrice: item.basePrice,
         sellingPrice: item.currentPrice,
         isDefault: true,
       },

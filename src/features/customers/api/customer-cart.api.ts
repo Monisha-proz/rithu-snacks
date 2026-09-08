@@ -5,6 +5,16 @@ import type {
   CartCountResponse,
 } from "@/features/cart/types/cart.types";
 
+const EMPTY_CART: CartResponse = {
+  id: null,
+  items: [],
+  subtotal: 0,
+  totalDiscount: 0,
+  totalSavings: 0,
+  total: 0,
+  totalItems: 0,
+};
+
 export interface AddCartItemPayload {
   variantId: string;
   quantity: number;
@@ -17,7 +27,7 @@ export const customerCartApi = {
    */
   async getCart(): Promise<CartResponse> {
     const response = await apiClient.get<CartResponse>("/api/customer/cart");
-    return response.data ?? { id: null, items: [], subtotal: 0, totalItems: 0 };
+    return response.data ?? EMPTY_CART;
   },
 
   /**

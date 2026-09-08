@@ -1,4 +1,5 @@
 import type { VariantMeasurement } from "@/features/variants/utils/measurement.util";
+import type { OfferBreakdown } from "@/features/offers/types";
 
 export type { VariantMeasurement };
 
@@ -12,17 +13,39 @@ export interface CartItemResponse {
   measurement: VariantMeasurement;
   primaryImage: string | null;
   quantity: number;
+  /** Alias of `currentPrice`, kept for callers that read `price`. */
   price?: number;
+  /** Catalog price captured when the item was added to the cart. */
   priceAtAdd: number;
+  /** Today's catalog price per unit, before any offer. */
+  basePrice: number;
+  /** What one unit actually costs after the best applicable offer. */
   currentPrice: number;
+  /** True when the catalog price moved since the item was added. */
   priceChanged: boolean;
+  /** Money the offer takes off this line, across all its units. */
+  discountAmount: number;
+  /** The offer that won for this line, or null when none applies. */
+  offer: OfferBreakdown | null;
+  /** Free units earned by a Buy X Get Y offer. */
+  freeQuantity: number;
+  /** Line total at the catalog price, before the offer. */
+  originalItemTotal: number;
+  /** Line total the customer pays, after the offer. */
   itemTotal: number;
 }
 
 export interface CartResponse {
   id: string | null; // Public Cart UUID
   items: CartItemResponse[];
+  /** Sum of the lines at catalog prices, before offers. */
   subtotal: number;
+  /** Total offer discount across the cart. */
+  totalDiscount: number;
+  /** Same figure, named for the "you saved" line in the UI. */
+  totalSavings: number;
+  /** Subtotal minus the discount; delivery and tax are added at checkout. */
+  total: number;
   totalItems: number;
 }
 

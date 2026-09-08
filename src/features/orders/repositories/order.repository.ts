@@ -155,6 +155,7 @@ export function formatOrderItem(
     primaryImage,
     quantity: item.quantity,
     unitPrice: Number(item.unit_price),
+    discountAmount: Number(item.discount_amount ?? 0),
     taxAmount: Number(item.tax_amount),
     totalPrice: Number(item.total_price),
   };
@@ -349,6 +350,7 @@ export const orderRepository = {
     userId: bigint;
     cartId: bigint;
     subtotal: number;
+    discountAmount?: number;
     shippingCharge?: number;
     totalAmount: number;
     notes?: string;
@@ -390,6 +392,7 @@ export const orderRepository = {
       sku: string;
       quantity: number;
       unitPrice: number;
+      discountAmount: number;
       taxAmount: number;
       totalPrice: number;
     }>;
@@ -408,7 +411,7 @@ export const orderRepository = {
           order_status: (params.orderStatus ?? "pending") as any,
           payment_status: (params.paymentStatus ?? "pending") as any,
           subtotal: params.subtotal,
-          discountAmount: 0,
+          discountAmount: params.discountAmount ?? 0,
           taxAmount: 0,
           shipping_charge: params.shippingCharge ?? 0,
           totalAmount: params.totalAmount,
@@ -477,6 +480,7 @@ export const orderRepository = {
           sku_snapshot: item.sku,
           quantity: item.quantity,
           unit_price: item.unitPrice,
+          discount_amount: item.discountAmount,
           tax_amount: item.taxAmount,
           total_price: item.totalPrice,
           is_active: true,

@@ -1,18 +1,18 @@
 import { createApiHandler } from "@/lib/api/api-handler";
 import { apiSuccess, apiCreated } from "@/lib/api/api-response";
 import { offerService } from "@/features/offers/services/offer.service";
-import { getOffersQuerySchema, createOfferSchema } from "@/features/offers/validations/offer.schema";
+import {
+  getOffersQuerySchema,
+  createOfferSchema,
+  type GetOffersQueryInput,
+  type CreateOfferSchemaOutput,
+} from "@/features/offers/validations/offer.schema";
 
 export const GET = createApiHandler(
   {
     GET: async (_request, context) => {
-      const query = context.query as ReturnType<typeof getOffersQuerySchema.parse>;
-      const result = await offerService.getOffers({
-        page: query.page,
-        limit: query.limit,
-        search: query.search,
-        isActive: query.isActive,
-      });
+      const query = context.query as GetOffersQueryInput;
+      const result = await offerService.getOffers(query);
       return apiSuccess(result.data, "Offers fetched successfully", 200, result.meta);
     },
   },
@@ -22,12 +22,15 @@ export const GET = createApiHandler(
 export const POST = createApiHandler(
   {
     POST: async (_request, context) => {
-      const body = context.body as ReturnType<typeof createOfferSchema.parse>;
-      const offer = await offerService.createOffer({
-        ...body,
-        startsAt: body.startsAt ? new Date(body.startsAt) : undefined,
-        endsAt: body.endsAt ? new Date(body.endsAt) : undefined,
-      });
+      const body = context.body as CreateOfferSchemaOutput;
+      const offer = await offerService.createOffer(
+        {
+          ...body,
+          startsAt: new Date(body.startsAt),
+          endsAt: new Date(body.endsAt),
+        },
+        context.session?.user?.email ?? undefined
+      );
       return apiCreated(offer, "Offer created successfully");
     },
   },

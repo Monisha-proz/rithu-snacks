@@ -24,8 +24,12 @@ export interface OrderItemResponse {
   measurement: VariantMeasurement;
   primaryImage: string | null;
   quantity: number;
+  /** Undiscounted price per unit at the time the order was placed. */
   unitPrice: number;
+  /** Money the applied offer took off this line, across all its units. */
+  discountAmount: number;
   taxAmount: number;
+  /** What the customer actually paid for this line, after the offer. */
   totalPrice: number;
 }
 

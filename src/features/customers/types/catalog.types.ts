@@ -1,4 +1,5 @@
 import type { VariantMeasurement } from "@/features/variants/utils/measurement.util";
+import type { OfferBreakdown } from "@/features/offers/types";
 
 export interface CustomerBrandDto {
   id: string; // Brand UUID
@@ -32,15 +33,18 @@ export interface CustomerProductListItemDto {
     label: string;
     basePrice: number;
     sellingPrice: number;
+    /** The offer that produced `sellingPrice`, or null when none applied. */
+    offer?: OfferBreakdown | null;
+    discountAmount?: number;
+    discountPercent?: number;
   }>;
 }
 
 /**
  * A single sellable pack size ("250g", "500g", "1kg", ...) for a variant/item.
- * Selling price is NOT stored - it is basePrice minus any active offer/discount,
- * computed at read time (see computeSellingPrice in the catalog repository). No
- * offer engine is wired up for the storefront yet, so sellingPrice currently
- * mirrors basePrice.
+ * Selling price is NOT stored - the repository returns it equal to basePrice,
+ * and `catalogOffers` in the customer service layer replaces it with the price
+ * the shared offer engine produces before the DTO leaves the server.
  */
 export interface CustomerVariantUnitPriceDto {
   id: string; // VariantUnitPrice UUID - this is what cart/wishlist APIs key off
@@ -49,6 +53,10 @@ export interface CustomerVariantUnitPriceDto {
   basePrice: number;
   sellingPrice: number;
   isDefault: boolean;
+  /** The offer that produced `sellingPrice`, or null when none applied. */
+  offer?: OfferBreakdown | null;
+  discountAmount?: number;
+  discountPercent?: number;
 }
 
 export interface CustomerVariantListItemDto {
@@ -59,6 +67,7 @@ export interface CustomerVariantListItemDto {
   measurement: VariantMeasurement;
   sku: string;
   basePrice: number;
+  /** Default pack size's price after offers; mirrors `unitPrices`. */
   salePrice: number;
   primaryImage: string | null;
   outOfStock?: boolean;
@@ -113,9 +122,10 @@ export interface CustomerRelatedVariantDto {
   variantName: string;
   measurement: VariantMeasurement;
   sku: string;
-  // basePrice; `offerPrice` is basePrice minus any active offer/discount
-  // (see computeSellingPrice in the catalog repository) and is null when no
-  // offer applies.
+  /** The pack size `price`/`offerPrice` refer to - what cart APIs key off. */
+  unitPriceId: string | null;
+  // `price` is the catalog base price; `offerPrice` is what the shared offer
+  // engine charges, and is null when no offer applies.
   price: number;
   offerPrice: number | null;
   image: string | null;

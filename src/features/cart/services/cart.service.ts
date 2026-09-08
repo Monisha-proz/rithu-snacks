@@ -2,6 +2,7 @@ import { db } from "@/lib/db/prisma";
 import { ApiError } from "@/lib/api/api-error";
 import { userRepository } from "@/features/users/repositories/user.repository";
 import { formatVariantMeasurement } from "@/features/variants/utils/measurement.util";
+import { offerService } from "@/features/offers/services/offer.service";
 import { cartRepository } from "../repositories/cart.repository";
 import type {
   AddCartItemInput,
@@ -18,10 +19,9 @@ type DefaultUnitPrice = {
 } | null | undefined;
 
 /**
- * Selling price is not stored on the unit price row - it is base_price minus
- * any active offer/discount. Offer/discount application is out of scope of
- * this cart pricing helper; callers should apply the existing offer logic on
- * top of this base price if/when it needs to be reflected in the cart.
+ * The catalog price of one unit. Offers are applied on top of this by
+ * `formatCartResponse`, via the shared offer engine - never here, because a
+ * minimum-cart-value offer can only be judged once every line is known.
  */
 function calculateVariantPrice(unitPrice: DefaultUnitPrice): number {
   const basePrice =
@@ -32,72 +32,104 @@ function calculateVariantPrice(unitPrice: DefaultUnitPrice): number {
   return basePrice;
 }
 
-function formatCartResponse(
+const EMPTY_CART: CartResponse = {
+  id: null,
+  items: [],
+  subtotal: 0,
+  totalDiscount: 0,
+  totalSavings: 0,
+  total: 0,
+  totalItems: 0,
+};
+
+async function formatCartResponse(
   cart: Awaited<ReturnType<typeof cartRepository.findActiveCartByUserId>>
-): CartResponse {
-  if (!cart) {
-    return {
-      id: null,
-      items: [],
-      subtotal: 0,
-      totalItems: 0,
-    };
+): Promise<CartResponse> {
+  if (!cart) return { ...EMPTY_CART };
+
+  type CartRow = (typeof cart.items)[number];
+  type PricedCartRow = CartRow & {
+    variant_unit_price: NonNullable<CartRow["variant_unit_price"]>;
+    product: NonNullable<CartRow["product"]>;
+  };
+
+  const rows = cart.items.filter(
+    (item): item is PricedCartRow =>
+      Boolean(item.variant_unit_price) && Boolean(item.product) && item.is_active
+  );
+
+  if (rows.length === 0) {
+    return { ...EMPTY_CART, id: cart.uuid || String(cart.id) };
   }
 
-  let subtotal = 0;
+  // One engine call for the whole cart, so offers gated on the cart value see
+  // the real subtotal and every line is priced consistently.
+  const pricing = await offerService.priceCartItems(
+    rows.map((item) => ({
+      itemId: item.variant_unit_price.uuid,
+      quantity: item.quantity,
+      unitPrice: calculateVariantPrice(item.variant_unit_price),
+    }))
+  );
+
   let totalItems = 0;
 
-  const items: CartItemResponse[] = cart.items
-    .filter((item) => item.variant_unit_price && item.product && item.is_active)
-    .map((item) => {
-      const unitPrice = item.variant_unit_price;
-      const variant = unitPrice.variant;
-      const product = item.product;
+  const items: CartItemResponse[] = rows.map((item, index) => {
+    const unitPrice = item.variant_unit_price;
+    const variant = unitPrice.variant;
+    const product = item.product;
+    const line = pricing.lines[index];
 
-      const currentPrice = calculateVariantPrice(unitPrice);
-      const priceAtAdd = Number(item.price_at_add);
-      const priceChanged = priceAtAdd !== currentPrice;
-      const itemTotal = item.quantity * currentPrice;
+    const basePrice = calculateVariantPrice(unitPrice);
+    const priceAtAdd = Number(item.price_at_add);
+    totalItems += item.quantity;
 
-      subtotal += itemTotal;
-      totalItems += item.quantity;
+    const primaryImg =
+      variant.product_variant_images?.[0]?.image_url ||
+      product.images?.[0]?.image_url ||
+      null;
 
-      const primaryImg =
-        variant.product_variant_images?.[0]?.image_url ||
-        product.images?.[0]?.image_url ||
-        null;
+    const measurement = formatVariantMeasurement(
+      unitPrice.product_units,
+      unitPrice.unit_value ?? 0
+    );
 
-      const measurement = formatVariantMeasurement(
-        unitPrice.product_units,
-        unitPrice.unit_value ?? 0
-      );
+    const variantName =
+      variant.variant_name ||
+      `${unitPrice.unit_value ?? ""} ${unitPrice.product_units?.code || ""}`.trim();
 
-      const variantName =
-        variant.variant_name ||
-        `${unitPrice.unit_value ?? ""} ${unitPrice.product_units?.code || ""}`.trim();
-
-      return {
-        id: item.uuid || String(item.id),
-        productId: product.uuid || String(product.id),
-        variantId: variant.uuid || String(variant.id),
-        variantUnitPriceId: unitPrice.uuid || String(unitPrice.id),
-        productName: product.name,
-        variantName,
-        measurement,
-        primaryImage: primaryImg,
-        quantity: item.quantity,
-        price: currentPrice,
-        priceAtAdd,
-        currentPrice,
-        priceChanged,
-        itemTotal,
-      };
-    });
+    return {
+      id: item.uuid || String(item.id),
+      productId: product.uuid || String(product.id),
+      variantId: variant.uuid || String(variant.id),
+      variantUnitPriceId: unitPrice.uuid || String(unitPrice.id),
+      productName: product.name,
+      variantName,
+      measurement,
+      primaryImage: primaryImg,
+      quantity: item.quantity,
+      price: line.finalPrice,
+      priceAtAdd,
+      basePrice,
+      currentPrice: line.finalPrice,
+      // Compared against the catalog price, so an offer starting or ending
+      // does not read as "the price of this product changed".
+      priceChanged: priceAtAdd !== basePrice,
+      discountAmount: line.discountAmount,
+      offer: line.offer,
+      freeQuantity: line.freeQuantity,
+      originalItemTotal: line.originalLineTotal,
+      itemTotal: line.finalLineTotal,
+    };
+  });
 
   return {
     id: cart.uuid || String(cart.id),
     items,
-    subtotal,
+    subtotal: pricing.subtotal,
+    totalDiscount: pricing.totalDiscount,
+    totalSavings: pricing.totalSavings,
+    total: pricing.total,
     totalItems,
   };
 }
@@ -210,12 +242,26 @@ export const cartService = {
     const variant = unitPrice?.variant;
     const product = item.product;
 
-    const currentPrice = unitPrice
+    const basePrice = unitPrice
       ? calculateVariantPrice(unitPrice)
       : Number(item.price_at_add);
     const priceAtAdd = Number(item.price_at_add);
-    const priceChanged = priceAtAdd !== currentPrice;
-    const itemTotal = item.quantity * currentPrice;
+    const priceChanged = priceAtAdd !== basePrice;
+
+    // Priced on its own, so the cart-value gate is judged against this line
+    // alone; the full-cart view re-prices it against the real subtotal.
+    const [line] = unitPrice
+      ? await offerService.priceItems(
+          [
+            {
+              itemId: unitPrice.uuid,
+              quantity: item.quantity,
+              unitPrice: basePrice,
+            },
+          ],
+          { trustUnitPrice: true }
+        )
+      : [];
 
     const primaryImg =
       variant?.product_variant_images?.[0]?.image_url ||
@@ -241,11 +287,16 @@ export const cartService = {
       measurement,
       primaryImage: primaryImg,
       quantity: item.quantity,
-      price: currentPrice,
+      price: line?.finalPrice ?? basePrice,
       priceAtAdd,
-      currentPrice,
+      basePrice,
+      currentPrice: line?.finalPrice ?? basePrice,
       priceChanged,
-      itemTotal,
+      discountAmount: line?.discountAmount ?? 0,
+      offer: line?.offer ?? null,
+      freeQuantity: line?.freeQuantity ?? 0,
+      originalItemTotal: line?.originalLineTotal ?? basePrice * item.quantity,
+      itemTotal: line?.finalLineTotal ?? basePrice * item.quantity,
     };
   },
 

@@ -1,5 +1,6 @@
 import { ApiError } from "@/lib/api/api-error";
 import { catalogRepository } from "../repositories/catalog.repository";
+import { catalogOffers } from "./catalog-offers";
 import type {
   CustomerBrandListInput,
   CustomerCategoryListInput,
@@ -37,8 +38,14 @@ export const catalogService = {
   },
 
   // Product Methods
+  //
+  // Every read below goes through `catalogOffers`, which is what turns the
+  // repository's catalog prices into the prices the shopper is quoted. Adding
+  // a new catalog read without it would show undiscounted prices.
   async getProducts(params: CustomerProductListInput) {
-    return catalogRepository.findCustomerProducts(params);
+    const result = await catalogRepository.findCustomerProducts(params);
+    await catalogOffers.decorateProducts(result.data);
+    return result;
   },
 
   async getProductByUuid(uuid: string) {
@@ -46,7 +53,7 @@ export const catalogService = {
     if (!product) {
       throw ApiError.notFound("Product not found");
     }
-    return product;
+    return catalogOffers.decorateProductDetail(product);
   },
 
   async getRelatedProducts(uuid: string, limit: number) {
@@ -54,6 +61,7 @@ export const catalogService = {
     if (related === null) {
       throw ApiError.notFound("Product not found");
     }
+    await catalogOffers.decorateProducts(related);
     return related;
   },
 
@@ -66,6 +74,7 @@ export const catalogService = {
     if (!result) {
       throw ApiError.notFound("Product not found");
     }
+    await catalogOffers.decorateVariants(result.data);
     return result;
   },
 
@@ -77,7 +86,7 @@ export const catalogService = {
     if (!variant) {
       throw ApiError.notFound("Variant not found");
     }
-    return variant;
+    return catalogOffers.decorateVariant(variant);
   },
 
   /**
@@ -90,10 +99,13 @@ export const catalogService = {
     if (result === null) {
       throw ApiError.notFound("Variant not found");
     }
+    await catalogOffers.decorateRelatedVariants(result.data);
     return result;
   },
 
   async getGlobalVariants(params: CustomerGlobalVariantListInput) {
-    return catalogRepository.findCustomerGlobalVariants(params);
+    const result = await catalogRepository.findCustomerGlobalVariants(params);
+    await catalogOffers.decorateVariants(result.data);
+    return result;
   },
 };
