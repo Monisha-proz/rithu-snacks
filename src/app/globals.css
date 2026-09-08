@@ -387,6 +387,16 @@
   --color-about-divider: var(--about-divider);
 }
 
+/*
+ * Most pages fetch their content client-side, so they start short (skeleton),
+ * grow past the viewport, and gain a scrollbar a beat later - shifting the
+ * whole layout sideways on every refresh. Reserving the gutter up front keeps
+ * the page still; it also stops the jump when a modal sets overflow: hidden.
+ */
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

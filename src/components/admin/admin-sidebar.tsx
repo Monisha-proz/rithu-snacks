@@ -30,6 +30,7 @@ import {
   UserCheck,
   Mail,
   PackagePlus,
+  HelpCircle,
 } from "lucide-react";
 import { cn, getInitials } from "@/lib/utils";
 import { APP_NAME } from "@/lib/constants";
@@ -97,6 +98,7 @@ const sidebarItems: SidebarItem[] = [
     icon: BookOpen,
     children: [
       { label: "Blogs", href: "/admin/dashboard/blogs", icon: BookOpen },
+      { label: "FAQs", href: "/admin/dashboard/faqs", icon: HelpCircle },
       { label: "Contact List", href: "/admin/dashboard/contacts", icon: Mail },
     ],
   },

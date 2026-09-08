@@ -24,6 +24,18 @@ export function Header() {
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const isAuthenticated = status === "authenticated";
+  // `status` is "loading" until /api/auth/session resolves on every page load.
+  // Treating that as logged-out would flash the Login button at signed-in users,
+  // so the account cell renders a placeholder until the session is known.
+  // If that request is slow or down, fall back to the signed-out UI rather than
+  // stranding the user behind a skeleton with nothing to click.
+  const [authGraceExpired, setAuthGraceExpired] = React.useState(false);
+  React.useEffect(() => {
+    if (status !== "loading") return;
+    const timer = setTimeout(() => setAuthGraceExpired(true), 1500);
+    return () => clearTimeout(timer);
+  }, [status]);
+  const isAuthLoading = status === "loading" && !authGraceExpired;
   const { data: profile } = useCustomerProfile();
 
   // Get user name and initials for authenticated header state
@@ -176,36 +188,46 @@ export function Header() {
                   : undefined;
 
               if (isUser) {
-                if (!isAuthenticated) {
-                  return (
-                    <Link
-                      key={item.id}
-                      href="/login"
-                      onClick={() => router.push("/login")}
-                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-sm bg-theme-primary hover:bg-theme-primary-hover text-theme-primary-fg border border-theme-primary text-xs sm:text-sm font-semibold transition-all duration-150 shadow-xs hover:shadow-sm active:scale-95 cursor-pointer"
-                      aria-label="Login"
-                    >
-                      <span>Login</span>
-                      <LogIn
-                        className="w-4 h-4 text-inherit shrink-0"
-                        strokeWidth={2}
-                      />
-                    </Link>
-                  );
-                }
-
+                // The account cell is the last item in a right-anchored row,
+                // so the Login pill (~92px) collapsing to the 26px avatar would
+                // drag every icon beside it. A fixed slot keeps the swap
+                // contained: siblings never move, whichever state wins.
                 return (
-                  <IconButton
+                  <div
                     key={item.id}
-                    alt={userName ? `${userName}'s profile` : "Profile"}
-                    href="/profile"
-                    onClick={() => router.push("/profile")}
-                    customIcon={
-                      <div className="w-[26px] h-[26px] rounded-full bg-theme-primary text-theme-primary-fg text-[11px] font-bold flex items-center justify-center border border-theme-border-accent shadow-2xs select-none leading-none">
-                        {userInitials}
-                      </div>
-                    }
-                  />
+                    className="flex min-w-[92px] justify-end"
+                  >
+                    {isAuthLoading ? (
+                      <div
+                        className="w-[26px] h-[26px] rounded-full bg-theme-surface-alt animate-pulse"
+                        aria-hidden="true"
+                      />
+                    ) : !isAuthenticated ? (
+                      <Link
+                        href="/login"
+                        onClick={() => router.push("/login")}
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-sm bg-theme-primary hover:bg-theme-primary-hover text-theme-primary-fg border border-theme-primary text-xs sm:text-sm font-semibold transition-all duration-150 shadow-xs hover:shadow-sm active:scale-95 cursor-pointer"
+                        aria-label="Login"
+                      >
+                        <span>Login</span>
+                        <LogIn
+                          className="w-4 h-4 text-inherit shrink-0"
+                          strokeWidth={2}
+                        />
+                      </Link>
+                    ) : (
+                      <IconButton
+                        alt={userName ? `${userName}'s profile` : "Profile"}
+                        href="/profile"
+                        onClick={() => router.push("/profile")}
+                        customIcon={
+                          <div className="w-[26px] h-[26px] rounded-full bg-theme-primary text-theme-primary-fg text-[11px] font-bold flex items-center justify-center border border-theme-border-accent shadow-2xs select-none leading-none">
+                            {userInitials}
+                          </div>
+                        }
+                      />
+                    )}
+                  </div>
                 );
               }
 
@@ -434,39 +456,48 @@ export function Header() {
               : undefined;
 
           if (isUser) {
-            if (!isAuthenticated) {
-              return (
-                <NavButton
-                  key={item.id}
-                  variant="bottom"
-                  customIcon={
-                    <LogIn
-                      className="w-[18px] h-[18px] text-theme-text-primary"
-                      strokeWidth={1.75}
-                    />
-                  }
-                  text="Login"
-                  href="/login"
-                  onClick={() => router.push("/login")}
-                  isActive={pathname === "/login"}
-                />
-              );
-            }
-
+            // "Login" and "Account" are different widths, and this bar is
+            // justify-around, so the swap would nudge all four items. Same fix
+            // as the desktop row: pin the cell width, let it repaint inside.
             return (
-              <NavButton
-                key={item.id}
-                variant="bottom"
-                customIcon={
-                  <div className="w-5 h-5 rounded-full bg-theme-primary text-theme-primary-fg text-[10px] font-bold flex items-center justify-center select-none leading-none">
-                    {userInitials}
+              <div key={item.id} className="flex w-16 justify-center">
+                {isAuthLoading ? (
+                  <div
+                    className="flex flex-col-reverse items-center gap-1"
+                    aria-hidden="true"
+                  >
+                    <span className="h-4 w-10 rounded bg-theme-surface-alt animate-pulse" />
+                    <span className="h-5 w-5 rounded-full bg-theme-surface-alt animate-pulse" />
                   </div>
-                }
-                text="Account"
-                href="/profile"
-                onClick={() => router.push("/profile")}
-                isActive={pathname === "/profile"}
-              />
+                ) : !isAuthenticated ? (
+                  <NavButton
+                    variant="bottom"
+                    customIcon={
+                      <LogIn
+                        className="w-[18px] h-[18px] text-theme-text-primary"
+                        strokeWidth={1.75}
+                      />
+                    }
+                    text="Login"
+                    href="/login"
+                    onClick={() => router.push("/login")}
+                    isActive={pathname === "/login"}
+                  />
+                ) : (
+                  <NavButton
+                    variant="bottom"
+                    customIcon={
+                      <div className="w-5 h-5 rounded-full bg-theme-primary text-theme-primary-fg text-[10px] font-bold flex items-center justify-center select-none leading-none">
+                        {userInitials}
+                      </div>
+                    }
+                    text="Account"
+                    href="/profile"
+                    onClick={() => router.push("/profile")}
+                    isActive={pathname === "/profile"}
+                  />
+                )}
+              </div>
             );
           }
 
