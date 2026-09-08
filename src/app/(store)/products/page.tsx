@@ -29,7 +29,7 @@ const SORT_OPTIONS: {
 function ProductCatalogSkeleton() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 animate-in fade-in duration-200">
-      {[1, 2, 3, 4, 5, 6].map((n) => (
+      {[1, 2, 3, 4, 5, 6,7,8,9].map((n) => (
         <div
           key={n}
           className="bg-white rounded-2xl border border-[#E8D9CD]/80 p-3.5 flex flex-col justify-between overflow-hidden shadow-2xs space-y-3"
@@ -64,8 +64,8 @@ export default function ShopAllPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState("createdAt_desc");
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [stockStatus, setStockStatus] = useState<"all" | "in_stock" | "out_of_stock">("all");
   const [vegType, setVegType] = useState<"all" | "veg" | "non_veg">("all");
   const [minPrice, setMinPrice] = useState(0);
@@ -81,14 +81,15 @@ export default function ShopAllPage() {
   const categories = categoriesData?.data ?? [];
 
   const currentCategory = useMemo(() => {
-    if (!selectedCategory) return null;
-    return categories.find((c) => c.id === selectedCategory);
-  }, [categories, selectedCategory]);
+    if (selectedCategoryIds.length !== 1) return null;
+    return categories.find((c) => c.id === selectedCategoryIds[0]);
+  }, [categories, selectedCategoryIds]);
 
   const pageTitle = useMemo(() => {
-    if (currentCategory?.name) return currentCategory.name;
+    if (selectedCategoryIds.length === 1 && currentCategory?.name) return currentCategory.name;
+    if (selectedCategoryIds.length > 1) return `${selectedCategoryIds.length} Categories Selected`;
     return "Shop All Snacks";
-  }, [currentCategory]);
+  }, [currentCategory, selectedCategoryIds]);
 
   // Find active sort config
   const activeSort = useMemo(() => {
@@ -106,8 +107,8 @@ export default function ShopAllPage() {
     page,
     pageSize: 18,
     search: search.trim() ? search.trim() : undefined,
-    categoryIds: selectedCategory ? [selectedCategory] : undefined,
-    productIds: selectedProductId ? [selectedProductId] : undefined,
+    categoryIds: selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
+    productIds: selectedProductIds.length > 0 ? selectedProductIds : undefined,
     minPrice: minPrice > 0 ? minPrice : undefined,
     maxPrice: maxPrice < 1000 ? maxPrice : undefined,
     sortBy: activeSort.sortBy,
@@ -177,20 +178,19 @@ export default function ShopAllPage() {
     }
   }, [isFetching]);
 
-  // Category Selection
-  const handleCategorySelect = (categoryId: string | null) => {
+  // Category Selection (Multi-select)
+  const handleCategorySelect = (categoryIds: string[]) => {
     setIsFilterSwitching(true);
     setAccumulatedVariants([]);
-    setSelectedProductId(null);
-    setSelectedCategory(categoryId);
+    setSelectedCategoryIds(categoryIds);
     setPage(1);
   };
 
-  // Product Selection under Category
-  const handleProductSelect = (productId: string | null) => {
+  // Product Selection under Category (Multi-select)
+  const handleProductSelect = (productIds: string[]) => {
     setIsFilterSwitching(true);
     setAccumulatedVariants([]);
-    setSelectedProductId(productId);
+    setSelectedProductIds(productIds);
     setPage(1);
   };
 
@@ -200,8 +200,8 @@ export default function ShopAllPage() {
     setAccumulatedVariants([]);
     setSearch("");
     setSortKey("createdAt_desc");
-    setSelectedCategory(null);
-    setSelectedProductId(null);
+    setSelectedCategoryIds([]);
+    setSelectedProductIds([]);
     setStockStatus("all");
     setVegType("all");
     setMinPrice(0);
@@ -211,9 +211,9 @@ export default function ShopAllPage() {
   };
 
   const hasActiveFilters =
-    Boolean(search) ||
-    Boolean(selectedCategory) ||
-    Boolean(selectedProductId) ||
+    Boolean(search.trim()) ||
+    selectedCategoryIds.length > 0 ||
+    selectedProductIds.length > 0 ||
     stockStatus !== "all" ||
     vegType !== "all" ||
     minPrice > 0 ||
@@ -221,9 +221,9 @@ export default function ShopAllPage() {
     sortKey !== "createdAt_desc";
 
   const activeFilterCount = [
-    Boolean(search),
-    Boolean(selectedCategory),
-    Boolean(selectedProductId),
+    Boolean(search.trim()),
+    selectedCategoryIds.length > 0,
+    selectedProductIds.length > 0,
     stockStatus !== "all",
     vegType !== "all",
     minPrice > 0 || maxPrice < 1000,
@@ -246,11 +246,19 @@ export default function ShopAllPage() {
             <span className="text-[#7A6258]">
               Products
             </span>
-            {selectedCategory && currentCategory && (
+            {selectedCategoryIds.length === 1 && currentCategory && (
               <>
                 <ChevronRight className="w-3.5 h-3.5" />
                 <span className="font-bold text-[#2D1810]">
                   {currentCategory.name}
+                </span>
+              </>
+            )}
+            {selectedCategoryIds.length > 1 && (
+              <>
+                <ChevronRight className="w-3.5 h-3.5" />
+                <span className="font-bold text-[#2D1810]">
+                  {selectedCategoryIds.length} Categories
                 </span>
               </>
             )}
@@ -300,10 +308,10 @@ export default function ShopAllPage() {
             <FilterSidebar
               categories={categories}
               isLoadingCategories={isLoadingCategories && categories.length === 0}
-              selectedCategoryId={selectedCategory}
-              onSelectCategory={handleCategorySelect}
-              selectedProductId={selectedProductId}
-              onSelectProduct={handleProductSelect}
+              selectedCategoryIds={selectedCategoryIds}
+              onSelectCategories={handleCategorySelect}
+              selectedProductIds={selectedProductIds}
+              onSelectProducts={handleProductSelect}
               searchQuery={search}
               onSearchChange={(val) => {
                 setIsFilterSwitching(true);
@@ -365,9 +373,11 @@ export default function ShopAllPage() {
                       {" "}in <strong className="text-[#7A2224] font-bold">{currentCategory.name}</strong>
                     </>
                   )}
-                  {selectedProductId && (
+                  {selectedProductIds.length > 0 && (
                     <span className="ml-2 text-xs bg-[#F5ECE1] text-[#7A2224] px-2 py-0.5 rounded-full font-semibold">
-                      Product filtered
+                      {selectedProductIds.length === 1
+                        ? "1 Product filtered"
+                        : `${selectedProductIds.length} Products filtered`}
                     </span>
                   )}
                 </p>

@@ -2,15 +2,16 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Star, ChevronRight, Check, Plus, ShoppingBag, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { resolveSnackFallbackImage } from "@/lib/storefront";
 import { formatMeasurementLabel } from "@/features/variants/utils/measurement.util";
 import { useAddToCart } from "@/features/cart/hooks/use-cart";
+import { useWishlist, useAddToWishlist, useRemoveFromWishlist } from "@/features/wishlist/hooks/use-wishlist";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/Toast";
-import { ProductImage } from "@/components/common/ProductImage";
+import { SnackCard } from "@/components/storefront/cards/SnackCard";
 import type { CustomerVariantListItemDto } from "../types";
 
 interface ProductVariantSelectorProps {
@@ -22,21 +23,10 @@ interface ProductVariantSelectorProps {
   className?: string;
 }
 
-const FESTIVE_BADGES = [
-  "Pure Ghee",
-  "Spicy Savory",
-  "Bestseller",
-  "Tea-Time Classic",
-  "Traditional",
-  "Crispy Crunch",
-  "Signature Recipe",
-  "Chef Special",
-];
-
 export function ProductVariantSelector({
   variants,
-  selectedVariantId,
-  onSelect,
+  selectedVariantId: _selectedVariantId,
+  onSelect: _onSelect,
   productName,
   categoryName,
   className,
@@ -44,16 +34,48 @@ export function ProductVariantSelector({
   const router = useRouter();
   const { data: session } = useSession();
   const addToCart = useAddToCart();
+  const { data: wishlist } = useWishlist({ enabled: !!session });
+  const addToWishlist = useAddToWishlist();
+  const removeFromWishlist = useRemoveFromWishlist();
   const [addingVariantId, setAddingVariantId] = React.useState<string | null>(null);
+
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = React.useState(false);
+  const [canScrollRight, setCanScrollRight] = React.useState(true);
+
+  const checkScrollability = React.useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanScrollLeft(scrollLeft > 10);
+    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 10);
+  }, []);
+
+  React.useEffect(() => {
+    checkScrollability();
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", checkScrollability, { passive: true });
+    window.addEventListener("resize", checkScrollability);
+    return () => {
+      el.removeEventListener("scroll", checkScrollability);
+      window.removeEventListener("resize", checkScrollability);
+    };
+  }, [checkScrollability, variants]);
+
+  const handleScroll = (direction: "left" | "right") => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const scrollAmount = Math.max(280, el.clientWidth * 0.75);
+    el.scrollBy({
+      left: direction === "left" ? -scrollAmount : scrollAmount,
+      behavior: "smooth",
+    });
+  };
 
   if (!variants || variants.length <= 1) return null;
 
-  const handleQuickAdd = (
-    e: React.MouseEvent,
-    variant: CustomerVariantListItemDto
-  ) => {
-    e.stopPropagation();
-
+  const handleAddToCart = (variant: CustomerVariantListItemDto, unitPriceId?: string) => {
     if (!session) {
       const returnUrl =
         typeof window !== "undefined" ? window.location.pathname : "/products";
@@ -63,17 +85,15 @@ export function ProductVariantSelector({
 
     const defaultUnit =
       variant.unitPrices?.find((u) => u.isDefault) || variant.unitPrices?.[0];
-    if (!defaultUnit) {
-      onSelect(variant.id);
-      return;
-    }
+    const targetUnitId = unitPriceId || defaultUnit?.id;
+    if (!targetUnitId) return;
 
     setAddingVariantId(variant.id);
     addToCart.mutate(
-      { variantUnitPriceId: defaultUnit.id, quantity: 1 },
+      { variantUnitPriceId: targetUnitId, quantity: 1 },
       {
         onSuccess: () => {
-          toast.success("Added to box", variant.variantName);
+          toast.success("Added to cart", variant.variantName);
           setAddingVariantId(null);
         },
         onError: () => {
@@ -84,10 +104,32 @@ export function ProductVariantSelector({
     );
   };
 
+  const handleWishlistToggle = (variant: CustomerVariantListItemDto, unitPriceId?: string) => {
+    if (!session) {
+      const returnUrl =
+        typeof window !== "undefined" ? window.location.pathname : "/products";
+      router.push(`/login?callbackUrl=${encodeURIComponent(returnUrl)}`);
+      return;
+    }
+
+    const defaultUnit =
+      variant.unitPrices?.find((u) => u.isDefault) || variant.unitPrices?.[0];
+    const targetUnitId = unitPriceId || defaultUnit?.id;
+    if (!targetUnitId) return;
+    if (addToWishlist.isPending || removeFromWishlist.isPending) return;
+
+    const isWishlisted = !!wishlist?.items.some((i) => i.variantUnitPriceId === targetUnitId);
+    if (isWishlisted) {
+      removeFromWishlist.mutate(targetUnitId);
+    } else {
+      addToWishlist.mutate(targetUnitId);
+    }
+  };
+
   return (
-    <section className={cn("w-full", className)}>
-      {/* Section Header matching festive design */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-6 sm:mb-8 gap-3 sm:gap-4">
+    <section className={cn("w-full relative", className)}>
+      {/* Section Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-5 sm:mb-6 gap-3 sm:gap-4">
         <div>
           <span className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] text-[#8B1D1D] block mb-1 font-sans">
             COMPLETE YOUR FESTIVE BOX
@@ -97,135 +139,123 @@ export function ProductVariantSelector({
           </h2>
         </div>
 
-        <Link
-          href="/products"
-          className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[#8B1D1D] hover:text-[#5A1911] transition-colors self-start sm:self-auto group"
-        >
-          <span>View All Sweets & Savories</span>
-          <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform group-hover:translate-x-0.5" />
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/products"
+            className="inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[#8B1D1D] hover:text-[#5A1911] transition-colors group"
+          >
+            <span>View All Sweets & Savories</span>
+            <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform group-hover:translate-x-0.5" />
+          </Link>
+
+          {/* Optional desktop arrows in header as backup / quick access */}
+          <div className="hidden sm:flex items-center gap-1.5 pl-2 border-l border-stone-200">
+            <button
+              type="button"
+              onClick={() => handleScroll("left")}
+              disabled={!canScrollLeft}
+              aria-label="Previous items"
+              className="w-8 h-8 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-stone-700 transition-colors shadow-2xs"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleScroll("right")}
+              disabled={!canScrollRight}
+              aria-label="Next items"
+              className="w-8 h-8 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-stone-700 transition-colors shadow-2xs"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Fully Responsive Grid: 2 columns on mobile, 3 on tablet, 4 on desktop */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5 lg:gap-6">
-        {variants.map((variant, idx) => {
-          const isSelected = selectedVariantId === variant.id;
-          const badge = FESTIVE_BADGES[idx % FESTIVE_BADGES.length];
-          const displayImage =
-            variant.primaryImage || resolveSnackFallbackImage(variant.variantName);
+      {/* Slider Container with Amazon-style Left & Right Arrows */}
+      <div className="relative group/slider">
+        {/* Floating Left Arrow */}
+        {canScrollLeft && (
+          <button
+            type="button"
+            onClick={() => handleScroll("left")}
+            aria-label="Scroll left"
+            className="absolute -left-2 sm:-left-4 top-1/2 -translate-y-1/2 z-20 w-9 h-14 sm:w-10 sm:h-16 rounded-md sm:rounded-lg bg-white/95 backdrop-blur-xs border border-stone-300/80 shadow-md flex items-center justify-center text-stone-700 hover:bg-white hover:border-stone-400 hover:text-stone-950 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+          >
+            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
+          </button>
+        )}
 
-          const defaultUnitPrice =
-            variant.unitPrices?.find((u) => u.isDefault) || variant.unitPrices?.[0];
-          const price = defaultUnitPrice?.sellingPrice ?? variant.salePrice ?? variant.basePrice ?? 0;
-          const measurementLabel = defaultUnitPrice?.measurement
-            ? formatMeasurementLabel(defaultUnitPrice.measurement as any)
-            : "200 g";
+        {/* Single-row Horizontal Scroll Track */}
+        <div
+          ref={scrollContainerRef}
+          className="flex items-stretch flex-nowrap gap-4 sm:gap-5 overflow-x-auto scroll-smooth py-2 px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {variants.map((variant) => {
+            const cardVariants = (variant.unitPrices || []).map((up) => ({
+              id: up.id,
+              label: formatMeasurementLabel(up.measurement),
+              price: up.sellingPrice,
+              comparePrice: up.basePrice > up.sellingPrice ? up.basePrice : null,
+              inStock: !variant.outOfStock,
+            }));
 
-          const isAddingThis = addingVariantId === variant.id;
+            const defaultUnit =
+              variant.unitPrices?.find((u) => u.isDefault) || variant.unitPrices?.[0];
 
-          return (
-            <div
-              key={variant.id}
-              onClick={() => onSelect(variant.id)}
-              className={cn(
-                "group bg-white rounded-xl sm:rounded-3xl border transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-between select-none",
-                isSelected
-                  ? "border-[#8B1D1D] shadow-md ring-2 ring-[#8B1D1D]/20"
-                  : "border-stone-200/80 shadow-2xs hover:shadow-lg hover:border-stone-300"
-              )}
-            >
-              {/* Card Image with Badge & Fallback */}
-              <div className="relative aspect-square sm:aspect-4/3 w-full overflow-hidden bg-stone-50">
-                {/* Festive Tag */}
-                <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 bg-white/95 backdrop-blur-xs text-[#2B1B17] font-bold text-[9px] sm:text-[11px] px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full shadow-xs border border-stone-200/50">
-                  {badge}
-                </div>
+            const isWishlisted = !!wishlist?.items.some((i) =>
+              variant.unitPrices?.some((u) => u.id === i.variantUnitPriceId)
+            );
 
-                {/* Active Indicator Badge */}
-                {isSelected && (
-                  <div className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10 bg-[#8B1D1D] text-white font-bold text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full shadow-xs uppercase tracking-wider flex items-center gap-1">
-                    <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[2.5]" />
-                    <span className="hidden xs:inline sm:inline">Viewing</span>
-                  </div>
-                )}
+            const isAddingThis = addingVariantId === variant.id;
 
-                {/* Snack Image using ProductImage with SVG Fallback */}
-                <ProductImage
-                  src={displayImage}
-                  alt={variant.variantName}
-                  fallbackText={variant.variantName}
-                  containerClassName="w-full h-full aspect-square sm:aspect-4/3"
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            const defaultPrice = defaultUnit?.sellingPrice ?? variant.salePrice ?? variant.basePrice ?? 0;
+            const comparePrice = defaultUnit?.basePrice ?? variant.basePrice ?? null;
+            const discountPercent =
+              comparePrice && comparePrice > defaultPrice
+                ? Math.round(((comparePrice - defaultPrice) / comparePrice) * 100)
+                : null;
+
+            return (
+              <div
+                key={variant.id}
+                className="w-[230px] sm:w-[250px] md:w-[270px] shrink-0 flex flex-col"
+              >
+                <SnackCard
+                  id={variant.id}
+                  name={variant.variantName}
+                  subtitle={categoryName || productName || "Authentic Snack"}
+                  image={variant.primaryImage || resolveSnackFallbackImage(variant.variantName)}
+                  href={`/products/${variant.productId || variant.id}?variant=${variant.id}`}
+                  variants={cardVariants}
+                  discountPercent={discountPercent}
+                  isWishlisted={isWishlisted}
+                  onWishlistToggle={(unitId?: string) => handleWishlistToggle(variant, unitId)}
+                  onAddToCart={(unitId?: string) => handleAddToCart(variant, unitId)}
+                  isLoading={isAddingThis}
+                  disabled={variant.outOfStock}
+                  className="w-full h-full shadow-2xs hover:shadow-md"
                 />
               </div>
+            );
+          })}
+        </div>
 
-              {/* Card Body */}
-              <div className="p-2.5 sm:p-4 lg:p-5 flex flex-col justify-between flex-1">
-                <div>
-                  {/* Category / Product Subtitle */}
-                  <span className="text-[9px] sm:text-[11px] font-bold uppercase tracking-wider text-stone-500 block mb-0.5 sm:mb-1 truncate">
-                    {categoryName || productName || "Traditional Snack"}
-                  </span>
-
-                  {/* Variant Title */}
-                  <h3 className="font-serif text-xs sm:text-base lg:text-lg font-bold text-stone-900 group-hover:text-[#8B1D1D] transition-colors leading-tight sm:leading-snug line-clamp-2 sm:line-clamp-1">
-                    {variant.variantName}
-                  </h3>
-
-                  {/* Pack Size / Subtitle info */}
-                  <p className="text-[10px] sm:text-xs text-stone-500 mt-0.5 sm:mt-1 truncate">
-                    Pack: {measurementLabel} • Fresh Batch
-                  </p>
-
-                  {/* 5 Star Rating */}
-                  <div className="flex items-center gap-0.5 sm:gap-1 mt-1.5 sm:mt-2 text-amber-500">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-amber-400 text-amber-400" />
-                    ))}
-                    <span className="text-[10px] sm:text-[11px] font-medium text-stone-500 ml-0.5 sm:ml-1">
-                      (5)
-                    </span>
-                  </div>
-                </div>
-
-                {/* Price and Add+ button */}
-                <div className="mt-3 sm:mt-4 pt-2 sm:pt-3 border-t border-stone-100 flex items-center justify-between gap-1">
-                  <div>
-                    <span className="text-xs sm:text-base lg:text-lg font-extrabold text-stone-900">
-                      ₹{price.toFixed(2)}
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={(e) => handleQuickAdd(e, variant)}
-                    disabled={variant.outOfStock || isAddingThis}
-                    className={cn(
-                      "px-2 sm:px-3.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold transition-all cursor-pointer flex items-center gap-1 select-none shrink-0",
-                      variant.outOfStock
-                        ? "bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed"
-                        : isSelected
-                        ? "bg-[#8B1D1D] text-white hover:bg-[#6D1515] shadow-xs"
-                        : "bg-white text-stone-800 border border-stone-300 hover:bg-[#8B1D1D] hover:text-white hover:border-[#8B1D1D]"
-                    )}
-                  >
-                    {isAddingThis ? (
-                      <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin" />
-                    ) : (
-                      <>
-                        <Plus className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                        <span>Add</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+        {/* Floating Right Arrow */}
+        {canScrollRight && (
+          <button
+            type="button"
+            onClick={() => handleScroll("right")}
+            aria-label="Scroll right"
+            className="absolute -right-2 sm:-right-4 top-1/2 -translate-y-1/2 z-20 w-9 h-14 sm:w-10 sm:h-16 rounded-md sm:rounded-lg bg-white/95 backdrop-blur-xs border border-stone-300/80 shadow-md flex items-center justify-center text-stone-700 hover:bg-white hover:border-stone-400 hover:text-stone-950 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+          >
+            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
+          </button>
+        )}
       </div>
     </section>
   );
 }
+
 
 export default ProductVariantSelector;

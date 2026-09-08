@@ -12,6 +12,7 @@ import {
   X,
   SlidersHorizontal,
   Loader2,
+  Check,
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { customerCatalogApi } from "@/features/customers/api/customer-catalog.api";
@@ -26,16 +27,20 @@ export interface FilterSidebarProps {
   // Categories (handles 200+ categories)
   categories: CategoryOption[];
   isLoadingCategories?: boolean;
-  selectedCategoryId: string | null;
-  onSelectCategory: (categoryId: string | null) => void;
+  selectedCategoryId?: string | null;
+  selectedCategoryIds?: string[];
+  onSelectCategory?: (categoryId: string | null) => void;
+  onSelectCategories?: (categoryIds: string[]) => void;
 
   // Single category isolation mode (e.g. /categories/[id])
   isSingleCategoryMode?: boolean;
   viewAllCategoriesHref?: string;
 
-  // Selected Product inside category
+  // Selected Products inside categories
   selectedProductId?: string | null;
+  selectedProductIds?: string[];
   onSelectProduct?: (productId: string | null) => void;
+  onSelectProducts?: (productIds: string[]) => void;
 
   // Search by name
   searchQuery: string;
@@ -83,11 +88,15 @@ export function FilterSidebar({
   categories,
   isLoadingCategories = false,
   selectedCategoryId,
+  selectedCategoryIds,
   onSelectCategory,
+  onSelectCategories,
   isSingleCategoryMode = false,
   viewAllCategoriesHref = "/categories/all",
   selectedProductId = null,
+  selectedProductIds,
   onSelectProduct,
+  onSelectProducts,
   searchQuery,
   onSearchChange,
   sortKey,
@@ -112,10 +121,26 @@ export function FilterSidebar({
   const [isCategoriesOpen, setIsCategoriesOpen] = React.useState(true);
   const [categorySearch, setCategorySearch] = React.useState("");
 
-  // Nested Tree: Single expanded category ID (one open at a time) & cached products per category
-  const [expandedCategoryId, setExpandedCategoryId] = React.useState<string | null>(
-    () => selectedCategoryId || (isSingleCategoryMode ? categories[0]?.id || null : null)
-  );
+  // Normalized active categories & products for multiple selection
+  const activeCategoryIds = React.useMemo<string[]>(() => {
+    if (selectedCategoryIds !== undefined) return selectedCategoryIds;
+    return selectedCategoryId ? [selectedCategoryId] : [];
+  }, [selectedCategoryIds, selectedCategoryId]);
+
+  const activeProductIds = React.useMemo<string[]>(() => {
+    if (selectedProductIds !== undefined) return selectedProductIds;
+    return selectedProductId ? [selectedProductId] : [];
+  }, [selectedProductIds, selectedProductId]);
+
+  // Nested Tree: Expanded category IDs & cached products per category
+  const [expandedCategoryIds, setExpandedCategoryIds] = React.useState<Set<string>>(() => {
+    const initial = new Set<string>();
+    if (selectedCategoryId) initial.add(selectedCategoryId);
+    if (selectedCategoryIds) selectedCategoryIds.forEach((id) => initial.add(id));
+    if (isSingleCategoryMode && categories[0]?.id) initial.add(categories[0].id);
+    return initial;
+  });
+
   const [categoryProducts, setCategoryProducts] = React.useState<
     Record<string, Array<{ id: string; name: string }>>
   >({});
@@ -132,11 +157,20 @@ export function FilterSidebar({
     };
   }, []);
 
-  // Auto-expand selected category or single category
+  // Auto-expand and load products for selected categories
   React.useEffect(() => {
-    const targetCatId = selectedCategoryId || (isSingleCategoryMode ? categories[0]?.id : null);
-    if (targetCatId) {
-      setExpandedCategoryId((prev) => (prev === targetCatId ? prev : targetCatId));
+    const targetCatIds = isSingleCategoryMode
+      ? [categories[0]?.id].filter(Boolean) as string[]
+      : activeCategoryIds;
+
+    for (const targetCatId of targetCatIds) {
+      setExpandedCategoryIds((prev) => {
+        if (prev.has(targetCatId)) return prev;
+        const next = new Set(prev);
+        next.add(targetCatId);
+        return next;
+      });
+
       if (
         !categoryProducts[targetCatId] &&
         !fetchingRef.current.has(targetCatId)
@@ -169,20 +203,27 @@ export function FilterSidebar({
           });
       }
     }
-  }, [selectedCategoryId, isSingleCategoryMode, categories]);
+  }, [activeCategoryIds, isSingleCategoryMode, categories, categoryProducts]);
 
-  // Fetch products for a category when user clicks expand chevron (only one open at a time)
+  // Fetch products for a category when user clicks expand chevron
   const toggleCategoryExpand = React.useCallback(
     async (categoryId: string, e?: React.MouseEvent) => {
       e?.stopPropagation();
 
-      const isCurrentlyExpanded = expandedCategoryId === categoryId;
-      const nextCategoryId = isCurrentlyExpanded ? null : categoryId;
-      setExpandedCategoryId(nextCategoryId);
+      const willBeExpanded = !expandedCategoryIds.has(categoryId);
+      setExpandedCategoryIds((prev) => {
+        const next = new Set(prev);
+        if (willBeExpanded) {
+          next.add(categoryId);
+        } else {
+          next.delete(categoryId);
+        }
+        return next;
+      });
 
       // If expanding and products not yet loaded or fetching, fetch them once
       if (
-        nextCategoryId &&
+        willBeExpanded &&
         !categoryProducts[categoryId] &&
         !fetchingRef.current.has(categoryId)
       ) {
@@ -210,8 +251,64 @@ export function FilterSidebar({
         }
       }
     },
-    [expandedCategoryId, categoryProducts]
+    [expandedCategoryIds, categoryProducts]
   );
+
+  // Multi-select handlers
+  const handleCategoryToggle = (catId: string) => {
+    const isCurrentlyActive = activeCategoryIds.includes(catId);
+    const next = isCurrentlyActive
+      ? activeCategoryIds.filter((id) => id !== catId)
+      : [...activeCategoryIds, catId];
+
+    if (onSelectCategories) {
+      onSelectCategories(next);
+    } else if (onSelectCategory) {
+      onSelectCategory(next.length === 1 ? next[0] : next.length > 1 ? next[next.length - 1] : null);
+    }
+  };
+
+  const handleProductToggle = (prodId: string, catId?: string) => {
+    const isCurrentlyActive = activeProductIds.includes(prodId);
+    const next = isCurrentlyActive
+      ? activeProductIds.filter((id) => id !== prodId)
+      : [...activeProductIds, prodId];
+
+    if (onSelectProducts) {
+      onSelectProducts(next);
+    } else if (onSelectProduct) {
+      onSelectProduct(next.length === 1 ? next[0] : next.length > 1 ? next[next.length - 1] : null);
+    }
+
+    // In multi-category mode, if category wasn't active, ensure it's selected
+    if (catId && !isSingleCategoryMode && !activeCategoryIds.includes(catId)) {
+      if (onSelectCategories) {
+        onSelectCategories([...activeCategoryIds, catId]);
+      }
+    }
+  };
+
+  const handleAllSnacksClick = () => {
+    if (onSelectCategories) onSelectCategories([]);
+    if (onSelectCategory) onSelectCategory(null);
+    if (onSelectProducts) onSelectProducts([]);
+    if (onSelectProduct) onSelectProduct(null);
+  };
+
+  const handleAllInCategoryClick = (catId: string) => {
+    // Clear product selections
+    if (onSelectProducts) onSelectProducts([]);
+    if (onSelectProduct) onSelectProduct(null);
+
+    // If category is not selected, select it
+    if (!activeCategoryIds.includes(catId)) {
+      if (onSelectCategories) {
+        onSelectCategories([catId]);
+      } else if (onSelectCategory) {
+        onSelectCategory(catId);
+      }
+    }
+  };
 
   // Local state for instant slider responsiveness, debounced to parent
   const [localMinPrice, setLocalMinPrice] = React.useState(currentMinPrice);
@@ -479,30 +576,27 @@ export function FilterSidebar({
               {!isSingleCategoryMode && !categorySearch && (
                 <button
                   type="button"
-                  onClick={() => {
-                    onSelectCategory(null);
-                    onSelectProduct?.(null);
-                  }}
+                  onClick={handleAllSnacksClick}
                   className={`flex items-center gap-2.5 py-1 text-left cursor-pointer group transition-colors select-none ${
-                    selectedCategoryId === null && !selectedProductId
+                    activeCategoryIds.length === 0 && activeProductIds.length === 0
                       ? "text-[#1E4D3E] font-bold"
                       : "text-[#3D2C24] hover:text-[#1E4D3E] font-medium"
                   }`}
                 >
                   <span
-                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${
-                      selectedCategoryId === null && !selectedProductId
-                        ? "border-[#1E4D3E] bg-[#1E4D3E]/10"
-                        : "border-[#5A4338] group-hover:border-[#1E4D3E]"
+                    className={`w-4.5 h-4.5 rounded-md border flex items-center justify-center transition-all shrink-0 ${
+                      activeCategoryIds.length === 0 && activeProductIds.length === 0
+                        ? "border-[#1E4D3E] bg-[#1E4D3E] text-white shadow-2xs"
+                        : "border-[#8A7366] bg-white group-hover:border-[#1E4D3E]"
                     }`}
                   >
-                    {selectedCategoryId === null && !selectedProductId && (
-                      <span className="w-2.5 h-2.5 rounded-full bg-[#1E4D3E]" />
+                    {activeCategoryIds.length === 0 && activeProductIds.length === 0 && (
+                      <Check className="w-3 h-3 stroke-[3]" />
                     )}
                   </span>
                   <span
                     className={`text-sm ${
-                      selectedCategoryId === null && !selectedProductId
+                      activeCategoryIds.length === 0 && activeProductIds.length === 0
                         ? "underline underline-offset-4 decoration-2 decoration-[#1E4D3E]"
                         : ""
                     }`}
@@ -518,7 +612,7 @@ export function FilterSidebar({
                   {[1, 2, 3, 4, 5].map((i) => (
                     <div key={i} className="flex items-center justify-between py-1">
                       <div className="flex items-center gap-2.5 flex-1">
-                        <div className="w-5 h-5 rounded-full bg-[#EADCCF]/80 skeleton-shimmer shrink-0" />
+                        <div className="w-4.5 h-4.5 rounded-md bg-[#EADCCF]/80 skeleton-shimmer shrink-0" />
                         <div
                           className="h-3.5 rounded bg-[#EADCCF]/80 skeleton-shimmer"
                           style={{ width: `${45 + (i % 3) * 20}%` }}
@@ -532,8 +626,8 @@ export function FilterSidebar({
                 </div>
               ) : filteredCategories.length > 0 ? (
                 filteredCategories.map((cat) => {
-                  const isSelected = selectedCategoryId === cat.id || isSingleCategoryMode;
-                  const isExpanded = isSingleCategoryMode ? true : expandedCategoryId === cat.id;
+                  const isSelected = isSingleCategoryMode ? true : activeCategoryIds.includes(cat.id);
+                  const isExpanded = isSingleCategoryMode ? true : expandedCategoryIds.has(cat.id);
                   const products = categoryProducts[cat.id] || [];
                   const isLoadingProducts = loadingCategoryIds.has(cat.id);
 
@@ -545,10 +639,9 @@ export function FilterSidebar({
                           type="button"
                           onClick={() => {
                             if (isSingleCategoryMode) {
-                              onSelectProduct?.(null);
+                              handleAllInCategoryClick(cat.id);
                             } else {
-                              onSelectCategory(isSelected ? null : cat.id);
-                              onSelectProduct?.(null);
+                              handleCategoryToggle(cat.id);
                               if (!isExpanded) toggleCategoryExpand(cat.id);
                             }
                           }}
@@ -559,21 +652,19 @@ export function FilterSidebar({
                           }`}
                         >
                           <span
-                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${
-                              isSelected && !selectedProductId
-                                ? "border-[#1E4D3E] bg-[#1E4D3E]/10"
-                                : isSelected
-                                ? "border-[#1E4D3E]"
-                                : "border-[#5A4338] group-hover:border-[#1E4D3E]"
+                            className={`w-4.5 h-4.5 rounded-md border flex items-center justify-center transition-all shrink-0 ${
+                              isSelected
+                                ? "border-[#1E4D3E] bg-[#1E4D3E] text-white shadow-2xs"
+                                : "border-[#8A7366] bg-white group-hover:border-[#1E4D3E]"
                             }`}
                           >
                             {isSelected && (
-                              <span className="w-2.5 h-2.5 rounded-full bg-[#1E4D3E]" />
+                              <Check className="w-3 h-3 stroke-[3]" />
                             )}
                           </span>
                           <span
                             className={`text-sm truncate ${
-                              isSelected && !selectedProductId
+                              isSelected && activeProductIds.length === 0
                                 ? "underline underline-offset-4 decoration-2 decoration-[#1E4D3E]"
                                 : ""
                             }`}
@@ -610,27 +701,27 @@ export function FilterSidebar({
                           {isSingleCategoryMode && (
                             <button
                               type="button"
-                              onClick={() => onSelectProduct?.(null)}
+                              onClick={() => handleAllInCategoryClick(cat.id)}
                               className={`flex items-center gap-2 py-0.5 text-left cursor-pointer group transition-colors select-none ${
-                                !selectedProductId
+                                activeProductIds.length === 0
                                   ? "text-[#1E4D3E] font-bold"
                                   : "text-[#5A4338] hover:text-[#1E4D3E] font-medium"
                               }`}
                             >
                               <span
-                                className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-all shrink-0 ${
-                                  !selectedProductId
-                                    ? "border-[#1E4D3E] bg-[#1E4D3E]/15"
-                                    : "border-[#9C8274] group-hover:border-[#1E4D3E]"
+                                className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all shrink-0 ${
+                                  activeProductIds.length === 0
+                                    ? "border-[#1E4D3E] bg-[#1E4D3E] text-white shadow-2xs"
+                                    : "border-[#9C8274] bg-white group-hover:border-[#1E4D3E]"
                                 }`}
                               >
-                                {!selectedProductId && (
-                                  <span className="w-1.5 h-1.5 rounded-full bg-[#1E4D3E]" />
+                                {activeProductIds.length === 0 && (
+                                  <Check className="w-2.5 h-2.5 stroke-[3]" />
                                 )}
                               </span>
                               <span
                                 className={`text-xs truncate ${
-                                  !selectedProductId
+                                  activeProductIds.length === 0
                                     ? "underline underline-offset-2 decoration-1 decoration-[#1E4D3E]"
                                     : ""
                                 }`}
@@ -647,17 +738,12 @@ export function FilterSidebar({
                             </div>
                           ) : products.length > 0 ? (
                             products.map((prod) => {
-                              const isProductActive = selectedProductId === prod.id;
+                              const isProductActive = activeProductIds.includes(prod.id);
                               return (
                                 <button
                                   key={prod.id}
                                   type="button"
-                                  onClick={() => {
-                                    if (selectedCategoryId !== cat.id) {
-                                      onSelectCategory(cat.id);
-                                    }
-                                    onSelectProduct?.(isProductActive ? null : prod.id);
-                                  }}
+                                  onClick={() => handleProductToggle(prod.id, cat.id)}
                                   className={`flex items-center gap-2 py-0.5 text-left cursor-pointer group transition-colors select-none ${
                                     isProductActive
                                       ? "text-[#1E4D3E] font-bold"
@@ -665,14 +751,14 @@ export function FilterSidebar({
                                   }`}
                                 >
                                   <span
-                                    className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-all shrink-0 ${
+                                    className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all shrink-0 ${
                                       isProductActive
-                                        ? "border-[#1E4D3E] bg-[#1E4D3E]/15"
-                                        : "border-[#9C8274] group-hover:border-[#1E4D3E]"
+                                        ? "border-[#1E4D3E] bg-[#1E4D3E] text-white shadow-2xs"
+                                        : "border-[#9C8274] bg-white group-hover:border-[#1E4D3E]"
                                     }`}
                                   >
                                     {isProductActive && (
-                                      <span className="w-1.5 h-1.5 rounded-full bg-[#1E4D3E]" />
+                                      <Check className="w-2.5 h-2.5 stroke-[3]" />
                                     )}
                                   </span>
                                   <span
@@ -689,8 +775,8 @@ export function FilterSidebar({
                               );
                             })
                           ) : (
-                            <span className="text-[11px] text-[#9C8274] italic py-0.5">
-                              No products found in this category
+                            <span className="text-xs text-[#9C8274] italic py-0.5">
+                              No products found
                             </span>
                           )}
                         </div>
@@ -699,11 +785,9 @@ export function FilterSidebar({
                   );
                 })
               ) : (
-                <p className="text-xs text-[#9C8274] py-2 text-center">
-                  {categorySearch.trim()
-                    ? `No categories matching "${categorySearch}"`
-                    : "No categories found"}
-                </p>
+                <div className="text-xs text-[#9C8274] py-2 text-center">
+                  No categories match &ldquo;{categorySearch}&rdquo;
+                </div>
               )}
 
               {/* View All Categories Link when in single category mode */}

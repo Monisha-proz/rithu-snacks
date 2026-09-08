@@ -34,7 +34,7 @@ const SORT_OPTIONS: {
 function ProductCatalogSkeleton() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 animate-in fade-in duration-200">
-      {[1, 2, 3, 4, 5, 6].map((n) => (
+      {[1, 2, 3, 4, 5, 6,7,8,9].map((n) => (
         <div
           key={n}
           className="bg-white rounded-2xl border border-[#E8D9CD]/80 p-3.5 flex flex-col justify-between overflow-hidden shadow-2xs space-y-3"
@@ -75,7 +75,7 @@ export default function CategoryProductsPage({
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState("createdAt_desc");
   const [activeCategoryOverride, setActiveCategoryOverride] = useState<string | null>(null);
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [stockStatus, setStockStatus] = useState<"all" | "in_stock" | "out_of_stock">("all");
   const [vegType, setVegType] = useState<"all" | "veg" | "non_veg">("all");
   const [minPrice, setMinPrice] = useState(0);
@@ -96,7 +96,7 @@ export default function CategoryProductsPage({
   // Reset internal state when the route slug changes
   useEffect(() => {
     setActiveCategoryOverride(null);
-    setSelectedProductId(null);
+    setSelectedProductIds([]);
     setPage(1);
   }, [slug]);
 
@@ -164,7 +164,7 @@ export default function CategoryProductsPage({
     pageSize: 18,
     search: search.trim() ? search.trim() : undefined,
     categoryIds: activeCategoryId ? [activeCategoryId] : undefined,
-    productIds: selectedProductId ? [selectedProductId] : undefined,
+    productIds: selectedProductIds.length > 0 ? selectedProductIds : undefined,
     minPrice: minPrice > 0 ? minPrice : undefined,
     maxPrice: maxPrice < 1000 ? maxPrice : undefined,
     sortBy: activeSort.sortBy,
@@ -219,35 +219,25 @@ export default function CategoryProductsPage({
       { threshold: 0.1, rootMargin: "250px" }
     );
 
-    const currentSentinel = sentinelRef.current;
-    observer.observe(currentSentinel);
-
-    return () => {
-      if (currentSentinel) observer.unobserve(currentSentinel);
-      observer.disconnect();
-    };
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
   }, [meta, page, isFetching, isLoading]);
 
-  // Turn off filter switching once query fetching completes
+  // When switching filters: smoothly transition
   useEffect(() => {
-    if (!isFetching) {
-      setIsFilterSwitching(false);
+    if (isFilterSwitching && !isFetching) {
+      const timer = setTimeout(() => {
+        setIsFilterSwitching(false);
+      }, 150);
+      return () => clearTimeout(timer);
     }
-  }, [isFetching]);
+  }, [isFilterSwitching, isFetching]);
 
   // Category Selection
   const handleCategorySelect = (categoryId: string | null) => {
-    if (isSingleCategoryMode) {
-      setIsFilterSwitching(true);
-      setAccumulatedVariants([]);
-      setSelectedProductId(null);
-      setPage(1);
-      return;
-    }
-
     setIsFilterSwitching(true);
     setAccumulatedVariants([]);
-    setSelectedProductId(null);
+    setSelectedProductIds([]);
     if (!categoryId) {
       setActiveCategoryOverride("all");
       setPage(1);
@@ -259,11 +249,11 @@ export default function CategoryProductsPage({
     window.history.pushState(null, "", `/categories/${categoryId}`);
   };
 
-  // Product Selection under Category
-  const handleProductSelect = (productId: string | null) => {
+  // Product Selection under Category (Multi-select)
+  const handleProductSelect = (productIds: string[]) => {
     setIsFilterSwitching(true);
     setAccumulatedVariants([]);
-    setSelectedProductId(productId);
+    setSelectedProductIds(productIds);
     setPage(1);
   };
 
@@ -277,7 +267,7 @@ export default function CategoryProductsPage({
     setVegType("all");
     setMinPrice(0);
     setMaxPrice(1000);
-    setSelectedProductId(null);
+    setSelectedProductIds([]);
     if (!isSingleCategoryMode) {
       setActiveCategoryOverride(null);
     }
@@ -286,8 +276,8 @@ export default function CategoryProductsPage({
   };
 
   const hasActiveFilters =
-    Boolean(search) ||
-    Boolean(selectedProductId) ||
+    Boolean(search.trim()) ||
+    selectedProductIds.length > 0 ||
     stockStatus !== "all" ||
     vegType !== "all" ||
     minPrice > 0 ||
@@ -296,8 +286,8 @@ export default function CategoryProductsPage({
     (!isSingleCategoryMode && Boolean(activeCategoryId));
 
   const activeFilterCount = [
-    Boolean(search),
-    Boolean(selectedProductId),
+    Boolean(search.trim()),
+    selectedProductIds.length > 0,
     stockStatus !== "all",
     vegType !== "all",
     minPrice > 0 || maxPrice < 1000,
@@ -380,8 +370,8 @@ export default function CategoryProductsPage({
             isLoadingCategories={isLoadingCategories && categories.length === 0}
             selectedCategoryId={activeCategoryId}
             onSelectCategory={handleCategorySelect}
-            selectedProductId={selectedProductId}
-            onSelectProduct={handleProductSelect}
+            selectedProductIds={selectedProductIds}
+            onSelectProducts={handleProductSelect}
             isSingleCategoryMode={isSingleCategoryMode}
             viewAllCategoriesHref="/categories/all"
             searchQuery={search}
@@ -443,9 +433,11 @@ export default function CategoryProductsPage({
                 <strong className="text-[#7A2224] font-bold">
                   {categoryTitle}
                 </strong>
-                {selectedProductId && (
+                {selectedProductIds.length > 0 && (
                   <span className="ml-2 text-xs bg-[#F5ECE1] text-[#7A2224] px-2 py-0.5 rounded-full font-semibold">
-                    Product filtered
+                    {selectedProductIds.length === 1
+                      ? "1 Product filtered"
+                      : `${selectedProductIds.length} Products filtered`}
                   </span>
                 )}
               </p>
