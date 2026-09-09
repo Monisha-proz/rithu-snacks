@@ -165,8 +165,12 @@ export interface GetOrdersResult {
 }
 
 export interface PlaceOrderInput {
-  shippingAddressId: string;
+  shippingAddressId?: string;
+  addressId?: number | string;
   billingAddressId?: string;
+  deliveryMethod?: DeliveryMethod | string;
+  paymentMethod?: PaymentMethod | string;
+  couponCode?: string;
   notes?: string;
 }
 
@@ -177,10 +181,22 @@ export interface UpdateOrderStatusInput {
 
 export interface CheckoutSummary {
   subtotal: number;
-  discountAmount: number;
-  taxAmount: number;
-  shippingCharge: number;
-  totalAmount: number;
+  discountAmount?: number;
+  discount?: number;
+  taxAmount?: number;
+  shippingCharge?: number;
+  deliveryCharge?: number;
+  totalAmount?: number;
+  total?: number;
+  totalSavings?: number;
+  items?: any[];
+  totals?: {
+    subtotal: number;
+    shipping: number;
+    discount: number;
+    total: number;
+  };
+  coupon?: { code: string; discount: number } | null;
   couponCode?: string | null;
   appliedCoupon?: unknown;
 }

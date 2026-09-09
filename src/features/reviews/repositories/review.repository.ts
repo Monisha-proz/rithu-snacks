@@ -75,6 +75,20 @@ export const reviewRepository = {
         OR: orConditions,
         isActive: true,
       },
+      include: {
+        variants: {
+          where: { deleted_at: null, isActive: true },
+          include: {
+            variant_unit_prices: {
+              where: { deleted_at: null, isActive: true },
+              select: { id: true, uuid: true, sku: true },
+              orderBy: [{ is_default: "desc" as const }, { createdAt: "asc" as const }],
+              take: 1,
+            },
+          },
+          take: 1,
+        },
+      },
     });
   },
 
@@ -109,7 +123,7 @@ export const reviewRepository = {
         },
         variant_unit_prices: {
           where: { deleted_at: null, isActive: true },
-          select: { sku: true },
+          select: { id: true, uuid: true, sku: true },
           orderBy: [{ is_default: "desc" as const }, { createdAt: "asc" as const }],
           take: 1,
         },

@@ -27,9 +27,9 @@ export const bannerIncludePosition = Prisma.validator<Prisma.BannerInclude>()({
 });
 
 export function formatBanner(
-  record: Prisma.BannerGetPayload<{ include: typeof bannerIncludePosition }>
+  record: any
 ): BannerDto {
-  const position = record.banner_positions;
+  const position = record.banner_positions || {};
   return {
     id: record.uuid || String(record.id),
     title: record.title,
@@ -43,10 +43,10 @@ export function formatBanner(
     startsAt: record.startsAt,
     endsAt: record.ends_at,
     bannerPosition: {
-      id: position.uuid || String(position.id),
-      name: position.name,
-      slug: position.slug,
-      page: position.page,
+      id: position.uuid || String(position.id || ""),
+      name: position.name || "",
+      slug: position.slug || "",
+      page: position.page || null,
     },
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
@@ -207,8 +207,8 @@ export const bannerRepository = {
       };
     }
 
-    if (params.isActive !== undefined) {
-      where.isActive = params.isActive;
+    if (params.isActive !== undefined && params.isActive !== null) {
+      where.isActive = Boolean(params.isActive);
     }
 
     if (params.search) {

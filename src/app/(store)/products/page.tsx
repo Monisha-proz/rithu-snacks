@@ -67,7 +67,7 @@ export default function ShopAllPage() {
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [stockStatus, setStockStatus] = useState<"all" | "in_stock" | "out_of_stock">("all");
-  const [vegType, setVegType] = useState<"all" | "veg" | "non_veg">("all");
+  const [vegType, setVegType] = useState<"all" | "veg" | "non_veg" | "vegan">("all");
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(1000);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
@@ -95,6 +95,17 @@ export default function ShopAllPage() {
     return SORT_OPTIONS.find((s) => s.value === sortKey) ?? SORT_OPTIONS[0];
   }, [sortKey]);
 
+  const inStockParam =
+    stockStatus === "in_stock" ? true : stockStatus === "out_of_stock" ? false : undefined;
+  const vegTypeParam =
+    vegType === "veg"
+      ? ("veg" as const)
+      : vegType === "non_veg"
+      ? ("non_veg" as const)
+      : vegType === "vegan"
+      ? ("vegan" as const)
+      : undefined;
+
   // Query variants with filters (Postman: POST /api/customer/variants)
   const {
     data: variantsResponse,
@@ -110,6 +121,8 @@ export default function ShopAllPage() {
     productIds: selectedProductIds.length > 0 ? selectedProductIds : undefined,
     minPrice: minPrice > 0 ? minPrice : undefined,
     maxPrice: maxPrice < 1000 ? maxPrice : undefined,
+    inStock: inStockParam,
+    vegType: vegTypeParam,
     sortBy: activeSort.sortBy,
     sortOrder: activeSort.sortOrder,
   });
@@ -182,20 +195,6 @@ export default function ShopAllPage() {
     setPage(1);
   };
 
-  // Reset Filters
-  const handleResetFilters = () => {
-    setSearch("");
-    setSortKey("createdAt_desc");
-    setSelectedCategoryIds([]);
-    setSelectedProductIds([]);
-    setStockStatus("all");
-    setVegType("all");
-    setMinPrice(0);
-    setMaxPrice(1000);
-    setPage(1);
-    refetch();
-  };
-
   const hasActiveFilters =
     Boolean(search.trim()) ||
     selectedCategoryIds.length > 0 ||
@@ -205,6 +204,20 @@ export default function ShopAllPage() {
     minPrice > 0 ||
     maxPrice < 1000 ||
     sortKey !== "createdAt_desc";
+
+  // Reset Filters
+  const handleResetFilters = () => {
+    if (!hasActiveFilters) return;
+    setSearch("");
+    setSortKey("createdAt_desc");
+    setSelectedCategoryIds([]);
+    setSelectedProductIds([]);
+    setStockStatus("all");
+    setVegType("all");
+    setMinPrice(0);
+    setMaxPrice(1000);
+    setPage(1);
+  };
 
   const activeFilterCount = [
     Boolean(search.trim()),
@@ -332,6 +345,7 @@ export default function ShopAllPage() {
               isMobileOpen={isMobileFilterOpen}
               onCloseMobile={() => setIsMobileFilterOpen(false)}
               totalResultsCount={meta?.total}
+              facets={meta?.facets}
             />
 
             {/* Right Main Products Display (3 cards per row) */}

@@ -10,17 +10,22 @@ import type {
 } from "../types";
 
 function mapToInventoryListItem(item: any): InventoryListItem {
+  const v = item.variant_unit_price?.variant;
+  const prod = v?.product;
+  const available = Number(item.quantity_available ?? 0);
+  const reserved = Number(item.quantity_reserved ?? 0);
+
   return {
-    id: item.id,
-    productId: item.productId,
-    variantId: item.variantId,
-    quantity: item.quantity,
-    reservedQuantity: item.reservedQuantity,
-    reorderLevel: item.reorderLevel,
-    availableQuantity: item.quantity - item.reservedQuantity,
-    productName: item.product.name,
-    productSlug: item.product.slug,
-    variantName: item.variant?.name,
+    id: Number(item.id),
+    productId: prod?.id ? Number(prod.id) : 0,
+    variantId: v?.id ? Number(v.id) : null,
+    quantity: available,
+    reservedQuantity: reserved,
+    reorderLevel: Number(item.reorderLevel ?? 0),
+    availableQuantity: available - reserved,
+    productName: prod?.name ?? "Unknown Product",
+    productSlug: prod?.slug ?? "",
+    variantName: v?.variant_name ?? undefined,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
   };
@@ -55,29 +60,29 @@ export const inventoryService = {
       throw ApiError.notFound("Inventory item not found");
     }
 
-    const newQuantity = inventory.quantity + input.quantity;
+    const currentQty = inventory.quantity_available;
+    const newQuantity = currentQty + input.quantity;
 
-    if (
-      (input.type === "SALE" || input.type === "TRANSFER") &&
-      newQuantity < 0
-    ) {
+    if (newQuantity < 0) {
       throw ApiError.badRequest(
-        `Insufficient stock. Available: ${inventory.quantity}, Requested: ${Math.abs(input.quantity)}`
+        `Insufficient stock. Available: ${currentQty}, Requested: ${Math.abs(input.quantity)}`
       );
     }
+
+    const txType = input.quantity >= 0 ? ("in" as const) : ("out" as const);
 
     const transaction = await db.$transaction(async (tx) => {
       const txn = await tx.inventoryTransaction.create({
         data: {
-          inventory: { connect: { id: input.inventoryId } },
-          type: input.type,
-          quantity: input.quantity,
-          notes: input.notes ?? undefined,
+          variant_unit_price: { connect: { id: inventory.variantUnitPriceId } },
+          type: txType,
+          quantity: Math.abs(input.quantity),
+          note: input.notes ?? undefined,
         },
       });
       await tx.inventory.update({
-        where: { id: input.inventoryId },
-        data: { quantity: newQuantity },
+        where: { id: BigInt(input.inventoryId) },
+        data: { quantity_available: newQuantity },
       });
       return txn;
     });
@@ -86,23 +91,19 @@ export const inventoryService = {
   },
 
   async createInventory(input: CreateInventoryInput) {
-    const existing = await inventoryRepository.findByProductAndVariant(
-      input.productId,
-      input.variantId
+    const existing = await inventoryRepository.findByVariantUnitPriceId(
+      input.variantId || input.productId
     );
 
     if (existing) {
       throw ApiError.conflict(
-        "Inventory record already exists for this product variant"
+        "Inventory record already exists for this unit price"
       );
     }
 
     const inventory = await inventoryRepository.create({
-      product: { connect: { id: input.productId } },
-      variant: input.variantId
-        ? { connect: { id: input.variantId } }
-        : undefined,
-      quantity: input.quantity,
+      variant_unit_price: { connect: { id: BigInt(input.variantId || input.productId) } },
+      quantity_available: input.quantity,
       reorderLevel: input.reorderLevel ?? 10,
     });
 
@@ -112,16 +113,26 @@ export const inventoryService = {
   async getLowStock() {
     const items = await db.inventory.findMany({
       where: {
-        quantity: { gt: 0 },
+        is_active: true,
+        quantity_available: { gt: 0 },
       },
       include: {
-        product: { select: { name: true, slug: true } },
-        variant: { select: { name: true } },
+        variant_unit_price: {
+          include: {
+            variant: {
+              select: {
+                id: true,
+                variant_name: true,
+                product: { select: { id: true, name: true, slug: true } },
+              },
+            },
+          },
+        },
       },
     });
 
     const lowStockItems = items.filter(
-      (item) => item.quantity <= item.reorderLevel
+      (item) => item.quantity_available <= item.reorderLevel
     );
 
     return lowStockItems.map(mapToInventoryListItem);
@@ -129,10 +140,19 @@ export const inventoryService = {
 
   async getOutOfStock() {
     const items = await db.inventory.findMany({
-      where: { quantity: 0 },
+      where: { is_active: true, quantity_available: 0 },
       include: {
-        product: { select: { name: true, slug: true } },
-        variant: { select: { name: true } },
+        variant_unit_price: {
+          include: {
+            variant: {
+              select: {
+                id: true,
+                variant_name: true,
+                product: { select: { id: true, name: true, slug: true } },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -149,22 +169,25 @@ export const inventoryService = {
     }
 
     const { data, total } =
-      await inventoryRepository.findTransactionsByInventoryId(inventoryId, {
-        page: params.page,
-        limit: params.limit,
-        type: params.type as any,
-      });
+      await inventoryRepository.findTransactionsByVariantUnitPriceId(
+        inventory.variantUnitPriceId,
+        {
+          page: params.page,
+          limit: params.limit,
+          type: params.type as any,
+        }
+      );
 
     const mapped: InventoryTransactionItem[] = data.map((t) => ({
-      id: t.id,
-      inventoryId: t.inventoryId,
+      id: Number(t.id),
+      inventoryId: Number(inventory.id),
       type: t.type,
       quantity: t.quantity,
       referenceType: t.referenceType,
-      referenceId: t.referenceId,
-      notes: t.notes,
+      referenceId: t.referenceId ? Number(t.referenceId) : null,
+      notes: t.note,
       createdAt: t.createdAt,
-      productName: t.inventory.product.name,
+      productName: (t as any).variant_unit_price?.variant?.product?.name ?? "",
     }));
 
     return {

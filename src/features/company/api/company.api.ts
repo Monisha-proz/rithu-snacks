@@ -10,7 +10,7 @@ export const companyApi = {
   async getCompany(): Promise<CompanyResponse | null> {
     try {
       const response = await apiClient.get<CompanyResponse>("/api/admin/company");
-      return response.data;
+      return response.data ?? null;
     } catch (error) {
       if (error instanceof ApiClientError && error.status === 404) {
         return null;
@@ -28,7 +28,7 @@ export const companyApi = {
       "/api/admin/company",
       data
     );
-    return response.data;
+    return response.data!;
   },
 
   /**
@@ -44,6 +44,6 @@ export const companyApi = {
       company: CompanyResponse;
     }>("/api/admin/company/logo", formData);
 
-    return response.data;
+    return response.data!;
   },
 };

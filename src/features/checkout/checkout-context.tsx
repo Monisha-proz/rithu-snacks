@@ -29,7 +29,7 @@ const STORAGE_KEY = "rithu-checkout-state";
 
 const DEFAULT_STATE: CheckoutState = {
   addressId: null,
-  deliveryMethod: "STANDARD",
+  deliveryMethod: "standard",
   couponCode: null,
   paymentMethod: "CASH_ON_DELIVERY",
   notes: "",

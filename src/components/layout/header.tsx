@@ -205,7 +205,6 @@ export function Header() {
                     ) : !isAuthenticated ? (
                       <Link
                         href="/login"
-                        onClick={() => router.push("/login")}
                         className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-sm bg-theme-primary hover:bg-theme-primary-hover text-theme-primary-fg border border-theme-primary text-xs sm:text-sm font-semibold transition-all duration-150 shadow-xs hover:shadow-sm active:scale-95 cursor-pointer"
                         aria-label="Login"
                       >
@@ -219,7 +218,6 @@ export function Header() {
                       <IconButton
                         alt={userName ? `${userName}'s profile` : "Profile"}
                         href="/profile"
-                        onClick={() => router.push("/profile")}
                         customIcon={
                           <div className="w-[26px] h-[26px] rounded-full bg-theme-primary text-theme-primary-fg text-[11px] font-bold flex items-center justify-center border border-theme-border-accent shadow-2xs select-none leading-none">
                             {userInitials}
@@ -346,13 +344,12 @@ export function Header() {
                                 pathname === `/categories/${cat.id}`;
 
                               return (
-                                <button
+                                <Link
                                   key={cat.id}
-                                  type="button"
+                                  href={`/categories/${cat.id}`}
                                   onClick={() => {
                                     setIsOpen(false);
                                     setIsMobileCategoriesOpen(false);
-                                    router.push(`/categories/${cat.id}`);
                                   }}
                                   className={`
                                     w-full flex items-center justify-between px-3 py-2 rounded-lg text-left text-xs
@@ -377,7 +374,7 @@ export function Header() {
                                     <span className="truncate">{cat.name}</span>
                                   </div>
                                   <ChevronRight className="w-3.5 h-3.5 text-white/50 shrink-0" />
-                                </button>
+                                </Link>
                               );
                             })}
 
@@ -480,7 +477,6 @@ export function Header() {
                     }
                     text="Login"
                     href="/login"
-                    onClick={() => router.push("/login")}
                     isActive={pathname === "/login"}
                   />
                 ) : (
@@ -493,7 +489,6 @@ export function Header() {
                     }
                     text="Account"
                     href="/profile"
-                    onClick={() => router.push("/profile")}
                     isActive={pathname === "/profile"}
                   />
                 )}

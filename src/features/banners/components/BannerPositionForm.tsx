@@ -54,7 +54,7 @@ export function BannerPositionForm({
   );
 
   const methods = useForm<BannerPositionFormData>({
-    resolver: zodResolver(bannerPositionFormSchema),
+    resolver: zodResolver(bannerPositionFormSchema) as any,
     mode: "onChange",
     reValidateMode: "onChange",
     defaultValues: getFormDefaults(),

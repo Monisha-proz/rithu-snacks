@@ -528,6 +528,74 @@ export const orderService = {
     );
   },
 
+  async setOrderStatus(
+    adminSessionUserId: string,
+    uuid: string,
+    body: { status: orders_order_status; note?: string }
+  ) {
+    const adminUser = await userRepository.findById(adminSessionUserId);
+    if (!adminUser || !adminUser.internalId) {
+      throw ApiError.unauthorized("Session expired. Please log in again.");
+    }
+
+    const order = await db.order.findFirst({
+      where: { uuid, is_active: true },
+    });
+
+    if (!order) {
+      throw ApiError.notFound("Order not found");
+    }
+
+    const updated = await orderRepository.updateOrderStatusWithHistory({
+      orderId: order.id,
+      status: body.status,
+      note: body.note,
+      changedBy: adminUser.internalId,
+    });
+
+    return {
+      id: updated.id,
+      orderNumber: updated.orderNumber,
+      status: updated.status,
+    };
+  },
+
+  async cancelOrder(
+    userId: number | string | bigint,
+    orderIdOrUuid: string | number,
+    input?: any
+  ) {
+    return this.cancelCustomerOrder(
+      String(userId),
+      String(orderIdOrUuid),
+      typeof input === "string" ? { reason: input } : input
+    );
+  },
+
+  async getOrder(userId: number | string | bigint, orderIdOrUuid: string | number) {
+    return this.getCustomerOrderByUuid(String(userId), String(orderIdOrUuid));
+  },
+
+  async getOrderByNumber(
+    userIdOrOrderNumber: number | string | bigint,
+    orderNumber?: string
+  ) {
+    if (!orderNumber) {
+      const order = await db.order.findFirst({
+        where: { orderNumber: String(userIdOrOrderNumber), is_active: true },
+      });
+      if (!order) throw ApiError.notFound("Order not found");
+      return this.getCustomerOrderByUuid(String(order.userId), order.uuid!);
+    }
+    const user = await userRepository.findById(String(userIdOrOrderNumber));
+    if (!user || !user.internalId) throw ApiError.unauthorized("User not found");
+    const order = await db.order.findFirst({
+      where: { orderNumber, userId: user.internalId, is_active: true },
+    });
+    if (!order) throw ApiError.notFound("Order not found");
+    return this.getCustomerOrderByUuid(String(userIdOrOrderNumber), order.uuid!);
+  },
+
   async getOrders(userId: number | string | bigint, params: any = {}) {
     return this.getCustomerOrders(String(userId), params);
   },
@@ -570,15 +638,27 @@ export const orderService = {
       }));
 
     const pricing = await offerService.priceCartItems(lines);
-    const deliveryCharge = deliveryMethod === "EXPRESS" ? 100 : 0;
+    const deliveryCharge = deliveryMethod === "EXPRESS" || deliveryMethod === "express" ? 100 : 0;
+    const totalAmount = pricing.total + deliveryCharge;
 
     return {
       subtotal: pricing.subtotal,
       deliveryCharge,
+      shippingCharge: deliveryCharge,
       discount: pricing.totalDiscount,
+      discountAmount: pricing.totalDiscount,
       totalSavings: pricing.totalSavings,
       items: pricing.lines,
-      total: pricing.total + deliveryCharge,
+      total: totalAmount,
+      totalAmount,
+      totals: {
+        subtotal: pricing.subtotal,
+        shipping: deliveryCharge,
+        discount: pricing.totalDiscount,
+        total: totalAmount,
+      },
+      coupon: _couponCode ? { code: _couponCode, discount: pricing.totalDiscount } : null,
+      couponCode: _couponCode || null,
     };
   },
 };

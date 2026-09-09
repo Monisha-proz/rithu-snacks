@@ -7,10 +7,10 @@ const blogListInclude = Prisma.validator<Prisma.BlogInclude>()({
 });
 
 function buildBlogWhere(params: GetBlogsParams): Prisma.BlogWhereInput {
-  const where: Prisma.BlogWhereInput = {};
+  const where: Prisma.BlogWhereInput = { is_active: true };
 
   if (params.status) {
-    where.status = params.status as Prisma.EnumBlogStatusFilter["equals"];
+    where.is_published = params.status === "PUBLISHED" || params.status === "published";
   }
 
   if (params.search) {

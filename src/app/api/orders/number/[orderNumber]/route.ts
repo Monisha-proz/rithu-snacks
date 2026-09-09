@@ -9,13 +9,9 @@ export const GET = createApiHandler(
         const userId = parseInt((context.session?.user as { id?: string })?.id ?? "0");
         if (!userId) return apiFromError(new Error("Unauthorized"));
         const orderNumber = context.params?.orderNumber ?? "";
-        const order = await orderService.getOrderByNumber(orderNumber);
+        const order = await orderService.getOrderByNumber(userId, orderNumber);
 
         if (!order) {
-          return apiFromError(new Error("Order not found"));
-        }
-
-        if (order.user?.id !== userId) {
           return apiFromError(new Error("Order not found"));
         }
 

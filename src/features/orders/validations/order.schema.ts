@@ -130,6 +130,16 @@ export const cancelOrderSchema = z
   .strict();
 
 export type CancelOrderInput = z.infer<typeof cancelOrderSchema>;
+export type CancelOrderSchemaInput = CancelOrderInput;
+
+export const updateOrderStatusSchema = z
+  .object({
+    status: z.enum(ORDER_STATUS_ENUM),
+    note: z.string().max(255, "Note cannot exceed 255 characters").optional(),
+  })
+  .strict();
+
+export type UpdateOrderStatusSchemaInput = z.infer<typeof updateOrderStatusSchema>;
 
 export const returnOrderSchema = z
   .object({

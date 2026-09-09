@@ -390,4 +390,49 @@ export const productService = {
       message: "Product deleted successfully",
     };
   },
+
+  async getProduct(idOrUuid: string | number) {
+    const str = String(idOrUuid);
+    const existing = await productRepository.findByUuid(str);
+    if (existing) return formatAdminProductResponse(existing);
+    try {
+      const byId = await productRepository.findById(BigInt(str));
+      if (byId) return formatAdminProductResponse(byId);
+    } catch {}
+    throw ApiError.notFound("Product not found");
+  },
+
+  async createProduct(data: any, adminEmail?: string) {
+    return this.createAdminProduct(data, adminEmail);
+  },
+
+  async updateProduct(idOrUuid: string | number, data: any, adminEmail?: string) {
+    const str = String(idOrUuid);
+    let uuid = str;
+    const existing = await productRepository.findByUuid(str);
+    if (existing?.uuid) {
+      uuid = existing.uuid;
+    } else {
+      try {
+        const byId = await productRepository.findById(BigInt(str));
+        if (byId?.uuid) uuid = byId.uuid;
+      } catch {}
+    }
+    return this.updateAdminProduct(uuid, data, adminEmail);
+  },
+
+  async deleteProduct(idOrUuid: string | number, adminEmail?: string) {
+    const str = String(idOrUuid);
+    let uuid = str;
+    const existing = await productRepository.findByUuid(str);
+    if (existing?.uuid) {
+      uuid = existing.uuid;
+    } else {
+      try {
+        const byId = await productRepository.findById(BigInt(str));
+        if (byId?.uuid) uuid = byId.uuid;
+      } catch {}
+    }
+    return this.deleteAdminProduct(uuid, adminEmail);
+  },
 };

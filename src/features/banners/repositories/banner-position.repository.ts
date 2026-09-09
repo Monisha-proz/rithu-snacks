@@ -107,8 +107,8 @@ export const bannerPositionRepository = {
 
     const where: Prisma.banner_positionsWhereInput = {};
 
-    if (params.isActive !== undefined) {
-      where.is_active = params.isActive;
+    if (params.isActive !== undefined && params.isActive !== null) {
+      where.is_active = Boolean(params.isActive);
     }
 
     if (params.search) {

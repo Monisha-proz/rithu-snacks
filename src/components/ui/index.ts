@@ -3,7 +3,7 @@ export type { ButtonProps } from "./button";
 export { Input } from "./input";
 export type { InputProps } from "./input";
 export { Textarea } from "./textarea";
-export { Select, Dropdown } from "./select";
+export { Select } from "./select";
 export type { SelectProps, SelectOption } from "./select";
 export { Checkbox } from "./checkbox";
 export { Radio, RadioGroup } from "./Radio";

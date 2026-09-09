@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 interface SearchInputProps
-  extends React.InputHTMLAttributes<HTMLInputElement> {
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> {
   onSearch?: (value: string) => void;
   debounceMs?: number;
+  size?: "sm" | "md" | "lg";
 }
 
 function SearchInput({

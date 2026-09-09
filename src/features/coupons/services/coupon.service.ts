@@ -21,9 +21,12 @@ export const couponService = {
       throw ApiError.conflict("A coupon with this code already exists");
     }
 
+    const couponType =
+      String(data.type).toLowerCase() === "percentage" ? "percentage" as const : "flat" as const;
+
     return couponRepository.create({
       code: data.code.toUpperCase(),
-      type: data.type,
+      type: couponType,
       value: data.value,
       minOrderAmount: data.minOrderAmount,
       maxDiscount: data.maxDiscount,
@@ -49,7 +52,10 @@ export const couponService = {
 
     const updateData: Record<string, unknown> = {};
     if (data.code !== undefined) updateData.code = data.code.toUpperCase();
-    if (data.type !== undefined) updateData.type = data.type;
+    if (data.type !== undefined) {
+      updateData.type =
+        String(data.type).toLowerCase() === "percentage" ? "percentage" : "flat";
+    }
     if (data.value !== undefined) updateData.value = data.value;
     if (data.minOrderAmount !== undefined) updateData.minOrderAmount = data.minOrderAmount;
     if (data.maxDiscount !== undefined) updateData.maxDiscount = data.maxDiscount;

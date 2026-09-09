@@ -56,7 +56,7 @@ export interface CartCountResponse {
   totalQuantity: number;
 }
 
-export interface CartSummary {
+export interface CartSummaryData {
   subtotal: number;
   discount: number;
   tax: number;
@@ -65,6 +65,8 @@ export interface CartSummary {
   totalItems: number;
 }
 
+export type CartSummaryType = CartSummaryData;
+
 export interface AddToCartInput {
   variantId?: string;
   variantUnitPriceId?: string;
@@ -72,7 +74,5 @@ export interface AddToCartInput {
   quantity?: number;
 }
 
-export interface UpdateCartItemInput {
-  quantity: number;
-}
+export type { UpdateCartItemInput } from "../validations/cart.schema";
 
