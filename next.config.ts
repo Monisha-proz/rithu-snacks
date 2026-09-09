@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   images: {
     remotePatterns: [
@@ -12,7 +12,12 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  serverExternalPackages: ["@prisma/adapter-mariadb", "mariadb"],
+  serverExternalPackages: [
+    "@prisma/adapter-mariadb",
+    "mariadb",
+    "@whiskeysockets/baileys",
+    "pino",
+  ],
   experimental: {
     optimizePackageImports: [
       "lucide-react",

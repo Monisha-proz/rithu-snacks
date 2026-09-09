@@ -911,6 +911,27 @@ export const catalogRepository = {
       }
     }
 
+    // Base facet where: before inStock and vegType filters are applied
+    const baseFacetWhere: Prisma.ProductVariantWhereInput = { ...where };
+
+    // In Stock / Out of Stock filter
+    if (params.inStock !== undefined) {
+      where.out_of_stock = !params.inStock;
+    }
+
+    // Dietary (veg / non_veg / vegan) filter
+    if (params.vegType) {
+      if (params.vegType === "non_veg" || params.vegType === "nonveg") {
+        where.veg_type = "nonveg";
+      } else if (params.vegType === "vegan") {
+        where.veg_type = "vegan";
+      } else if (params.vegType === "veg") {
+        where.veg_type = { in: ["veg", "na"] };
+      } else {
+        where.veg_type = params.vegType as "veg" | "vegan" | "na";
+      }
+    }
+
     // Sorting
     let orderBy: Prisma.ProductVariantOrderByWithRelationInput = { createdAt: "desc" };
     if (params.sortBy === "variantName") {
@@ -923,7 +944,15 @@ export const catalogRepository = {
 
     const isPriceSort = params.sortBy === "basePrice" || params.sortBy === "salePrice";
 
-    const [variants, total] = await Promise.all([
+    const [
+      variants,
+      total,
+      inStockCount,
+      outOfStockCount,
+      vegCount,
+      nonVegCount,
+      veganCount,
+    ] = await Promise.all([
       db.productVariant.findMany({
         where,
         orderBy,
@@ -941,6 +970,11 @@ export const catalogRepository = {
         },
       }),
       db.productVariant.count({ where }),
+      db.productVariant.count({ where: { ...baseFacetWhere, out_of_stock: false } }),
+      db.productVariant.count({ where: { ...baseFacetWhere, out_of_stock: true } }),
+      db.productVariant.count({ where: { ...baseFacetWhere, veg_type: { in: ["veg", "na"] } } }),
+      db.productVariant.count({ where: { ...baseFacetWhere, veg_type: "nonveg" } }),
+      db.productVariant.count({ where: { ...baseFacetWhere, veg_type: "vegan" } }),
     ]);
 
     let data: CustomerVariantListItemDto[] = variants.map((v) =>
@@ -965,6 +999,13 @@ export const catalogRepository = {
         pageSize,
         total,
         totalPages: Math.ceil(total / pageSize),
+        facets: {
+          inStockCount,
+          outOfStockCount,
+          vegCount,
+          nonVegCount,
+          veganCount,
+        },
       },
     };
   },
