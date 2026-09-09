@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/utils";
-import type { CartSummary as CartSummaryType } from "../types";
+import type { CartSummaryType } from "../types";
 
 interface CartSummaryProps {
   summary: CartSummaryType;

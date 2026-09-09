@@ -140,6 +140,7 @@ export function WriteReviewModal({
       rating,
       title: title.trim() || undefined,
       comment: comment.trim() || undefined,
+      images: [],
     });
   };
 

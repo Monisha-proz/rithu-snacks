@@ -7,19 +7,24 @@ import type {
 } from "../types";
 
 function toAddressItem(address: Record<string, unknown>): AddressItem {
+  const fullName = (address.full_name as string) || "";
+  const nameParts = fullName.split(" ");
+  const autoFirstName = nameParts[0] || "";
+  const autoLastName = nameParts.slice(1).join(" ");
+
   return {
-    id: address.id as number,
-    userId: address.userId as number,
-    firstName: address.firstName as string,
-    lastName: address.lastName as string,
-    phone: address.phone as string,
-    addressLine1: address.addressLine1 as string,
-    addressLine2: (address.addressLine2 as string | null) ?? null,
-    city: address.city as string,
-    state: address.state as string,
-    postalCode: address.postalCode as string,
-    country: address.country as string,
-    isDefault: address.isDefault as boolean,
+    id: Number(address.id),
+    userId: Number(address.userId),
+    firstName: (address.firstName as string) || autoFirstName,
+    lastName: (address.lastName as string) !== undefined ? (address.lastName as string) : autoLastName,
+    phone: (address.phone as string) || "",
+    addressLine1: ((address.addressLine1 || address.address_line1) as string) || "",
+    addressLine2: ((address.addressLine2 ?? address.address_line2) as string | null) ?? null,
+    city: (address.city as string) || "",
+    state: (address.state as string) || "",
+    postalCode: ((address.postalCode || address.pincode) as string) || "",
+    country: (address.country as string) || "India",
+    isDefault: Boolean(address.isDefault),
     createdAt: address.createdAt as Date,
     updatedAt: address.updatedAt as Date,
   };

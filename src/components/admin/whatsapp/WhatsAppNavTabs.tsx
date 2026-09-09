@@ -36,8 +36,10 @@ const TABS = [
 
 export function WhatsAppNavTabs({
   showCreateButton = true,
+  active,
 }: {
   showCreateButton?: boolean;
+  active?: string;
 }) {
   const pathname = usePathname();
 
@@ -46,7 +48,9 @@ export function WhatsAppNavTabs({
       <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-1">
         {TABS.map((tab) => {
           const Icon = tab.icon;
-          const isActive = tab.exact
+          const isActive = active
+            ? tab.href.toLowerCase().includes(active.toLowerCase()) || tab.label.toLowerCase().includes(active.toLowerCase())
+            : tab.exact
             ? pathname === tab.href
             : pathname.startsWith(tab.href);
 

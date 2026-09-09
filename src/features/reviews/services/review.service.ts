@@ -150,7 +150,7 @@ export const reviewService = {
         }
       } else if (input.productId) {
         const product = await reviewRepository.findProductByIdentifier(input.productId);
-        const firstVariant = product?.variants?.[0];
+        const firstVariant = (product as any)?.product_variants?.[0] || (product as any)?.variants?.[0];
         if (firstVariant && firstVariant.variant_unit_prices?.length > 0) {
           unitPrice = await reviewRepository.findVariantUnitPriceByIdentifier(
             firstVariant.variant_unit_prices[0].uuid || String(firstVariant.variant_unit_prices[0].id)
