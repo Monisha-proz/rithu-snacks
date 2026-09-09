@@ -182,15 +182,26 @@ export const reviewRepository = {
     });
   },
 
+  async findActiveReviewByVariant(variantUnitPriceId: bigint, customerId: bigint) {
+    return db.review.findFirst({
+      where: {
+        variant_unit_price_id: variantUnitPriceId,
+        userId: customerId,
+        is_active: true,
+      },
+    });
+  },
+
   async createReviewTransaction(params: {
     productId: bigint;
     variantUnitPriceId: bigint;
     userId: bigint;
-    orderItemId: bigint;
+    orderItemId?: bigint | null;
     rating: number;
     title?: string;
     comment?: string;
     images?: string[];
+    isApproved?: boolean;
   }) {
     const reviewUuid = crypto.randomUUID();
 
@@ -201,11 +212,11 @@ export const reviewRepository = {
           productId: params.productId,
           variant_unit_price_id: params.variantUnitPriceId,
           userId: params.userId,
-          order_item_id: params.orderItemId,
+          order_item_id: params.orderItemId ?? null,
           rating: params.rating,
           title: params.title || null,
           comment: params.comment || null,
-          isApproved: false,
+          isApproved: params.isApproved ?? false,
           is_active: true,
           created_by: params.userId,
           updated_by: params.userId,

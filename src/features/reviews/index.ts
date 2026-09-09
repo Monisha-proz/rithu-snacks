@@ -9,5 +9,7 @@ export * from "./components/AdminReviewDetailModal";
 export * from "./components/AdminReviewListTable";
 export * from "./components/ProductReviewsSection";
 export * from "./hooks/use-public-reviews";
+export * from "./api/customer-reviews.api";
+export * from "./hooks/use-customer-reviews";
 export * from "./repositories/review.repository";
 export * from "./services/review.service";

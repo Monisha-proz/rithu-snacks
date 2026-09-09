@@ -604,6 +604,9 @@ function ProductDetails({ product }: ProductDetailsProps) {
         variantId={selectedVariant?.id}
         variantName={selectedVariant?.variantName}
         productName={product.name}
+        productIdOrSlug={product.id}
+        selectedUnitPriceId={selectedUnitPrice?.id}
+        packSizes={unitPrices}
       />
     </div>
   );

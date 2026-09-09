@@ -124,7 +124,7 @@ export function Header() {
               width={80}
               height={40}
               priority
-              className="w-[95px] sm:w-[120px] hover:scale-105 transition-transform duration-300"
+              className="w-[95px] sm:w-[120px] h-auto hover:scale-105 transition-transform duration-300"
             />
           </Link>
 
@@ -136,7 +136,7 @@ export function Header() {
               width={80}
               height={80}
               priority
-              className="hover:scale-105 transition-transform duration-300"
+              className="w-auto h-auto hover:scale-105 transition-transform duration-300"
             />
           </Link>
         </div>
@@ -319,7 +319,7 @@ export function Header() {
                           alt="dropdown"
                           width={14}
                           height={14}
-                          className={`transition-transform duration-300 ${
+                          className={`w-auto h-auto transition-transform duration-300 ${
                             isMobileCategoriesOpen ? "rotate-180" : ""
                           }`}
                         />

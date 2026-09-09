@@ -131,7 +131,7 @@ export function CategoryNavDropdown({
               alt="dropdown icon"
               width={12}
               height={12}
-              className={`transition-transform duration-300 ${
+              className={`w-auto h-auto transition-transform duration-300 ${
                 isOpen ? "rotate-180" : "group-hover:rotate-180"
               }`}
             />

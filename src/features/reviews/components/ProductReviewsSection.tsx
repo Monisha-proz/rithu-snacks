@@ -1,18 +1,22 @@
 "use client";
 
 import * as React from "react";
-import { Star, CheckCircle2, ChevronDown } from "lucide-react";
+import { Star, CheckCircle2, ChevronDown, PenLine } from "lucide-react";
 import {
   usePublicProductReviews,
   usePublicVariantReviews,
 } from "../hooks/use-public-reviews";
+import { WriteReviewModal } from "./WriteReviewModal";
 import type { PublicReviewItem } from "../types/review.types";
+import type { CustomerVariantUnitPriceDto } from "@/features/customers/types/catalog.types";
 
 interface ProductReviewsSectionProps {
   variantId?: string | null;
   variantName?: string;
   productName?: string;
   productIdOrSlug?: string | null;
+  selectedUnitPriceId?: string | null;
+  packSizes?: CustomerVariantUnitPriceDto[];
 }
 
 function getInitials(name?: string): string {
@@ -27,8 +31,11 @@ export function ProductReviewsSection({
   variantName,
   productName,
   productIdOrSlug,
+  selectedUnitPriceId,
+  packSizes,
 }: ProductReviewsSectionProps) {
   const [isExpanded, setIsExpanded] = React.useState(false);
+  const [isWriteModalOpen, setIsWriteModalOpen] = React.useState(false);
 
   // Collapse back to top 3 reviews whenever the selected variant changes
   React.useEffect(() => {
@@ -76,28 +83,40 @@ export function ProductReviewsSection({
             from genuine sweet lovers and festive patrons
           </p>
 
-          {/* Social Proof Rating Pill (Only if reviews exist) */}
-          {totalCount > 0 && (
-            <div className="inline-flex items-center justify-center gap-2 mt-3.5 px-4 py-1.5 rounded-full bg-white/90 border border-stone-200/80 text-xs font-semibold text-stone-700 shadow-2xs">
-              <div className="flex items-center gap-0.5 text-amber-500">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-3.5 h-3.5 ${
-                      i < Math.round(avgRating)
-                        ? "fill-amber-400 text-amber-400"
-                        : "fill-stone-200 text-stone-200"
-                    }`}
-                  />
-                ))}
+          {/* Social Proof Rating Pill & Write Review Button */}
+          <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
+            {totalCount > 0 && (
+              <div className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-white/90 border border-stone-200/80 text-xs font-semibold text-stone-700 shadow-2xs">
+                <div className="flex items-center gap-0.5 text-amber-500">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`w-3.5 h-3.5 ${
+                        i < Math.round(avgRating)
+                          ? "fill-amber-400 text-amber-400"
+                          : "fill-stone-200 text-stone-200"
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className="font-bold text-stone-900">{avgRating.toFixed(1)}</span>
+                <span className="text-stone-300">•</span>
+                <span>
+                  {totalCount} customer {totalCount === 1 ? "review" : "reviews"}
+                </span>
               </div>
-              <span className="font-bold text-stone-900">{avgRating.toFixed(1)}</span>
-              <span className="text-stone-300">•</span>
-              <span>
-                {totalCount} customer {totalCount === 1 ? "review" : "reviews"}
-              </span>
-            </div>
-          )}
+            )}
+
+            {/* Write a Review Button */}
+            <button
+              type="button"
+              onClick={() => setIsWriteModalOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#7A2224] hover:bg-[#5A1911] text-white text-xs font-bold shadow-xs hover:shadow-sm transition-all cursor-pointer group"
+            >
+              <PenLine className="w-3.5 h-3.5 text-white/90 group-hover:scale-110 transition-transform" />
+              <span>Write a Review</span>
+            </button>
+          </div>
         </div>
 
         {/* Reviews Grid or Clean Empty State */}
@@ -107,9 +126,17 @@ export function ProductReviewsSection({
               <Star className="w-6 h-6 stroke-[1.5] text-[#8B1D1D]" />
             </div>
             <h3 className="font-serif text-lg font-bold text-[#2B1B17]">No Reviews Yet</h3>
-            <p className="text-xs sm:text-sm text-stone-500 mt-1.5 leading-relaxed">
+            <p className="text-xs sm:text-sm text-stone-500 mt-1.5 leading-relaxed mb-5">
               Be the first to taste <strong className="text-stone-700">{targetTitle}</strong> and share your thoughts with fellow food connoisseurs!
             </p>
+            <button
+              type="button"
+              onClick={() => setIsWriteModalOpen(true)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#7A2224] hover:bg-[#5A1911] text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
+            >
+              <PenLine className="w-3.5 h-3.5" />
+              <span>Write the First Review</span>
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
@@ -153,16 +180,18 @@ export function ProductReviewsSection({
                     <span className="text-sm font-bold text-[#2B1B17] truncate">
                       {review.customerName}
                     </span>
-                    <span className="text-xs text-emerald-700 font-medium flex items-center gap-1 mt-0.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span>Verified Buyer</span>
+                    <div className="text-xs text-emerald-700 font-medium flex flex-wrap items-center gap-1 mt-0.5">
+                      <span className="inline-flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>Verified Buyer</span>
+                      </span>
                       {location && (
-                        <>
-                          <span className="text-stone-300 mx-0.5">•</span>
-                          <span className="text-stone-500 truncate">{location}</span>
-                        </>
+                        <span className="inline-flex items-center text-stone-500 truncate">
+                
+                          <span className="truncate">{location}</span>
+                        </span>
                       )}
-                    </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -193,6 +222,18 @@ export function ProductReviewsSection({
           </div>
         )}
       </div>
+
+      {/* Write a Review Modal */}
+      <WriteReviewModal
+        isOpen={isWriteModalOpen}
+        onClose={() => setIsWriteModalOpen(false)}
+        variantId={variantId}
+        variantName={variantName}
+        productName={productName}
+        productId={productIdOrSlug}
+        selectedUnitPriceId={selectedUnitPriceId}
+        packSizes={packSizes}
+      />
     </section>
   );
 }
