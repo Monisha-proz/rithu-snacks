@@ -318,7 +318,7 @@ export const paymentRepository = {
       FROM \`payment_redirect_tokens\`
       WHERE token = ${token}
         AND is_used = 0
-        AND expires_at > NOW()
+        AND (expires_at > UTC_TIMESTAMP() OR expires_at > NOW())
       LIMIT 1
     `;
 
