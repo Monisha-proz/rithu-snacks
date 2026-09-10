@@ -16,12 +16,21 @@ import type {
 } from "../validations/catalog.schema";
 import type { ApiResponse } from "@/lib/api/api-response";
 
+export interface CatalogFacets {
+  inStockCount: number;
+  outOfStockCount: number;
+  vegCount: number;
+  nonVegCount: number;
+  veganCount?: number;
+}
+
 export interface PaginationMeta {
   page: number;
   limit: number;
   pageSize?: number;
   total: number;
   totalPages: number;
+  facets?: CatalogFacets;
 }
 
 export interface PaginatedResponse<T> {

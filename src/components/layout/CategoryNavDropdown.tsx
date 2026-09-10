@@ -3,7 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { ChevronRight, Sparkles } from "lucide-react";
 import { ICONS, CATEGORYLOGOS } from "@/constants/storefront";
 import { useCustomerCategories } from "@/features/customers/hooks/use-customer-catalog";
@@ -45,7 +45,6 @@ export function CategoryNavDropdown({
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   const pathname = usePathname();
-  const router = useRouter();
 
   // Fetch categories using TanStack Query from POST /api/customer/categories
   const { data: response, isLoading } = useCustomerCategories({
@@ -131,7 +130,7 @@ export function CategoryNavDropdown({
               alt="dropdown icon"
               width={12}
               height={12}
-              className={`transition-transform duration-300 ${
+              className={`w-auto h-auto transition-transform duration-300 ${
                 isOpen ? "rotate-180" : "group-hover:rotate-180"
               }`}
             />
@@ -185,13 +184,10 @@ export function CategoryNavDropdown({
                     pathname === `/categories/${category.id}`;
 
                   return (
-                    <button
+                    <Link
                       key={category.id}
-                      type="button"
-                      onClick={() => {
-                        setIsOpen(false);
-                        router.push(`/categories/${category.id}`);
-                      }}
+                      href={`/categories/${category.id}`}
+                      onClick={() => setIsOpen(false)}
                       className={`
                         w-full flex items-center justify-between px-3 py-2 rounded-xl text-left
                         transition-all duration-150 cursor-pointer group/item
@@ -232,7 +228,7 @@ export function CategoryNavDropdown({
                           ${isCategoryActive ? "text-theme-primary font-bold" : ""}
                         `}
                       />
-                    </button>
+                    </Link>
                   );
                 })}
               </div>

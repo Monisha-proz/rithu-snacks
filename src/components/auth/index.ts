@@ -1,3 +1,2 @@
-export { AuthGuard } from "./auth-guard";
-export { UserMenu } from "./user-menu";
-export { LoginRequired } from "./login-required";
+export { default as AuthBanner } from "./AuthBanner";
+export { default as AuthFormLayout } from "./AuthFormLayout";

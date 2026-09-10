@@ -7,6 +7,7 @@ import type {
   AssignDeliveryInput,
   StaffDeliveryListInput,
   MarkDeliveredInput,
+  MarkFailedInput,
 } from "../validations/delivery.schema";
 import type {
   AdminDeliveryOrderItem,
@@ -497,6 +498,45 @@ export const deliveryService = {
       shipment.id,
       shipment.orders.id,
       staffUser.internalId,
+      input?.note
+    );
+
+    return {
+      shipmentId: result.shipment.uuid || String(result.shipment.id),
+      orderId: result.order.uuid || String(result.order.id),
+      shipmentStatus: result.shipment.status,
+      orderStatus: result.order.order_status,
+    };
+  },
+
+  async markFailed(
+    sessionUserId: string,
+    uuid: string,
+    input?: MarkFailedInput
+  ): Promise<DeliveryTransitionResult> {
+    const staffUser = await userRepository.findById(sessionUserId);
+    if (!staffUser || !staffUser.internalId) {
+      throw ApiError.unauthorized("Staff member not found");
+    }
+
+    const shipment = await deliveryRepository.findStaffDeliveryByUuid(
+      uuid,
+      staffUser.internalId
+    );
+
+    if (!shipment) {
+      const anyShipment = await deliveryRepository.findShipmentByUuidOnly(uuid);
+      if (anyShipment) {
+        throw ApiError.forbidden("You do not have access to this delivery");
+      }
+      throw ApiError.notFound("Delivery not found");
+    }
+
+    const result = await deliveryRepository.markFailedTransaction(
+      shipment.id,
+      shipment.orders.id,
+      staffUser.internalId,
+      input?.reason,
       input?.note
     );
 

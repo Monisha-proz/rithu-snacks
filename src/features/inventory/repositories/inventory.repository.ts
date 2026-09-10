@@ -1,5 +1,6 @@
 import { db } from "@/lib/db/prisma";
-import { Prisma, InventoryTransactionType } from "@/generated/prisma";
+import { Prisma } from "@/generated/prisma";
+import type { inventory_transactions_type } from "@/generated/prisma";
 
 interface FindAllParams {
   page?: number;
@@ -12,7 +13,7 @@ interface FindAllParams {
 interface FindTransactionsParams {
   page?: number;
   limit?: number;
-  type?: InventoryTransactionType;
+  type?: inventory_transactions_type;
 }
 
 export const inventoryRepository = {
@@ -20,31 +21,42 @@ export const inventoryRepository = {
     const { page = 1, limit = 10, search, lowStock, outOfStock } = params;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.InventoryWhereInput = {};
+    const where: Prisma.InventoryWhereInput = { is_active: true };
 
     if (search) {
-      where.product = {
-        name: { contains: search },
+      where.variant_unit_price = {
+        variant: {
+          product: {
+            name: { contains: search },
+          },
+        },
       };
     }
 
     if (lowStock) {
-      where.quantity = { gt: 0 };
+      where.quantity_available = { gt: 0 };
     }
 
     if (outOfStock) {
-      where.quantity = 0;
+      where.quantity_available = 0;
     }
 
     const [data, total] = await Promise.all([
       db.inventory.findMany({
         where,
         include: {
-          product: {
-            select: { name: true, slug: true },
-          },
-          variant: {
-            select: { name: true },
+          variant_unit_price: {
+            include: {
+              variant: {
+                select: {
+                  id: true,
+                  variant_name: true,
+                  product: {
+                    select: { id: true, name: true, slug: true },
+                  },
+                },
+              },
+            },
           },
         },
         skip,
@@ -57,25 +69,32 @@ export const inventoryRepository = {
     return { data, total };
   },
 
-  async findById(id: number) {
+  async findById(id: number | bigint) {
     return db.inventory.findUnique({
-      where: { id },
+      where: { id: BigInt(id) },
       include: {
-        product: {
-          select: { name: true, slug: true },
-        },
-        variant: {
-          select: { name: true },
+        variant_unit_price: {
+          include: {
+            variant: {
+              select: {
+                id: true,
+                variant_name: true,
+                product: {
+                  select: { id: true, name: true, slug: true },
+                },
+              },
+            },
+          },
         },
       },
     });
   },
 
-  async findByProductAndVariant(productId: number, variantId?: number) {
+  async findByVariantUnitPriceId(variantUnitPriceId: number | bigint) {
     return db.inventory.findFirst({
       where: {
-        productId,
-        variantId: variantId ?? null,
+        variantUnitPriceId: BigInt(variantUnitPriceId),
+        is_active: true,
       },
     });
   },
@@ -84,18 +103,21 @@ export const inventoryRepository = {
     return db.inventory.create({ data });
   },
 
-  async update(id: number, data: Prisma.InventoryUpdateInput) {
-    return db.inventory.update({ where: { id }, data });
+  async update(id: number | bigint, data: Prisma.InventoryUpdateInput) {
+    return db.inventory.update({ where: { id: BigInt(id) }, data });
   },
 
-  async findTransactionsByInventoryId(
-    inventoryId: number,
+  async findTransactionsByVariantUnitPriceId(
+    variantUnitPriceId: number | bigint,
     params: FindTransactionsParams
   ) {
     const { page = 1, limit = 20, type } = params;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.InventoryTransactionWhereInput = { inventoryId };
+    const where: Prisma.InventoryTransactionWhereInput = {
+      variant_unit_price_id: BigInt(variantUnitPriceId),
+      is_active: true,
+    };
 
     if (type) {
       where.type = type;
@@ -105,9 +127,13 @@ export const inventoryRepository = {
       db.inventoryTransaction.findMany({
         where,
         include: {
-          inventory: {
+          variant_unit_price: {
             include: {
-              product: { select: { name: true } },
+              variant: {
+                select: {
+                  product: { select: { name: true } },
+                },
+              },
             },
           },
         },

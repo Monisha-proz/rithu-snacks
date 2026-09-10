@@ -3,11 +3,21 @@ import { z } from "zod";
 export const createReviewSchema = z
   .object({
     variantUnitPriceId: z
-      .string({ message: "Variant unit price ID is required" })
-      .uuid("Invalid variant unit price UUID"),
+      .string()
+      .uuid("Invalid variant unit price UUID")
+      .optional(),
+    variantId: z
+      .string()
+      .uuid("Invalid variant UUID")
+      .optional(),
+    productId: z
+      .string()
+      .uuid("Invalid product UUID")
+      .optional(),
     orderItemId: z
-      .string({ message: "Order item ID is required" })
-      .uuid("Invalid order item UUID"),
+      .string()
+      .uuid("Invalid order item UUID")
+      .optional(),
     rating: z
       .number({ message: "Rating is required" })
       .int("Rating must be an integer")
@@ -31,7 +41,14 @@ export const createReviewSchema = z
       .optional()
       .default([]),
   })
-  .strict();
+  .strict()
+  .refine(
+    (data) => Boolean(data.orderItemId || data.variantUnitPriceId || data.variantId || data.productId),
+    {
+      message: "At least one target (orderItemId, variantUnitPriceId, variantId, or productId) must be provided",
+      path: ["variantId"],
+    }
+  );
 
 export type CreateReviewInput = z.infer<typeof createReviewSchema>;
 

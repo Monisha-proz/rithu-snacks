@@ -1,22 +1,16 @@
-ZodError: [
-  {
-    "origin": "string",
-    "code": "invalid_format",
-    "format": "regex",
-    "pattern": "/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i",
-    "path": [],
-    "message": "Invalid UUID format"
-  }
-]
-    at GET (webpack-internal:///(rsc)/./src/app/api/customer/products/[productUuid]/variants/[variantUuid]/route.ts:25:126)
-    at eval (webpack-internal:///(rsc)/./src/lib/api/api-handler.ts:115:26)
+ApiError: Upload folder name is required
+    at ApiError.badRequest (webpack-internal:///(rsc)/./src/lib/api/api-error.ts:20:16)
+    at validateFolder (webpack-internal:///(rsc)/./src/features/uploads/services/upload.service.ts:57:72)
+    at Object.handleSingleFileUpload (webpack-internal:///(rsc)/./src/features/uploads/services/upload.service.ts:72:29)
+    at POST (webpack-internal:///(rsc)/./src/app/api/admin/upload/route.ts:17:115)
     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async eval (webpack-internal:///(rsc)/./src/lib/api/api-handler.ts:115:20)
     at async AppRouteRouteModule.do (D:\Projects\Rithu snacks\rithu-snacks\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:5:42791)
     at async AppRouteRouteModule.handle (D:\Projects\Rithu snacks\rithu-snacks\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:5:50709)
-    at async responseGenerator (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js?name=app%2Fapi%2Fcustomer%2Fproducts%2F%5BproductUuid%5D%2Fvariants%2F%5BvariantUuid%5D%2Froute&page=%2Fapi%2Fcustomer%2Fproducts%2F%5BproductUuid%5D%2Fvariants%2F%5BvariantUuid%5D%2Froute&appPaths=&allNormalizedAppPaths=&pagePath=private-next-app-dir%2Fapi%2Fcustomer%2Fproducts%2F%5BproductUuid%5D%2Fvariants%2F%5BvariantUuid%5D%2Froute.ts&appDir=D%3A%5CProjects%5CRithu%20snacks%5Crithu-snacks%5Csrc%5Capp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=D%3A%5CProjects%5CRithu%20snacks%5Crithu-snacks&isDev=true&tsconfigPath=&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D&isGlobalNotFoundEnabled=!:219:30)
+    at async responseGenerator (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js?name=app%2Fapi%2Fadmin%2Fupload%2Froute&page=%2Fapi%2Fadmin%2Fupload%2Froute&appPaths=&allNormalizedAppPaths=&pagePath=private-next-app-dir%2Fapi%2Fadmin%2Fupload%2Froute.ts&appDir=D%3A%5CProjects%5CRithu%20snacks%5Crithu-snacks%5Csrc%5Capp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=D%3A%5CProjects%5CRithu%20snacks%5Crithu-snacks&isDev=true&tsconfigPath=&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D&isGlobalNotFoundEnabled=!:219:30)
     at async AppRouteRouteModule.handleResponse (D:\Projects\Rithu snacks\rithu-snacks\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:1:248724)
-    at async handleResponse (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js?name=app%2Fapi%2Fcustomer%2Fproducts%2F%5BproductUuid%5D%2Fvariants%2F%5BvariantUuid%5D%2Froute&page=%2Fapi%2Fcustomer%2Fproducts%2F%5BproductUuid%5D%2Fvariants%2F%5BvariantUuid%5D%2Froute&appPaths=&allNormalizedAppPaths=&pagePath=private-next-app-dir%2Fapi%2Fcustomer%2Fproducts%2F%5BproductUuid%5D%2Fvariants%2F%5BvariantUuid%5D%2Froute.ts&appDir=D%3A%5CProjects%5CRithu%20snacks%5Crithu-snacks%5Csrc%5Capp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=D%3A%5CProjects%5CRithu%20snacks%5Crithu-snacks&isDev=true&tsconfigPath=&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D&isGlobalNotFoundEnabled=!:292:32)
-    at async Module.handler (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js?name=app%2Fapi%2Fcustomer%2Fproducts%2F%5BproductUuid%5D%2Fvariants%2F%5BvariantUuid%5D%2Froute&page=%2Fapi%2Fcustomer%2Fproducts%2F%5BproductUuid%5D%2Fvariants%2F%5BvariantUuid%5D%2Froute&appPaths=&allNormalizedAppPaths=&pagePath=private-next-app-dir%2Fapi%2Fcustomer%2Fproducts%2F%5BproductUuid%5D%2Fvariants%2F%5BvariantUuid%5D%2Froute.ts&appDir=D%3A%5CProjects%5CRithu%20snacks%5Crithu-snacks%5Csrc%5Capp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=D%3A%5CProjects%5CRithu%20snacks%5Crithu-snacks&isDev=true&tsconfigPath=&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D&isGlobalNotFoundEnabled=!:413:9)
+    at async handleResponse (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js?name=app%2Fapi%2Fadmin%2Fupload%2Froute&page=%2Fapi%2Fadmin%2Fupload%2Froute&appPaths=&allNormalizedAppPaths=&pagePath=private-next-app-dir%2Fapi%2Fadmin%2Fupload%2Froute.ts&appDir=D%3A%5CProjects%5CRithu%20snacks%5Crithu-snacks%5Csrc%5Capp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=D%3A%5CProjects%5CRithu%20snacks%5Crithu-snacks&isDev=true&tsconfigPath=&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D&isGlobalNotFoundEnabled=!:292:32)
+    at async Module.handler (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js?name=app%2Fapi%2Fadmin%2Fupload%2Froute&page=%2Fapi%2Fadmin%2Fupload%2Froute&appPaths=&allNormalizedAppPaths=&pagePath=private-next-app-dir%2Fapi%2Fadmin%2Fupload%2Froute.ts&appDir=D%3A%5CProjects%5CRithu%20snacks%5Crithu-snacks%5Csrc%5Capp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=D%3A%5CProjects%5CRithu%20snacks%5Crithu-snacks&isDev=true&tsconfigPath=&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D&isGlobalNotFoundEnabled=!:413:9)
     at async DevServer.renderToResponseWithComponentsImpl (D:\Projects\Rithu snacks\rithu-snacks\node_modules\next\dist\server\base-server.js:1537:9)
     at async DevServer.renderPageComponent (D:\Projects\Rithu snacks\rithu-snacks\node_modules\next\dist\server\base-server.js:1589:24)
     at async DevServer.renderToResponseImpl (D:\Projects\Rithu snacks\rithu-snacks\node_modules\next\dist\server\base-server.js:1639:32)

@@ -75,6 +75,20 @@ export const reviewRepository = {
         OR: orConditions,
         isActive: true,
       },
+      include: {
+        variants: {
+          where: { deleted_at: null, isActive: true },
+          include: {
+            variant_unit_prices: {
+              where: { deleted_at: null, isActive: true },
+              select: { id: true, uuid: true, sku: true },
+              orderBy: [{ is_default: "desc" as const }, { createdAt: "asc" as const }],
+              take: 1,
+            },
+          },
+          take: 1,
+        },
+      },
     });
   },
 
@@ -109,7 +123,7 @@ export const reviewRepository = {
         },
         variant_unit_prices: {
           where: { deleted_at: null, isActive: true },
-          select: { sku: true },
+          select: { id: true, uuid: true, sku: true },
           orderBy: [{ is_default: "desc" as const }, { createdAt: "asc" as const }],
           take: 1,
         },
@@ -182,15 +196,26 @@ export const reviewRepository = {
     });
   },
 
+  async findActiveReviewByVariant(variantUnitPriceId: bigint, customerId: bigint) {
+    return db.review.findFirst({
+      where: {
+        variant_unit_price_id: variantUnitPriceId,
+        userId: customerId,
+        is_active: true,
+      },
+    });
+  },
+
   async createReviewTransaction(params: {
     productId: bigint;
     variantUnitPriceId: bigint;
     userId: bigint;
-    orderItemId: bigint;
+    orderItemId?: bigint | null;
     rating: number;
     title?: string;
     comment?: string;
     images?: string[];
+    isApproved?: boolean;
   }) {
     const reviewUuid = crypto.randomUUID();
 
@@ -201,11 +226,11 @@ export const reviewRepository = {
           productId: params.productId,
           variant_unit_price_id: params.variantUnitPriceId,
           userId: params.userId,
-          order_item_id: params.orderItemId,
+          order_item_id: params.orderItemId ?? null,
           rating: params.rating,
           title: params.title || null,
           comment: params.comment || null,
-          isApproved: false,
+          isApproved: params.isApproved ?? false,
           is_active: true,
           created_by: params.userId,
           updated_by: params.userId,

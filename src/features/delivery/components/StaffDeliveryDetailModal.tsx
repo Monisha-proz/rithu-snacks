@@ -136,7 +136,7 @@ export function StaffDeliveryDetailModal({
                 {formatPrice(order?.totalAmount ?? 0)}
               </h2>
               <div className="mt-1 text-xs text-neutral-300">
-                Placed: {formatDateTime(order?.placedAt || order?.createdAt)}
+                Placed: {(order?.placedAt || order?.createdAt) ? formatDateTime(order?.placedAt || order?.createdAt) : "—"}
               </div>
             </div>
 

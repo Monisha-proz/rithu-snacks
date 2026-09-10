@@ -87,56 +87,109 @@ export const reviewService = {
     const customer = await resolveActiveCustomer(sessionUserId);
     const customerId = BigInt(customer.internalId || customer.id);
 
-    // 2. Resolve & Validate Order Item & Customer Ownership
-    const orderItem = await reviewRepository.findOrderItemForReview(
-      input.orderItemId,
-      customerId
-    );
+    let productId: bigint;
+    let variantUnitPriceId: bigint;
+    let orderItemId: bigint | null = null;
 
-    if (!orderItem) {
-      throw ApiError.badRequest(
-        "Order item not found or does not belong to your orders"
+    if (input.orderItemId) {
+      // Order Item Review Flow (Verified delivered purchase)
+      const orderItem = await reviewRepository.findOrderItemForReview(
+        input.orderItemId,
+        customerId
       );
+
+      if (!orderItem) {
+        throw ApiError.badRequest(
+          "Order item not found or does not belong to your orders"
+        );
+      }
+
+      if (orderItem.order.order_status !== "delivered") {
+        throw ApiError.badRequest(
+          `Cannot review items from order with status '${orderItem.order.order_status}'. Only delivered orders can be reviewed.`
+        );
+      }
+
+      if (
+        input.variantUnitPriceId &&
+        orderItem.variant_unit_price &&
+        orderItem.variant_unit_price.uuid !== input.variantUnitPriceId
+      ) {
+        throw ApiError.badRequest(
+          "The selected pack size does not match the one purchased in the order item"
+        );
+      }
+
+      const existingActive = await reviewRepository.findActiveReviewByOrderItem(
+        orderItem.id,
+        customerId
+      );
+      if (existingActive) {
+        throw ApiError.conflict(
+          "You have already submitted a review for this order item"
+        );
+      }
+
+      productId = orderItem.productId;
+      variantUnitPriceId = orderItem.variantUnitPriceId!;
+      orderItemId = orderItem.id;
+    } else {
+      // Storefront Product / Variant Review Flow
+      let unitPrice = null;
+
+      if (input.variantUnitPriceId) {
+        unitPrice = await reviewRepository.findVariantUnitPriceByIdentifier(
+          input.variantUnitPriceId
+        );
+      } else if (input.variantId) {
+        const variant = await reviewRepository.findVariantByIdentifier(input.variantId);
+        if (variant && variant.variant_unit_prices?.length > 0) {
+          unitPrice = await reviewRepository.findVariantUnitPriceByIdentifier(
+            variant.variant_unit_prices[0].uuid || String(variant.variant_unit_prices[0].id)
+          );
+        }
+      } else if (input.productId) {
+        const product = await reviewRepository.findProductByIdentifier(input.productId);
+        const firstVariant = (product as any)?.product_variants?.[0] || (product as any)?.variants?.[0];
+        if (firstVariant && firstVariant.variant_unit_prices?.length > 0) {
+          unitPrice = await reviewRepository.findVariantUnitPriceByIdentifier(
+            firstVariant.variant_unit_prices[0].uuid || String(firstVariant.variant_unit_prices[0].id)
+          );
+        }
+      }
+
+      if (!unitPrice) {
+        throw ApiError.badRequest(
+          "Valid product variant or pack size is required to submit a review"
+        );
+      }
+
+      productId = unitPrice.variant.productId;
+      variantUnitPriceId = unitPrice.id;
+
+      // Duplicate prevention: 1 review per customer per variant pack
+      const existingActive = await reviewRepository.findActiveReviewByVariant(
+        variantUnitPriceId,
+        customerId
+      );
+      if (existingActive) {
+        throw ApiError.conflict(
+          "You have already submitted a review for this snack"
+        );
+      }
     }
 
-    // 3. Verify Order is Delivered
-    if (orderItem.order.order_status !== "delivered") {
-      throw ApiError.badRequest(
-        `Cannot review items from order with status '${orderItem.order.order_status}'. Only delivered orders can be reviewed.`
-      );
-    }
-
-    // 4. Verify Submitted Variant Unit Price Matches Order Item's Actual Pack Size
-    if (
-      !orderItem.variant_unit_price ||
-      orderItem.variant_unit_price.uuid !== input.variantUnitPriceId
-    ) {
-      throw ApiError.badRequest(
-        "The selected pack size does not match the one purchased in the order item"
-      );
-    }
-
-    // 5. Duplicate Active Review Check (1 per customer + order item)
-    const existingActive = await reviewRepository.findActiveReviewByOrderItem(
-      orderItem.id,
-      customerId
-    );
-    if (existingActive) {
-      throw ApiError.conflict(
-        "You have already submitted a review for this order item"
-      );
-    }
-
-    // 6. Create Review Transaction with derived parent product and variant
+    // Create Review Transaction
     const created = await reviewRepository.createReviewTransaction({
-      productId: orderItem.productId,
-      variantUnitPriceId: orderItem.variantUnitPriceId!,
+      productId,
+      variantUnitPriceId,
       userId: customerId,
-      orderItemId: orderItem.id,
+      orderItemId,
       rating: input.rating,
       title: input.title || undefined,
       comment: input.comment || undefined,
       images: input.images,
+      isApproved: false, // Requires admin approval before appearing publicly
     });
 
     return formatReviewResponse(created);

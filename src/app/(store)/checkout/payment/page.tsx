@@ -180,7 +180,25 @@ export default function CheckoutPaymentPage() {
                 <LoadingState size="sm" text="Calculating totals..." />
               ) : summary ? (
                 <OrderTotals
-                  totals={summary.totals}
+                  totals={{
+                    subtotal: summary.subtotal,
+                    taxAmount: summary.taxAmount ?? 0,
+                    shippingAmount:
+                      summary.shippingCharge ??
+                      summary.deliveryCharge ??
+                      summary.totals?.shipping ??
+                      0,
+                    discountAmount:
+                      summary.discountAmount ??
+                      summary.discount ??
+                      summary.totals?.discount ??
+                      0,
+                    totalAmount:
+                      summary.totalAmount ??
+                      summary.total ??
+                      summary.totals?.total ??
+                      summary.subtotal,
+                  }}
                   couponLabel={summary.coupon?.code ?? null}
                 />
               ) : (

@@ -119,7 +119,7 @@ export default function AdminVariantsPage() {
 
   // Options for form dropdowns & filter
   const productOptions = useMemo(() => {
-    return products.map((p) => ({
+    return products.map((p: any) => ({
       value: p.id,
       label: p.name,
       slug: p.slug,

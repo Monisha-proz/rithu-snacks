@@ -92,9 +92,9 @@ export function AdminOrderListTable({
 
   const hasActiveFilters = search.trim() !== "" || paymentFilter !== "";
 
-  const handlePrint = () => {
+  const handlePrint = (orderUuid: string) => {
     if (typeof window !== "undefined") {
-      window.print();
+      window.open(`/invoice/${orderUuid}`, "_blank", "noopener");
     }
   };
 
@@ -561,7 +561,11 @@ export function AdminOrderListTable({
                   </Button>
                 )}
 
-                <Button variant="outline" size="sm" onClick={handlePrint}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePrint(orderDetail.id)}
+                >
                   <Printer className="mr-1.5 h-4 w-4" />
                   Print Invoice
                 </Button>

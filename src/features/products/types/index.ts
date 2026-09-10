@@ -120,6 +120,8 @@ export interface AdminProductListParams {
   brandId?: string;
   hsnCodeId?: string;
   status?: boolean;
+  vegType?: string;
+  isFeatured?: boolean;
   sortBy?: "name" | "slug" | "createdAt" | "updatedAt" | "status" | "isActive";
   sortOrder?: "asc" | "desc";
 }

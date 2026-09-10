@@ -10,7 +10,7 @@ export interface BrandListItem {
 }
 
 export interface BrandDetail extends BrandListItem {
-  products?: { id: number; name: string; slug: string; price: number; isActive: boolean }[];
+  products?: { id: number | bigint; name: string; slug: string; price?: number; base_price?: any; isActive: boolean }[];
 }
 
 export interface GetBrandsParams {
@@ -22,7 +22,7 @@ export interface GetBrandsParams {
 
 export interface GetBrandsResult {
   data: BrandListItem[];
-  meta: { page: number; limit: number; total: number; totalPages: number };
+  meta: { page: number; limit: number; total: number; totalPages: number; pageSize?: number };
 }
 
 export interface CreateBrandInput {

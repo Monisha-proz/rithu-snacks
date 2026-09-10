@@ -184,7 +184,22 @@ export const bannerListQuerySchema = z
   })
   .strict();
 
-export type BannerListQueryInput = z.infer<typeof bannerListQuerySchema>;
+export interface BannerListQueryInput {
+  page?: number;
+  limit?: number;
+  search?: string;
+  bannerPositionId?: string;
+  positionSlug?: string;
+  isActive?: boolean;
+  sortBy?:
+    | "createdAt"
+    | "updatedAt"
+    | "title"
+    | "sortOrder"
+    | "startsAt"
+    | "endsAt";
+  sortOrder?: "asc" | "desc";
+}
 
 export const bannerUuidParamSchema = z
   .object({

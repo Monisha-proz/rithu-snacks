@@ -54,9 +54,18 @@ export interface FilterSidebarProps {
   stockStatus: "all" | "in_stock" | "out_of_stock";
   onStockStatusChange: (status: "all" | "in_stock" | "out_of_stock") => void;
 
-  // Dietary (Veg / Non-Veg)
-  vegType: "all" | "veg" | "non_veg";
-  onVegTypeChange: (vegType: "all" | "veg" | "non_veg") => void;
+  // Dietary (Veg / Non-Veg / Vegan)
+  vegType: "all" | "veg" | "non_veg" | "vegan";
+  onVegTypeChange: (vegType: "all" | "veg" | "non_veg" | "vegan") => void;
+
+  // Facet availability counts
+  facets?: {
+    inStockCount?: number;
+    outOfStockCount?: number;
+    vegCount?: number;
+    nonVegCount?: number;
+    veganCount?: number;
+  };
 
   // Price Range Slider
   minPriceLimit?: number;
@@ -105,6 +114,7 @@ export function FilterSidebar({
   onStockStatusChange,
   vegType,
   onVegTypeChange,
+  facets,
   minPriceLimit = 0,
   maxPriceLimit = 1000,
   currentMinPrice,
@@ -156,6 +166,44 @@ export function FilterSidebar({
       isMountedRef.current = false;
     };
   }, []);
+
+  // Check if specific filter options are not available in current catalog/category
+  const isInStockDisabled = facets ? (facets.inStockCount ?? 0) === 0 : false;
+  const isOutOfStockDisabled = facets ? (facets.outOfStockCount ?? 0) === 0 : false;
+  const isVegDisabled = facets ? (facets.vegCount ?? 0) === 0 : false;
+  const isNonVegDisabled = facets ? (facets.nonVegCount ?? 0) === 0 : false;
+  const isVeganDisabled = facets ? (facets.veganCount ?? 0) === 0 : false;
+
+  // Auto-reset if active filter becomes unavailable
+  React.useEffect(() => {
+    if (isOutOfStockDisabled && stockStatus === "out_of_stock") {
+      onStockStatusChange("all");
+    }
+  }, [isOutOfStockDisabled, stockStatus, onStockStatusChange]);
+
+  React.useEffect(() => {
+    if (isInStockDisabled && stockStatus === "in_stock") {
+      onStockStatusChange("all");
+    }
+  }, [isInStockDisabled, stockStatus, onStockStatusChange]);
+
+  React.useEffect(() => {
+    if (isNonVegDisabled && vegType === "non_veg") {
+      onVegTypeChange("all");
+    }
+  }, [isNonVegDisabled, vegType, onVegTypeChange]);
+
+  React.useEffect(() => {
+    if (isVegDisabled && vegType === "veg") {
+      onVegTypeChange("all");
+    }
+  }, [isVegDisabled, vegType, onVegTypeChange]);
+
+  React.useEffect(() => {
+    if (isVeganDisabled && vegType === "vegan") {
+      onVegTypeChange("all");
+    }
+  }, [isVeganDisabled, vegType, onVegTypeChange]);
 
   // Auto-expand and load products for selected categories
   React.useEffect(() => {
@@ -367,12 +415,13 @@ export function FilterSidebar({
 
   // Handle internal reset to immediately clear local search, category search, and price slider
   const handleInternalReset = React.useCallback(() => {
+    if (!hasActiveFilters) return;
     setLocalSearch("");
     setCategorySearch("");
     setLocalMinPrice(minPriceLimit);
     setLocalMaxPrice(maxPriceLimit);
     onResetFilters();
-  }, [minPriceLimit, maxPriceLimit, onResetFilters]);
+  }, [hasActiveFilters, minPriceLimit, maxPriceLimit, onResetFilters]);
 
   const sidebarContent = (
     <div className="flex flex-col gap-5 text-[#2D1810]">
@@ -392,13 +441,14 @@ export function FilterSidebar({
 
         <button
           type="button"
+          disabled={!hasActiveFilters}
           onClick={handleInternalReset}
-          className={`text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer select-none ${
+          className={`text-xs font-bold flex items-center gap-1.5 transition-colors select-none ${
             hasActiveFilters
-              ? "text-[#7A2224] hover:text-[#5A1911] hover:underline"
-              : "text-[#9C8274] hover:text-[#7A2224]"
+              ? "text-[#7A2224] hover:text-[#5A1911] hover:underline cursor-pointer"
+              : "opacity-35 cursor-not-allowed pointer-events-none text-[#9C8274]"
           }`}
-          title="Clear all filters"
+          title={hasActiveFilters ? "Clear all filters" : "No active filters"}
         >
           <RotateCcw className="w-3.5 h-3.5" />
           Clear Filter
@@ -464,31 +514,49 @@ export function FilterSidebar({
         <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
-            onClick={() =>
-              onStockStatusChange(stockStatus === "in_stock" ? "all" : "in_stock")
-            }
-            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer select-none flex items-center gap-1.5 ${
-              stockStatus === "in_stock"
-                ? "bg-[#166534] text-white border border-[#166534] shadow-xs"
-                : "bg-white text-[#4A3228] border border-[#DCC7B7] hover:bg-[#FAF6F0]"
+            disabled={isInStockDisabled}
+            onClick={() => {
+              if (isInStockDisabled) return;
+              onStockStatusChange(stockStatus === "in_stock" ? "all" : "in_stock");
+            }}
+            title={isInStockDisabled ? "No in-stock snacks available" : undefined}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all select-none flex items-center gap-1.5 ${
+              isInStockDisabled
+                ? "opacity-35 cursor-not-allowed bg-[#FAF6F0] text-[#9C8274] border border-[#DCC7B7]/50"
+                : stockStatus === "in_stock"
+                ? "bg-[#166534] text-white border border-[#166534] shadow-xs cursor-pointer"
+                : "bg-white text-[#4A3228] border border-[#DCC7B7] hover:bg-[#FAF6F0] cursor-pointer"
             }`}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                isInStockDisabled ? "bg-[#9C8274]/50" : "bg-green-500"
+              }`}
+            />
             In Stock
           </button>
 
           <button
             type="button"
-            onClick={() =>
-              onStockStatusChange(stockStatus === "out_of_stock" ? "all" : "out_of_stock")
-            }
-            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer select-none flex items-center gap-1.5 ${
-              stockStatus === "out_of_stock"
-                ? "bg-[#991B1B] text-white border border-[#991B1B] shadow-xs"
-                : "bg-white text-[#4A3228] border border-[#DCC7B7] hover:bg-[#FAF6F0]"
+            disabled={isOutOfStockDisabled}
+            onClick={() => {
+              if (isOutOfStockDisabled) return;
+              onStockStatusChange(stockStatus === "out_of_stock" ? "all" : "out_of_stock");
+            }}
+            title={isOutOfStockDisabled ? "No out-of-stock snacks available" : undefined}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all select-none flex items-center gap-1.5 ${
+              isOutOfStockDisabled
+                ? "opacity-35 cursor-not-allowed bg-[#FAF6F0] text-[#9C8274] border border-[#DCC7B7]/50"
+                : stockStatus === "out_of_stock"
+                ? "bg-[#991B1B] text-white border border-[#991B1B] shadow-xs cursor-pointer"
+                : "bg-white text-[#4A3228] border border-[#DCC7B7] hover:bg-[#FAF6F0] cursor-pointer"
             }`}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                isOutOfStockDisabled ? "bg-[#9C8274]/50" : "bg-red-500"
+              }`}
+            />
             Out of Stock
           </button>
         </div>
@@ -502,27 +570,73 @@ export function FilterSidebar({
         <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
-            onClick={() => onVegTypeChange(vegType === "veg" ? "all" : "veg")}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer select-none flex items-center gap-1.5 ${
-              vegType === "veg"
-                ? "bg-emerald-700 text-white border border-emerald-700 shadow-xs"
-                : "bg-white text-emerald-800 border border-emerald-300 hover:bg-emerald-50"
+            disabled={isVegDisabled}
+            onClick={() => {
+              if (isVegDisabled) return;
+              onVegTypeChange(vegType === "veg" ? "all" : "veg");
+            }}
+            title={isVegDisabled ? "No pure veg snacks available" : undefined}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all select-none flex items-center gap-1.5 ${
+              isVegDisabled
+                ? "opacity-35 cursor-not-allowed bg-[#FAF6F0] text-[#9C8274] border border-[#DCC7B7]/50"
+                : vegType === "veg"
+                ? "bg-emerald-700 text-white border border-emerald-700 shadow-xs cursor-pointer"
+                : "bg-white text-emerald-800 border border-emerald-300 hover:bg-emerald-50 cursor-pointer"
             }`}
           >
-            <span className="w-2 h-2 rounded-full bg-green-500" />
-            Pure Veg
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isVegDisabled ? "bg-[#9C8274]/50" : "bg-green-500"
+              }`}
+            />
+            Veg
           </button>
 
           <button
             type="button"
-            onClick={() => onVegTypeChange(vegType === "non_veg" ? "all" : "non_veg")}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer select-none flex items-center gap-1.5 ${
-              vegType === "non_veg"
-                ? "bg-red-700 text-white border border-red-700 shadow-xs"
-                : "bg-white text-red-800 border border-red-300 hover:bg-red-50"
+            disabled={isVeganDisabled}
+            onClick={() => {
+              if (isVeganDisabled) return;
+              onVegTypeChange(vegType === "vegan" ? "all" : "vegan");
+            }}
+            title={isVeganDisabled ? "No vegan snacks available" : undefined}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all select-none flex items-center gap-1.5 ${
+              isVeganDisabled
+                ? "opacity-35 cursor-not-allowed bg-[#FAF6F0] text-[#9C8274] border border-[#DCC7B7]/50"
+                : vegType === "vegan"
+                ? "bg-teal-700 text-white border border-teal-700 shadow-xs cursor-pointer"
+                : "bg-white text-teal-800 border border-teal-300 hover:bg-teal-50 cursor-pointer"
             }`}
           >
-            <span className="w-2 h-2 rounded-full bg-red-500" />
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isVeganDisabled ? "bg-[#9C8274]/50" : "bg-teal-500"
+              }`}
+            />
+            Vegan
+          </button>
+
+          <button
+            type="button"
+            disabled={isNonVegDisabled}
+            onClick={() => {
+              if (isNonVegDisabled) return;
+              onVegTypeChange(vegType === "non_veg" ? "all" : "non_veg");
+            }}
+            title={isNonVegDisabled ? "No non-veg snacks available" : undefined}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all select-none flex items-center gap-1.5 ${
+              isNonVegDisabled
+                ? "opacity-35 cursor-not-allowed bg-[#FAF6F0] text-[#9C8274] border border-[#DCC7B7]/50"
+                : vegType === "non_veg"
+                ? "bg-red-700 text-white border border-red-700 shadow-xs cursor-pointer"
+                : "bg-white text-red-800 border border-red-300 hover:bg-red-50 cursor-pointer"
+            }`}
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isNonVegDisabled ? "bg-[#9C8274]/50" : "bg-red-500"
+              }`}
+            />
             Non-Veg
           </button>
         </div>

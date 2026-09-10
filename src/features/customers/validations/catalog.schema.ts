@@ -102,6 +102,8 @@ export const customerGlobalVariantListSchema = z
     categoryIds: z.array(z.string().trim().regex(uuidRegex, "Invalid category UUID")).optional(),
     minPrice: z.number().min(0, "minPrice cannot be negative").optional().nullable(),
     maxPrice: z.number().min(0, "maxPrice cannot be negative").optional().nullable(),
+    inStock: z.boolean().optional(),
+    vegType: z.enum(["veg", "non_veg", "nonveg", "vegan", "na"]).optional(),
     sortBy: z
       .enum(["variantName", "salePrice", "basePrice", "createdAt", "productName"])
       .optional()
