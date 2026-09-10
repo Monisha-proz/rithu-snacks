@@ -254,7 +254,7 @@ export const reviews = [
     name: "Mrs.Kavi P.,",
     location: "Namakkal, TamilNadu",
     feedback:
-      "Rithu's Snacks are the perfect balance of taste and health. Healthy, tasty, and made with care. This Snacks never disappoint. Every bite feels homemade and fresh!",
+      "Rithu's Snacks are the perfect balance of taste and health. Healthy, tasty, and made with care. These Snacks never disappoint. Every bite feels homemade and fresh!",
     bg: "--red-50",
   },
   {
@@ -264,7 +264,7 @@ export const reviews = [
     location: "Salem, TamilNadu",
     bg: "--green-50",
     feedback:
-      "Rithu's Snacks are the perfect balance of taste and health. Healthy, tasty, and made with care. This Snacks never disappoint. Every bite feels homemade and fresh!",
+      "Rithu's Snacks are the perfect balance of taste and health. Healthy, tasty, and made with care. These Snacks never disappoint. Every bite feels homemade and fresh!",
   },
   {
     id: 3,
@@ -273,7 +273,7 @@ export const reviews = [
     location: "Chennai, TamilNadu",
     bg: "--blue-50",
     feedback:
-      "Rithu's Snacks are the perfect balance of taste and health. Healthy, tasty, and made with care. This Snacks never disappoint. Every bite feels homemade and fresh!",
+      "Rithu's Snacks are the perfect balance of taste and health. Healthy, tasty, and made with care. These Snacks never disappoint. Every bite feels homemade and fresh!",
   },
 ];
 

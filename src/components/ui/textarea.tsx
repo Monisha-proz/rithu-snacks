@@ -20,7 +20,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           {...props}
         />
-        {error && <p className="mt-1 text-sm text-error-600">{error}</p>}
+        {error && <p className="mt-1 text-xs text-red-500 font-medium">{error}</p>}
       </div>
     );
   }

@@ -198,7 +198,7 @@ export default function AdminProductsPage() {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center justify-center gap-1.5">
           <Button
             variant="ghost"
             size="icon"
@@ -332,6 +332,7 @@ export default function AdminProductsPage() {
             if (formData.productImage && created?.data?.id) {
               await saveProductPrimaryImage(created.data.id, formData.productImage);
             }
+            refetch();
           }}
         />
       </FormModal>
@@ -405,7 +406,10 @@ export default function AdminProductsPage() {
         onConfirm={() => {
           if (deleteId) {
             deleteMutation.mutate(deleteId, {
-              onSuccess: () => setDeleteId(null),
+              onSuccess: () => {
+                setDeleteId(null);
+                refetch();
+              },
             });
           }
         }}

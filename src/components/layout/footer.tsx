@@ -168,16 +168,16 @@ export function Footer() {
       router.push("/orders");
       return;
     }
-    if (item === "Terms & Condition") {
-      router.push("/terms");
+    if (item === "Terms & Condition" || item === "Terms & Conditions") {
+      router.push("/terms-and-conditions");
       return;
     }
     if (item === "Privacy Policy") {
-      router.push("/privacy");
+      router.push("/privacy-policy");
       return;
     }
     if (item === "Return & Refund Policy") {
-      router.push("/refund-policy");
+      router.push("/return-refund-policy");
       return;
     }
     if (item === "FAQ's") {
@@ -211,7 +211,7 @@ export function Footer() {
   };
 
   return (
-    <footer className="relative pt-12">
+    <footer className="relative pt-4">
       {/* Floating Contact Cards */}
       <div className="relative z-10 lg:translate-y-12 mb-6 lg:mb-0">
         <div className="grid md:grid-cols-3 gap-5 max-w-[1100px] mx-auto px-4">
@@ -341,13 +341,22 @@ export function Footer() {
         <div className="mt-8 h-[3px] bg-[var(--brown-600)]" />
 
         {/* Copyright Bar */}
-        <div className="flex flex-col gap-2 py-5 text-sm text-gray-200 header-font text-center lg:flex-row lg:justify-between lg:items-center lg:text-left lg:px-8 max-w-[1400px] mx-auto">
+        <div className="flex flex-col gap-2 pt-5 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] lg:pb-6 text-sm text-gray-200 header-font text-center lg:flex-row lg:justify-between lg:items-center lg:text-left px-4 sm:px-6 lg:px-8 max-w-[1400px] mx-auto">
           <p className="header-font">
             Copyright © {new Date().getFullYear()} {companyName}. All Rights Reserved.
           </p>
 
           <p className="header-font">
-            Design and Developed By ProZ Solutions LLP.
+            Design and Developed By{" "}
+            <a
+              href="https://proz.in/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:underline hover:text-white transition-colors cursor-pointer"
+            >
+              ProZ Solutions LLP
+            </a>
+            .
           </p>
         </div>
       </div>

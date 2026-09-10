@@ -414,7 +414,7 @@ export function AddressesTab() {
                 }`}
               />
               {fieldErrors.fullName && (
-                <span className="text-[11px] text-red-600">{fieldErrors.fullName}</span>
+                <span className="text-xs text-red-500 font-medium">{fieldErrors.fullName}</span>
               )}
             </div>
 
@@ -431,7 +431,7 @@ export function AddressesTab() {
                 }`}
               />
               {fieldErrors.phone && (
-                <span className="text-[11px] text-red-600">{fieldErrors.phone}</span>
+                <span className="text-xs text-red-500 font-medium">{fieldErrors.phone}</span>
               )}
             </div>
 
@@ -456,7 +456,7 @@ export function AddressesTab() {
                 }`}
               />
               {fieldErrors.pincode && (
-                <span className="text-[11px] text-red-600">{fieldErrors.pincode}</span>
+                <span className="text-xs text-red-500 font-medium">{fieldErrors.pincode}</span>
               )}
             </div>
 
@@ -473,7 +473,7 @@ export function AddressesTab() {
                 }`}
               />
               {fieldErrors.addressLine1 && (
-                <span className="text-[11px] text-red-600">{fieldErrors.addressLine1}</span>
+                <span className="text-xs text-red-500 font-medium">{fieldErrors.addressLine1}</span>
               )}
             </div>
 
@@ -490,7 +490,7 @@ export function AddressesTab() {
                 }`}
               />
               {fieldErrors.addressLine2 && (
-                <span className="text-[11px] text-red-600">{fieldErrors.addressLine2}</span>
+                <span className="text-xs text-red-500 font-medium">{fieldErrors.addressLine2}</span>
               )}
             </div>
 
@@ -519,7 +519,7 @@ export function AddressesTab() {
                 }`}
               />
               {fieldErrors.city && (
-                <span className="text-[11px] text-red-600">{fieldErrors.city}</span>
+                <span className="text-xs text-red-500 font-medium">{fieldErrors.city}</span>
               )}
             </div>
 
@@ -536,7 +536,7 @@ export function AddressesTab() {
                 }`}
               />
               {fieldErrors.state && (
-                <span className="text-[11px] text-red-600">{fieldErrors.state}</span>
+                <span className="text-xs text-red-500 font-medium">{fieldErrors.state}</span>
               )}
             </div>
 

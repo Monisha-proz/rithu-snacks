@@ -868,7 +868,7 @@ export function FilterSidebar({
           <span className="text-[#9C8274]">—</span>
           <span className="bg-[#FAF6F0] px-2.5 py-1 rounded-md border border-[#DCC7B7] text-[#2D1810]">
             {formatPrice(localMaxPrice)}
-            {localMaxPrice >= maxPriceLimit ? "+" : ""}
+            {localMaxPrice >= maxPriceLimit ? "" : ""}
           </span>
         </div>
       </div>

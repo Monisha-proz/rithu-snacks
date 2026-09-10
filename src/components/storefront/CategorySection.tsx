@@ -334,7 +334,7 @@ export function CategorySection() {
         <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          className={`w-full md:flex-1 flex items-center flex-nowrap gap-4 sm:gap-6 md:gap-8 py-4 px-2 sm:px-4 md:px-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
+          className={`w-full md:flex-1 flex items-center flex-nowrap gap-4 sm:gap-6 md:gap-8 py-2 px-2 sm:px-4 md:px-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
             needsScroll ? "justify-start" : "justify-center"
           }`}
           onMouseEnter={handleMouseEnter}

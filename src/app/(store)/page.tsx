@@ -14,7 +14,7 @@ import {
 
 export default function HomePage() {
   return (
-    <div className="pb-16 lg:pb-0 bg-white">
+    <div className="bg-white">
       <OfferPopup />
       <HeroSlider />
       <CategorySection />

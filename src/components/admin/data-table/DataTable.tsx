@@ -160,7 +160,7 @@ function DataTable<TData, TValue>({
                         className={cn(
                           "h-14 px-4 text-left align-middle text-xs font-semibold tracking-wider whitespace-nowrap text-[var(--color-neutral-500)] uppercase sm:px-5 bg-[var(--color-neutral-50)] border-b border-gray-200 sticky top-0 z-10",
                           isActions &&
-                            "text-right sticky top-0 right-0 z-30 shadow-[-6px_0_10px_-4px_rgba(0,0,0,0.06)] border-l border-neutral-200/80 bg-[var(--color-neutral-50)]",
+                            "text-center sticky top-0 right-0 z-30 shadow-[-6px_0_10px_-4px_rgba(0,0,0,0.06)] border-l border-neutral-200/80 bg-[var(--color-neutral-50)]",
                           header.column.getCanSort() &&
                             "cursor-pointer select-none hover:text-[var(--color-neutral-700)]"
                         )}
@@ -169,7 +169,7 @@ function DataTable<TData, TValue>({
                         <div
                           className={cn(
                             "flex items-center gap-1",
-                            isActions && "justify-end"
+                            isActions ? "justify-center" : ""
                           )}
                         >
                           {header.isPlaceholder
@@ -211,7 +211,7 @@ function DataTable<TData, TValue>({
                           className={cn(
                             "px-4 py-4 align-middle whitespace-nowrap sm:px-5 bg-white group-hover:bg-[var(--color-neutral-50)] transition-colors border-b border-gray-200",
                             isActions &&
-                              "text-right [&>div]:justify-end sticky right-0 z-20 shadow-[-6px_0_10px_-4px_rgba(0,0,0,0.06)] border-l border-neutral-200/80 bg-white group-hover:bg-[var(--color-neutral-50)]"
+                              "text-center [&>div]:justify-center [&>div]:items-center sticky right-0 z-20 shadow-[-6px_0_10px_-4px_rgba(0,0,0,0.06)] border-l border-neutral-200/80 bg-white group-hover:bg-[var(--color-neutral-50)]"
                           )}
                         >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}

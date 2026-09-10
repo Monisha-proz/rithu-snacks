@@ -1,5 +1,9 @@
+"use client";
+
 import Image from "next/image";
-import { ReactNode } from "react";
+import Link from "next/link";
+import { ReactNode, useState } from "react";
+import { ContactFormModal } from "@/features/contact/components/ContactFormModal";
 
 interface AuthFormLayoutProps {
   title: string;
@@ -18,6 +22,8 @@ export default function AuthFormLayout({
   bottomContent,
   showFooter = false,
 }: AuthFormLayoutProps) {
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+
   return (
     <div className="mx-auto flex w-full max-w-[300px] flex-col justify-center sm:max-w-[420px] lg:max-w-[420px]">
       {/* Logo */}
@@ -61,32 +67,39 @@ export default function AuthFormLayout({
       {/* Footer */}
       {showFooter && (
         <div className="mt-10 flex flex-wrap items-center justify-center gap-3 text-xs text-neutral-500 md:text-sm">
-          <a
+          <Link
             href="/privacy-policy"
             className="transition-colors hover:text-secondary-600"
           >
             Privacy Policy
-          </a>
+          </Link>
 
           <span>•</span>
 
-          <a
+          <Link
             href="/terms-and-conditions"
             className="transition-colors hover:text-secondary-600"
           >
             Terms & Conditions
-          </a>
+          </Link>
 
           <span>•</span>
 
-          <a
-            href="/contact"
-            className="transition-colors hover:text-secondary-600"
+          <button
+            type="button"
+            onClick={() => setIsContactModalOpen(true)}
+            className="cursor-pointer transition-colors hover:text-secondary-600"
           >
             Contact Us
-          </a>
+          </button>
         </div>
       )}
+
+      {/* Contact Form Modal */}
+      <ContactFormModal
+        open={isContactModalOpen}
+        onClose={() => setIsContactModalOpen(false)}
+      />
     </div>
   );
-}
+}

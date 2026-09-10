@@ -196,7 +196,7 @@ export default function AdminUsersPage() {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center justify-center gap-1.5">
           <Button
             variant="ghost"
             size="icon"
@@ -292,7 +292,7 @@ export default function AdminUsersPage() {
               placeholder="Full name"
             />
             {errors.name && (
-              <p className="mt-1 text-sm text-error-600">{errors.name.message}</p>
+              <p className="mt-1 text-xs text-red-500 font-medium">{errors.name.message}</p>
             )}
           </div>
 
@@ -307,7 +307,7 @@ export default function AdminUsersPage() {
               placeholder="user@example.com"
             />
             {errors.email && (
-              <p className="mt-1 text-sm text-error-600">{errors.email.message}</p>
+              <p className="mt-1 text-xs text-red-500 font-medium">{errors.email.message}</p>
             )}
           </div>
 
@@ -323,7 +323,7 @@ export default function AdminUsersPage() {
                 placeholder="Minimum 6 characters"
               />
               {errors.password && (
-                <p className="mt-1 text-sm text-error-600">{errors.password.message}</p>
+                <p className="mt-1 text-xs text-red-500 font-medium">{errors.password.message}</p>
               )}
             </div>
           )}
@@ -338,7 +338,7 @@ export default function AdminUsersPage() {
               placeholder="Phone number"
             />
             {errors.phone && (
-              <p className="mt-1 text-sm text-error-600">{errors.phone.message}</p>
+              <p className="mt-1 text-xs text-red-500 font-medium">{errors.phone.message}</p>
             )}
           </div>
 
@@ -354,7 +354,7 @@ export default function AdminUsersPage() {
                 placeholder="1"
               />
               {errors.roleId && (
-                <p className="mt-1 text-sm text-error-600">{errors.roleId.message}</p>
+                <p className="mt-1 text-xs text-red-500 font-medium">{errors.roleId.message}</p>
               )}
             </div>
 
@@ -371,7 +371,7 @@ export default function AdminUsersPage() {
                 <option value="banned">Banned</option>
               </select>
               {errors.status && (
-                <p className="mt-1 text-sm text-error-600">{errors.status.message}</p>
+                <p className="mt-1 text-xs text-red-500 font-medium">{errors.status.message}</p>
               )}
             </div>
           </div>
@@ -413,7 +413,7 @@ export default function AdminUsersPage() {
               placeholder="Minimum 6 characters"
             />
             {resetPasswordErrors.password && (
-              <p className="mt-1 text-sm text-error-600">
+              <p className="mt-1 text-xs text-red-500 font-medium">
                 {resetPasswordErrors.password.message}
               </p>
             )}

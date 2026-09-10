@@ -348,7 +348,7 @@ export default function AdminVariantsPage() {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
-        <div className="flex gap-1.5">
+        <div className="flex items-center justify-center gap-1.5">
           <Link
             href={`/admin/dashboard/variants/${encodeURIComponent(
               row.original.id
