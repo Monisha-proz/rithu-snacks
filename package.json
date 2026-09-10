@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" next dev --webpack",
-    "build": "next build --webpack",
+    "build": "cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "db:generate": "prisma generate",
@@ -41,6 +41,7 @@
     "pino": "^10.3.1",
     "prisma": "^7.9.1",
     "qrcode": "^1.5.4",
+    "razorpay": "^2.9.8",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-easy-crop": "^6.2.3",

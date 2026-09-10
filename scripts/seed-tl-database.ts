@@ -556,7 +556,7 @@ async function main() {
         },
       });
       totalProducts++;
-      createdProductsList.push({ id: product.id, uuid: product.uuid, name: product.name });
+      createdProductsList.push({ id: product.id, uuid: productUuid, name: product.name });
       console.log(`  📦 [Product] ${prodData.name}`);
 
       // Seed a primary product image
