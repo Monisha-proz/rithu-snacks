@@ -1,31 +1,74 @@
-import { useQuery } from "@tanstack/react-query";
+"use client";
+
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { productKeys } from "@/lib/api/query-keys";
-import { getProducts, getProduct } from "../api/get-products";
-import type { GetProductsParams } from "../types";
+import {
+  getStoreProducts,
+  getStoreProduct,
+  getAdminProducts,
+  getAdminProduct,
+  getAdminProductImages,
+} from "../api/get-products";
+import type {
+  AdminProductListParams,
+  GetAdminProductsParams,
+  AdminProductImageResponse,
+} from "../types";
 
-export function useProducts(params?: GetProductsParams) {
-  const queryParams: Record<string, string | number | boolean | undefined> = {};
-  if (params?.page) queryParams.page = params.page;
-  if (params?.limit) queryParams.limit = params.limit;
-  if (params?.search) queryParams.search = params.search;
-  if (params?.category) queryParams.category = params.category;
-  if (params?.brand) queryParams.brand = params.brand;
-  if (params?.sort) queryParams.sort = params.sort;
-  if (params?.isFeatured !== undefined) queryParams.isFeatured = params.isFeatured;
-  if (params?.minPrice !== undefined) queryParams.minPrice = params.minPrice;
-  if (params?.maxPrice !== undefined) queryParams.maxPrice = params.maxPrice;
-
+export function useProducts(
+  params?: Record<string, unknown>,
+  options?: { enabled?: boolean }
+) {
   return useQuery({
-    queryKey: productKeys.list(queryParams),
-    queryFn: () => getProducts(queryParams),
-    placeholderData: (prev) => prev,
+    queryKey: productKeys.list(params ?? {}),
+    queryFn: () => getStoreProducts(params),
+    placeholderData: keepPreviousData,
+    ...options,
   });
 }
 
-export function useProduct(slugOrId: string | null) {
+export function useProduct(idOrSlug: string | null) {
   return useQuery({
-    queryKey: productKeys.detail(slugOrId ?? ""),
-    queryFn: () => getProduct(slugOrId!),
-    enabled: !!slugOrId,
+    queryKey: productKeys.detail(idOrSlug ?? ""),
+    queryFn: () => getStoreProduct(idOrSlug!),
+    enabled: !!idOrSlug,
   });
 }
+
+export function useAdminProducts(
+  params?: AdminProductListParams | GetAdminProductsParams,
+  options?: { enabled?: boolean }
+) {
+  return useQuery({
+    queryKey: ["admin", "products", "list", params ?? {}],
+    queryFn: () => getAdminProducts(params),
+    placeholderData: keepPreviousData,
+    ...options,
+  });
+}
+
+export function useAdminProduct(uuid: string | null) {
+  return useQuery({
+    queryKey: ["admin", "products", "detail", uuid ?? ""],
+    queryFn: () => getAdminProduct(uuid!),
+    enabled: !!uuid,
+  });
+}
+
+export function useProductImages(
+  productUuid: string | null,
+  options?: { enabled?: boolean }
+) {
+  return useQuery<AdminProductImageResponse[]>({
+    queryKey: productUuid
+      ? ([...productKeys.all, "images", productUuid] as const)
+      : (["products", "images"] as const),
+    queryFn: () => getAdminProductImages(productUuid!),
+    enabled: !!productUuid && (options?.enabled ?? true),
+  });
+}
+
+export {
+  useCustomerProducts,
+  useCustomerProduct,
+} from "@/features/customers/hooks";

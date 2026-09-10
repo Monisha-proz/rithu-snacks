@@ -7,7 +7,7 @@ import { useBlogs, useCreateBlog, useUpdateBlog, useDeleteBlog } from "@/feature
 import { DataTable } from "@/components/admin/data-table/DataTable";
 import { AdminPageHeader, AdminContent } from "@/components/admin/AdminPageHeader";
 import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
-import { LoadingState } from "@/components/ui/loading-state";
+import { AdminTableSkeleton } from "@/components/admin/AdminTableSkeleton";
 import { ErrorState } from "@/components/ui/error-state";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -158,18 +158,18 @@ export default function AdminBlogsPage() {
             size="icon"
             onClick={() => setDeleteId(row.original.id)}
           >
-            <Trash2 className="h-4 w-4 text-destructive" />
+            <Trash2 className="h-4 w-4 text-error-600" />
           </Button>
         </div>
       ),
     },
   ];
 
-  if (isLoading) return <LoadingState text="Loading blogs..." />;
+  if (isLoading) return <AdminTableSkeleton />;
   if (error) return <ErrorState message="Failed to load blogs" onRetry={() => refetch()} />;
 
   return (
-    <div>
+    <div className="flex flex-1 min-h-0 flex-col">
       <AdminBreadcrumb items={[{ label: "Blogs" }]} />
       <AdminPageHeader
         title="Blogs"
@@ -181,14 +181,17 @@ export default function AdminBlogsPage() {
           </Button>
         }
       />
-      <AdminContent>
-        <DataTable
-          columns={columns}
-          data={blogs}
-          searchKey="title"
-          searchPlaceholder="Search blogs..."
-          pageSize={20}
-        />
+      <AdminContent className="flex-1 min-h-0 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          <DataTable
+            columns={columns}
+            data={blogs}
+            searchKey="title"
+            searchPlaceholder="Search blogs..."
+            pageSize={20}
+            className="bg-white border border-neutral-200"
+          />
+        </div>
       </AdminContent>
 
       <FormModal
@@ -223,7 +226,7 @@ export default function AdminBlogsPage() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Title <span className="text-destructive">*</span>
+              Title <span className="text-error-600">*</span>
             </label>
             <input
               {...register("title")}
@@ -231,7 +234,7 @@ export default function AdminBlogsPage() {
               placeholder="Blog title"
             />
             {errors.title && (
-              <p className="mt-1 text-sm text-destructive">{errors.title.message}</p>
+              <p className="mt-1 text-sm text-error-600">{errors.title.message}</p>
             )}
           </div>
 
@@ -247,7 +250,7 @@ export default function AdminBlogsPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Content <span className="text-destructive">*</span>
+              Content <span className="text-error-600">*</span>
             </label>
             <textarea
               {...register("content")}
@@ -256,7 +259,7 @@ export default function AdminBlogsPage() {
               placeholder="Blog content"
             />
             {errors.content && (
-              <p className="mt-1 text-sm text-destructive">{errors.content.message}</p>
+              <p className="mt-1 text-sm text-error-600">{errors.content.message}</p>
             )}
           </div>
 

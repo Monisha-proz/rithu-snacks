@@ -10,9 +10,11 @@ export const PATCH = createApiHandler(
       try {
         const userId = parseInt((context.session?.user as { id?: string })?.id ?? "0");
         if (!userId) return apiFromError(new Error("Unauthorized"));
-        const id = parseInt(context.params?.id ?? "0", 10);
-        const body = (context.body as CancelOrderSchemaInput) ?? {};
-        const order = await orderService.cancelOrder(userId, id, body.reason);
+        const id = context.params?.id ?? "";
+        const body = (context.body as any) ?? {};
+        const order = await orderService.cancelOrder(userId, id, {
+          reason: body.reason || body.note,
+        });
         return apiSuccess(order, "Order cancelled successfully");
       } catch (error) {
         return apiFromError(error);

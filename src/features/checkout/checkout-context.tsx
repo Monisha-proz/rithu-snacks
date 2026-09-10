@@ -12,6 +12,7 @@ export interface CheckoutState {
   couponCode: string | null;
   paymentMethod: PaymentMethod;
   notes: string;
+  isOrderPlaced: boolean;
 }
 
 interface CheckoutContextValue extends CheckoutState {
@@ -20,6 +21,7 @@ interface CheckoutContextValue extends CheckoutState {
   setCouponCode: (code: string | null) => void;
   setPaymentMethod: (method: PaymentMethod) => void;
   setNotes: (notes: string) => void;
+  setIsOrderPlaced: (isPlaced: boolean) => void;
   resetCheckout: () => void;
 }
 
@@ -27,10 +29,11 @@ const STORAGE_KEY = "rithu-checkout-state";
 
 const DEFAULT_STATE: CheckoutState = {
   addressId: null,
-  deliveryMethod: "STANDARD",
+  deliveryMethod: "standard",
   couponCode: null,
   paymentMethod: "CASH_ON_DELIVERY",
   notes: "",
+  isOrderPlaced: false,
 };
 
 const CheckoutContext = React.createContext<CheckoutContextValue | null>(null);
@@ -41,7 +44,7 @@ function loadInitialState(): CheckoutState {
     const raw = window.sessionStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<CheckoutState>;
-      return { ...DEFAULT_STATE, ...parsed };
+      return { ...DEFAULT_STATE, ...parsed, isOrderPlaced: false };
     }
   } catch {
     // ignore invalid storage
@@ -72,6 +75,8 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
       setPaymentMethod: (paymentMethod) =>
         setState((prev) => ({ ...prev, paymentMethod })),
       setNotes: (notes) => setState((prev) => ({ ...prev, notes })),
+      setIsOrderPlaced: (isOrderPlaced) =>
+        setState((prev) => ({ ...prev, isOrderPlaced })),
       resetCheckout: () => setState(DEFAULT_STATE),
     }),
     [state]

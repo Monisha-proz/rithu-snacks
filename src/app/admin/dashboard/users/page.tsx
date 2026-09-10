@@ -13,16 +13,15 @@ import {
 import { DataTable } from "@/components/admin/data-table/DataTable";
 import { AdminPageHeader, AdminContent } from "@/components/admin/AdminPageHeader";
 import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
-import { LoadingState } from "@/components/ui/loading-state";
+import { AdminTableSkeleton } from "@/components/admin/AdminTableSkeleton";
 import { ErrorState } from "@/components/ui/error-state";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormModal } from "@/components/common/FormModal";
-import { Plus, Pencil, Trash2, KeyRound, ToggleLeft } from "lucide-react";
+import { Plus, Pencil, Trash2, KeyRound } from "lucide-react";
 import {
   createUserSchema,
-  updateUserSchema,
   resetPasswordSchema,
   type CreateUserSchemaInput,
 } from "@/features/users/validations/user.schema";
@@ -34,7 +33,7 @@ type ModalMode = "create" | "edit" | "resetPassword" | null;
 export default function AdminUsersPage() {
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [selectedUser, setSelectedUser] = useState<UserListItem | null>(null);
-  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [deleteId, setDeleteId] = useState<string | number | null>(null);
 
   const { data, isLoading, error, refetch } = useUsers();
   const createMutation = useCreateUser();
@@ -57,7 +56,7 @@ export default function AdminUsersPage() {
       password: "",
       phone: "",
       roleId: undefined,
-      status: "ACTIVE",
+      status: "active",
     },
   });
 
@@ -75,11 +74,11 @@ export default function AdminUsersPage() {
     if (modalMode === "edit" && selectedUser) {
       reset({
         name: selectedUser.name,
-        email: selectedUser.email,
+        email: selectedUser.email ?? "",
         password: "",
         phone: selectedUser.phone ?? "",
         roleId: selectedUser.roleId,
-        status: selectedUser.status as "ACTIVE" | "INACTIVE" | "BLOCKED",
+        status: (selectedUser.status as "active" | "inactive" | "banned") || "active",
       });
     } else if (modalMode === "create") {
       reset({
@@ -88,7 +87,7 @@ export default function AdminUsersPage() {
         password: "",
         phone: "",
         roleId: undefined,
-        status: "ACTIVE",
+        status: "active",
       });
     }
   }, [modalMode, selectedUser, reset]);
@@ -138,12 +137,13 @@ export default function AdminUsersPage() {
   };
 
   const statusBadgeVariant = (status: string) => {
-    switch (status) {
-      case "ACTIVE":
+    switch (status?.toLowerCase()) {
+      case "active":
         return "success";
-      case "INACTIVE":
+      case "inactive":
         return "secondary";
-      case "BLOCKED":
+      case "banned":
+      case "blocked":
         return "destructive";
       default:
         return "secondary";
@@ -225,21 +225,21 @@ export default function AdminUsersPage() {
             title="Delete"
             onClick={() => setDeleteId(row.original.id)}
           >
-            <Trash2 className="h-4 w-4 text-destructive" />
+            <Trash2 className="h-4 w-4 text-error-600" />
           </Button>
         </div>
       ),
     },
   ];
 
-  if (isLoading) return <LoadingState text="Loading users..." />;
+  if (isLoading) return <AdminTableSkeleton />;
   if (error) return <ErrorState message="Failed to load users" onRetry={() => refetch()} />;
 
   const isMutating = createMutation.isPending || updateMutation.isPending;
   const isRoleMutating = resetPasswordMutation.isPending;
 
   return (
-    <div>
+    <div className="flex flex-1 min-h-0 flex-col">
       <AdminBreadcrumb items={[{ label: "Users" }]} />
       <AdminPageHeader
         title="Users"
@@ -251,14 +251,17 @@ export default function AdminUsersPage() {
           </Button>
         }
       />
-      <AdminContent>
-        <DataTable
-          columns={columns}
-          data={users}
-          searchKey="name"
-          searchPlaceholder="Search users..."
-          pageSize={20}
-        />
+      <AdminContent className="flex-1 min-h-0 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          <DataTable
+            columns={columns}
+            data={users}
+            searchKey="name"
+            searchPlaceholder="Search users..."
+            pageSize={20}
+            className="bg-white border border-neutral-200"
+          />
+        </div>
       </AdminContent>
 
       <FormModal
@@ -281,7 +284,7 @@ export default function AdminUsersPage() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Name <span className="text-destructive">*</span>
+              Name <span className="text-error-600">*</span>
             </label>
             <input
               {...register("name")}
@@ -289,13 +292,13 @@ export default function AdminUsersPage() {
               placeholder="Full name"
             />
             {errors.name && (
-              <p className="mt-1 text-sm text-destructive">{errors.name.message}</p>
+              <p className="mt-1 text-sm text-error-600">{errors.name.message}</p>
             )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email <span className="text-destructive">*</span>
+              Email <span className="text-error-600">*</span>
             </label>
             <input
               {...register("email")}
@@ -304,14 +307,14 @@ export default function AdminUsersPage() {
               placeholder="user@example.com"
             />
             {errors.email && (
-              <p className="mt-1 text-sm text-destructive">{errors.email.message}</p>
+              <p className="mt-1 text-sm text-error-600">{errors.email.message}</p>
             )}
           </div>
 
           {modalMode === "create" && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Password <span className="text-destructive">*</span>
+                Password <span className="text-error-600">*</span>
               </label>
               <input
                 {...register("password")}
@@ -320,7 +323,7 @@ export default function AdminUsersPage() {
                 placeholder="Minimum 6 characters"
               />
               {errors.password && (
-                <p className="mt-1 text-sm text-destructive">{errors.password.message}</p>
+                <p className="mt-1 text-sm text-error-600">{errors.password.message}</p>
               )}
             </div>
           )}
@@ -335,7 +338,7 @@ export default function AdminUsersPage() {
               placeholder="Phone number"
             />
             {errors.phone && (
-              <p className="mt-1 text-sm text-destructive">{errors.phone.message}</p>
+              <p className="mt-1 text-sm text-error-600">{errors.phone.message}</p>
             )}
           </div>
 
@@ -351,7 +354,7 @@ export default function AdminUsersPage() {
                 placeholder="1"
               />
               {errors.roleId && (
-                <p className="mt-1 text-sm text-destructive">{errors.roleId.message}</p>
+                <p className="mt-1 text-sm text-error-600">{errors.roleId.message}</p>
               )}
             </div>
 
@@ -363,12 +366,12 @@ export default function AdminUsersPage() {
                 {...register("status")}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               >
-                <option value="ACTIVE">Active</option>
-                <option value="INACTIVE">Inactive</option>
-                <option value="BLOCKED">Blocked</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="banned">Banned</option>
               </select>
               {errors.status && (
-                <p className="mt-1 text-sm text-destructive">{errors.status.message}</p>
+                <p className="mt-1 text-sm text-error-600">{errors.status.message}</p>
               )}
             </div>
           </div>
@@ -401,7 +404,7 @@ export default function AdminUsersPage() {
         >
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              New Password <span className="text-destructive">*</span>
+              New Password <span className="text-error-600">*</span>
             </label>
             <input
               {...registerResetPassword("password")}
@@ -410,7 +413,7 @@ export default function AdminUsersPage() {
               placeholder="Minimum 6 characters"
             />
             {resetPasswordErrors.password && (
-              <p className="mt-1 text-sm text-destructive">
+              <p className="mt-1 text-sm text-error-600">
                 {resetPasswordErrors.password.message}
               </p>
             )}

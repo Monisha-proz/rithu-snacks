@@ -1,33 +1,48 @@
-import { apiClient } from "@/lib/api/api-client";
-import type { GetWishlistResult, WishlistItemWithProduct, WishlistStatusResult } from "../types";
+import { customerWishlistApi } from "@/features/customers/api/customer-wishlist.api";
+import type { CustomerWishlistResponse } from "../types/wishlist.types";
 
-export async function getWishlist(): Promise<GetWishlistResult> {
-  const response = await apiClient.get<GetWishlistResult>("/api/wishlist");
-  return response.data!;
+export async function getWishlist(): Promise<CustomerWishlistResponse> {
+  try {
+    return await customerWishlistApi.getWishlist();
+  } catch {
+    return { items: [], totalItems: 0 };
+  }
 }
 
-export async function addToWishlist(data: {
-  productId: number;
-}): Promise<WishlistItemWithProduct> {
-  const response = await apiClient.post<WishlistItemWithProduct>(
-    "/api/wishlist",
-    data
-  );
-  return response.data!;
+export async function getWishlistCount(): Promise<number> {
+  try {
+    return await customerWishlistApi.getWishlistCount();
+  } catch {
+    return 0;
+  }
 }
 
-export async function removeFromWishlist(
-  productId: number
-): Promise<void> {
-  await apiClient.delete(`/api/wishlist/${productId}`);
+export async function addToWishlist(
+  data: string | { productId?: number; variantId?: string; variantUnitPriceId?: string }
+): Promise<any> {
+  const id = typeof data === "string" ? data : data.variantUnitPriceId || data.variantId;
+  if (!id) {
+    throw new Error("No variant or unit price selected");
+  }
+  return await customerWishlistApi.addToWishlist(id);
+}
+
+export async function removeFromWishlist(id: number | string): Promise<void> {
+  await customerWishlistApi.removeFromWishlist(String(id));
+}
+
+export async function moveWishlistItemToCart(
+  variantUnitPriceId: string
+): Promise<{ success: boolean; message: string }> {
+  try {
+    return await customerWishlistApi.moveToCart(variantUnitPriceId);
+  } catch (error: any) {
+    return { success: false, message: error?.message || "Failed to move item to cart" };
+  }
 }
 
 export async function checkWishlistStatus(
-  productId: number
-): Promise<WishlistStatusResult> {
-  const response = await apiClient.get<WishlistStatusResult>(
-    `/api/wishlist/status`,
-    { params: { productId: String(productId) } }
-  );
-  return response.data!;
+  _productId: number | string
+): Promise<{ isInWishlist: boolean }> {
+  return { isInWishlist: false };
 }

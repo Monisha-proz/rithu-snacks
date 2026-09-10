@@ -1,160 +1,257 @@
-import { ApiError } from "@/lib/api/api-error";
 import { db } from "@/lib/db/prisma";
-import { wishlistRepository } from "../repositories/wishlist.repository";
+import { ApiError } from "@/lib/api/api-error";
+import { userRepository } from "@/features/users/repositories/user.repository";
 import { cartService } from "@/features/cart/services/cart.service";
+import { wishlistRepository, wishlistItemInclude } from "../repositories/wishlist.repository";
+import type { AddWishlistInput } from "../validations/wishlist.schema";
 import type {
-  AddToWishlistInput,
-  GetWishlistResult,
-  WishlistStatusResult,
-  WishlistItemWithProduct,
-  WishlistProduct,
-} from "../types";
+  CustomerWishlistItemDto,
+  CustomerWishlistResponse,
+} from "../types/wishlist.types";
 
-function mapProduct(product: {
-  id: number;
-  name: string;
-  slug: string;
-  sku: string;
-  price: unknown;
-  comparePrice: unknown;
-  discountPercent: unknown;
-  isActive: boolean;
-  isFeatured: boolean;
-  images: { id: number; url: string; altText: string | null }[];
-  category: { id: number; name: string; slug: string } | null;
-  brand: { id: number; name: string; slug: string } | null;
-}): WishlistProduct {
-  return {
-    id: product.id,
-    name: product.name,
-    slug: product.slug,
-    sku: product.sku,
-    price: Number(product.price),
-    comparePrice: product.comparePrice ? Number(product.comparePrice) : null,
-    discountPercent: Number(product.discountPercent),
-    isActive: product.isActive,
-    isFeatured: product.isFeatured,
-    images: product.images,
-    category: product.category,
-    brand: product.brand,
-  };
+async function resolveInternalUser(sessionUserId: string) {
+  const user = await userRepository.findById(sessionUserId);
+  if (!user || !user.internalId) {
+    throw ApiError.unauthorized("User not found or unauthorized");
+  }
+  if (!user.isActive || user.is_active === false) {
+    throw ApiError.forbidden("Your account is inactive or blocked. Please contact support.");
+  }
+  return user;
 }
 
-function mapWishlistItem(item: {
-  id: number;
-  userId: number;
-  productId: number;
-  createdAt: Date;
-  product: {
-    id: number;
-    name: string;
-    slug: string;
-    sku: string;
-    price: unknown;
-    comparePrice: unknown;
-    discountPercent: unknown;
-    isActive: boolean;
-    isFeatured: boolean;
-    images: { id: number; url: string; altText: string | null }[];
-    category: { id: number; name: string; slug: string } | null;
-    brand: { id: number; name: string; slug: string } | null;
-  };
-}): WishlistItemWithProduct {
-  return {
-    id: item.id,
-    userId: item.userId,
-    productId: item.productId,
-    createdAt: item.createdAt,
-    product: mapProduct(item.product),
-  };
+async function validateActiveVariantUnitPrice(identifier: string) {
+  let unitPrice = await db.variantUnitPrice.findFirst({
+    where: {
+      uuid: identifier,
+      deleted_at: null,
+    },
+    include: {
+      variant: {
+        include: { product: true },
+      },
+    },
+  });
+
+  if (!unitPrice) {
+    // Try looking up by variant UUID
+    unitPrice = await db.variantUnitPrice.findFirst({
+      where: {
+        variant: { uuid: identifier },
+        deleted_at: null,
+      },
+      orderBy: [{ is_default: "desc" }, { createdAt: "asc" }],
+      include: {
+        variant: {
+          include: { product: true },
+        },
+      },
+    });
+  }
+
+  if (!unitPrice || unitPrice.deleted_at !== null) {
+    throw ApiError.notFound("Product pack size not found");
+  }
+
+  const variant = unitPrice.variant;
+
+  if (
+    !unitPrice.isActive ||
+    !variant ||
+    !variant.isActive ||
+    variant.deleted_at !== null ||
+    !variant.product ||
+    !variant.product.isActive ||
+    variant.product.deleted_at !== null
+  ) {
+    throw ApiError.badRequest("Product variant is inactive or unavailable");
+  }
+
+  return unitPrice;
 }
 
 export const wishlistService = {
-  async getWishlist(userId: number): Promise<GetWishlistResult> {
-    const items = await wishlistRepository.findByUserId(userId);
-    const mappedItems = items.map(mapWishlistItem);
-    return {
-      items: mappedItems,
-      count: mappedItems.length,
-    };
+  async getCustomerWishlist(
+    sessionUserId: string
+  ): Promise<CustomerWishlistResponse> {
+    const user = await resolveInternalUser(sessionUserId);
+    return wishlistRepository.findActiveWishlistByUserId(BigInt(user.internalId));
   },
 
   async addToWishlist(
-    userId: number,
-    input: AddToWishlistInput
-  ): Promise<WishlistItemWithProduct> {
-    const product = await db.product.findUnique({
-      where: { id: input.productId },
+    sessionUserId: string,
+    input: AddWishlistInput
+  ): Promise<CustomerWishlistItemDto> {
+    const user = await resolveInternalUser(sessionUserId);
+    const identifier = input.variantUnitPriceId || input.variantId;
+    if (!identifier) {
+      throw ApiError.badRequest("Either variantUnitPriceId or variantId is required");
+    }
+
+    const unitPrice = await validateActiveVariantUnitPrice(identifier);
+
+    return wishlistRepository.addOrReactivateWishlistItem({
+      userId: BigInt(user.internalId),
+      productId: unitPrice.variant.productId,
+      variantId: unitPrice.variant_id,
+      variantUnitPriceId: unitPrice.id,
+      userInternalId: BigInt(user.internalId),
     });
-
-    if (!product || !product.isActive) {
-      throw new ApiError("Product not found or inactive", 404);
-    }
-
-    const existing = await wishlistRepository.findByUserAndProduct(
-      userId,
-      input.productId
-    );
-
-    if (existing) {
-      throw new ApiError("Product is already in your wishlist", 409);
-    }
-
-    const item = await wishlistRepository.addItem(userId, input.productId);
-    return mapWishlistItem(item);
   },
 
   async removeFromWishlist(
-    userId: number,
-    productId: number
+    sessionUserId: string,
+    identifier: string
   ): Promise<void> {
-    const existing = await wishlistRepository.findByUserAndProduct(
-      userId,
-      productId
-    );
+    const user = await resolveInternalUser(sessionUserId);
 
-    if (!existing) {
-      throw new ApiError("Product not found in wishlist", 404);
+    // Try finding the active wishlist item directly by wishlistItem uuid, variant_unit_price uuid, or variant uuid
+    const wishlistItem = await db.wishlistItem.findFirst({
+      where: {
+        userId: BigInt(user.internalId),
+        is_active: true,
+        OR: [
+          { uuid: identifier },
+          { variant_unit_price: { uuid: identifier } },
+          { variant: { uuid: identifier } },
+        ],
+      },
+    });
+
+    if (wishlistItem) {
+      await db.wishlistItem.update({
+        where: { id: wishlistItem.id },
+        data: {
+          is_active: false,
+          updated_at: new Date(),
+          updated_by: BigInt(user.internalId),
+        },
+      });
+      return;
     }
 
-    await wishlistRepository.removeItem(userId, productId);
-  },
+    // Fallback: If not matched directly, try resolving variant_unit_price
+    let unitPrice = await db.variantUnitPrice.findFirst({
+      where: { uuid: identifier },
+    });
 
-  async checkWishlistStatus(
-    userId: number,
-    productId: number
-  ): Promise<WishlistStatusResult> {
-    const existing = await wishlistRepository.findByUserAndProduct(
-      userId,
-      productId
-    );
-    return {
-      isInWishlist: !!existing,
-      wishlistItemId: existing?.id ?? null,
-    };
-  },
-
-  async moveToCart(
-    userId: number,
-    productId: number
-  ) {
-    const existing = await wishlistRepository.findByUserAndProduct(
-      userId,
-      productId
-    );
-
-    if (!existing) {
-      throw new ApiError("Product not found in wishlist", 404);
+    if (!unitPrice) {
+      unitPrice = await db.variantUnitPrice.findFirst({
+        where: { variant: { uuid: identifier } },
+        orderBy: [{ is_default: "desc" }, { createdAt: "asc" }],
+      });
     }
 
-    await cartService.addToCart(userId, {
-      productId,
+    if (!unitPrice) {
+      throw ApiError.notFound("Product pack size not found");
+    }
+
+    const removed = await wishlistRepository.softRemoveWishlistItem(
+      BigInt(user.internalId),
+      unitPrice.id,
+      BigInt(user.internalId)
+    );
+
+    if (!removed) {
+      throw ApiError.notFound("Item not found in wishlist");
+    }
+  },
+
+  async moveToCart(sessionUserId: string, identifier: string) {
+    const user = await resolveInternalUser(sessionUserId);
+
+    // 1. Find the active wishlist item belonging to this user
+    // Supports wishlistItem uuid, variant_unit_price uuid, or variant uuid
+    let wishlistItem = await db.wishlistItem.findFirst({
+      where: {
+        userId: BigInt(user.internalId),
+        is_active: true,
+        OR: [
+          { uuid: identifier },
+          { variant_unit_price: { uuid: identifier } },
+          { variant: { uuid: identifier } },
+        ],
+      },
+      include: wishlistItemInclude,
+      orderBy: { createdAt: "desc" },
+    });
+
+    // 2. If wishlistItem wasn't found through user active list, attempt to validate via identifier
+    if (!wishlistItem) {
+      const unitPrice = await validateActiveVariantUnitPrice(identifier);
+      wishlistItem = await wishlistRepository.findWishlistItemByUserAndVariant(
+        user.internalId,
+        unitPrice.id
+      );
+    }
+
+    if (!wishlistItem || !wishlistItem.is_active) {
+      throw ApiError.notFound("Item not found in wishlist");
+    }
+
+    const unitPrice = wishlistItem.variant_unit_price;
+    const variant = unitPrice?.variant;
+    const product = wishlistItem.product;
+
+    if (
+      !unitPrice ||
+      !unitPrice.isActive ||
+      unitPrice.deleted_at !== null ||
+      !variant ||
+      !variant.isActive ||
+      variant.deleted_at !== null ||
+      !product ||
+      !product.isActive ||
+      product.deleted_at !== null
+    ) {
+      throw ApiError.badRequest("Product pack size is unavailable or out of stock");
+    }
+
+    // 3. Add to active cart with the exact variant pack size
+    const cart = await cartService.addItem(sessionUserId, {
+      variantUnitPriceId: unitPrice.uuid,
       quantity: 1,
     });
 
-    await wishlistRepository.removeItem(userId, productId);
+    // 4. Soft remove this wishlist item
+    await db.wishlistItem.update({
+      where: { id: wishlistItem.id },
+      data: {
+        is_active: false,
+        updated_at: new Date(),
+        updated_by: BigInt(user.internalId),
+      },
+    });
 
-    const cart = await cartService.getCart(userId);
-    return { cart };
+    return {
+      cart,
+      movedVariantUnitPriceId: unitPrice.uuid,
+    };
+  },
+
+  async getAdminCustomerWishlist(
+    customerUuid: string
+  ): Promise<CustomerWishlistResponse> {
+    const customer = await db.user.findFirst({
+      where: {
+        uuid: customerUuid,
+        deleted_at: null,
+        role: {
+          slug: "customer",
+        },
+      },
+    });
+
+    if (!customer) {
+      throw ApiError.notFound("Customer not found");
+    }
+
+    return wishlistRepository.findActiveWishlistByUserId(customer.id);
+  },
+
+  async getWishlistCount(sessionUserId: string): Promise<{ count: number }> {
+    const user = await resolveInternalUser(sessionUserId);
+    const count = await wishlistRepository.getWishlistItemCount(BigInt(user.internalId));
+    return { count };
   },
 };

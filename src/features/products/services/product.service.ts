@@ -1,95 +1,438 @@
+import crypto from "crypto";
+import { db } from "@/lib/db/prisma";
 import { ApiError } from "@/lib/api/api-error";
 import { productRepository } from "../repositories/product.repository";
-import type { GetProductsParams, CreateProductInput, UpdateProductInput } from "../types";
+import { categoryRepository } from "@/features/categories/repositories/category.repository";
+import { brandRepository } from "@/features/brands/repositories/brand.repository";
+import { hsnCodeRepository } from "@/features/hsn-codes/repositories/hsn-code.repository";
+import { userRepository } from "@/features/users/repositories/user.repository";
+import type { Prisma } from "@/generated/prisma";
+import type {
+  AdminProductResponse,
+  GetAdminProductsParams,
+  AdminProductsCountResponse,
+} from "../types";
+import type {
+  CreateAdminProductInput,
+  UpdateAdminProductInput,
+  AdminProductListInput,
+} from "../validations/admin-product.schema";
+
+async function formatAdminProductResponse(
+  product: {
+    id: bigint;
+    uuid: string | null;
+    categoryId: bigint | null;
+    brandId: bigint | null;
+    hsn_code_id: bigint | null;
+    name: string;
+    slug: string;
+    status: boolean | null;
+    isActive: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+    brand?: { id: bigint; uuid: string | null; name: string; isActive: boolean } | null;
+    product_hsn_codes?: { id: bigint; uuid: string | null; code: string; description: string | null; is_active: boolean } | null;
+  },
+  cachedCategory?: { uuid: string | null; name: string | null } | null
+): Promise<AdminProductResponse> {
+  const productUuid = product.uuid || String(product.id);
+  
+  let categoryUuid: string | null = null;
+  let categoryName: string | null = null;
+  if (cachedCategory !== undefined && cachedCategory !== null) {
+    categoryUuid = cachedCategory.uuid ?? null;
+    categoryName = cachedCategory.name ?? null;
+  } else if (product.categoryId) {
+    const category = await categoryRepository.findById(product.categoryId);
+    categoryUuid = category?.uuid ?? null;
+    categoryName = category?.name ?? null;
+  }
+
+  const brandUuid = product.brand?.uuid ?? null;
+  const brandName = product.brand?.name ?? null;
+
+  const hsnUuid = product.product_hsn_codes?.uuid ?? null;
+  const hsnCodeName =
+    product.product_hsn_codes?.description ||
+    product.product_hsn_codes?.code ||
+    null;
+
+  return {
+    id: productUuid,
+    categoryId: categoryUuid,
+    categoryName,
+    brandId: brandUuid,
+    brandName,
+    hsnCodeId: hsnUuid,
+    hsnCodeName,
+    name: product.name,
+    slug: product.slug,
+    status: Boolean(product.status),
+    isActive: Boolean(product.isActive),
+    createdAt: product.createdAt,
+    updatedAt: product.updatedAt,
+  };
+}
+
+async function formatAdminProductList(products: any[]): Promise<AdminProductResponse[]> {
+  const categoryIds = Array.from(
+    new Set(
+      products
+        .map((p) => p.categoryId)
+        .filter((id): id is bigint => id !== null && id !== undefined)
+    )
+  );
+
+  const categories = categoryIds.length > 0
+    ? await db.productCategory.findMany({
+        where: { id: { in: categoryIds } },
+        select: { id: true, uuid: true, name: true },
+      })
+    : [];
+
+  const categoryMap = new Map<string, { uuid: string | null; name: string | null }>();
+  categories.forEach((cat) => {
+    categoryMap.set(String(cat.id), { uuid: cat.uuid, name: cat.name });
+  });
+
+  return Promise.all(
+    products.map((item) => {
+      const cached = item.categoryId ? categoryMap.get(String(item.categoryId)) : null;
+      return formatAdminProductResponse(item, cached);
+    })
+  );
+}
+
+async function getAdminInternalId(email?: string): Promise<bigint | null> {
+  if (!email) return null;
+  const user = await userRepository.findByEmail(email);
+  if (!user) return null;
+  return BigInt(user.internalId || user.id);
+}
 
 export const productService = {
-  async getProducts(params: GetProductsParams) {
-    return productRepository.findAll(params);
-  },
+  async createAdminProduct(
+    data: CreateAdminProductInput,
+    adminEmail?: string
+  ): Promise<AdminProductResponse> {
+    const adminId = await getAdminInternalId(adminEmail);
 
-  async getProduct(slugOrId: string) {
-    const product = await productRepository.findBySlugOrId(slugOrId);
-    if (!product) {
-      throw ApiError.notFound("Product not found");
+    // 1. Resolve & Validate Category UUID
+    const category = await categoryRepository.findByUuid(data.categoryId);
+    if (!category || !category.isActive) {
+      throw ApiError.badRequest("Invalid or inactive category");
     }
-    return product;
-  },
 
-  async getProductById(id: number) {
-    const product = await productRepository.findById(id);
-    if (!product) {
-      throw ApiError.notFound("Product not found");
+    // 2. Resolve & Validate Brand UUID
+    const brand = await brandRepository.findByUuid(data.brandId);
+    if (!brand || !brand.isActive) {
+      throw ApiError.badRequest("Invalid or inactive brand");
     }
-    return product;
-  },
 
-  async createProduct(data: CreateProductInput) {
+    // 3. Resolve & Validate HSN Code UUID
+    const hsnCode = await hsnCodeRepository.findByUuid(data.hsnCodeId);
+    if (!hsnCode || !hsnCode.is_active) {
+      throw ApiError.badRequest("Invalid or inactive HSN code");
+    }
+
+    // 4. Check duplicate slug
     const existingSlug = await productRepository.findBySlug(data.slug);
     if (existingSlug) {
-      throw ApiError.conflict("A product with this slug already exists");
+      throw ApiError.conflict(`An active product with slug '${data.slug}' already exists`);
     }
 
-    return productRepository.create({
+    // 5. Check duplicate name
+    const existingName = await productRepository.findByName(data.name);
+    if (existingName) {
+      throw ApiError.conflict(`An active product with name '${data.name}' already exists`);
+    }
+
+    const created = await productRepository.create({
+      uuid: crypto.randomUUID(),
+      categoryId: category.id,
+      brandId: brand.id,
+      hsn_code_id: hsnCode.id,
       name: data.name,
-      slug: data.slug,
-      description: data.description,
-      shortDescription: data.shortDescription,
-      category: { connect: { id: data.categoryId } },
-      brand: data.brandId ? { connect: { id: data.brandId } } : undefined,
-      sku: data.sku,
-      price: data.price,
-      comparePrice: data.comparePrice ?? null,
-      costPrice: data.costPrice ?? null,
-      taxRate: data.taxRate ?? 0,
-      discountPercent: data.discountPercent ?? 0,
-      isActive: data.isActive ?? true,
-      isFeatured: data.isFeatured ?? false,
-      isDigital: data.isDigital ?? false,
-      metaTitle: data.metaTitle,
-      metaDescription: data.metaDescription,
+      slug: data.slug, // Frontend-supplied slug preserved without modification
+      status: true, // Static reserved field - always true
+      isActive: true, // Active status
+      created_by: adminId,
+      updated_by: adminId,
     });
+
+    return formatAdminProductResponse(created, { uuid: category.uuid, name: category.name });
   },
 
-  async updateProduct(id: number, data: UpdateProductInput) {
-    const existing = await productRepository.findById(id);
-    if (!existing) {
-      throw ApiError.notFound("Product not found");
-    }
+  async getAdminProducts(params: GetAdminProductsParams = {}) {
+    const result = await productRepository.findAdminAll(params);
+    const data = await formatAdminProductList(result.data);
 
-    if (data.slug && data.slug !== existing.slug) {
-      const slugExists = await productRepository.findBySlug(data.slug);
-      if (slugExists) {
-        throw ApiError.conflict("A product with this slug already exists");
+    return {
+      data,
+      meta: result.meta,
+    };
+  },
+
+  async getAdminProductsList(params: AdminProductListInput) {
+    let resolvedCategoryInternalId: bigint | undefined = undefined;
+    let resolvedBrandInternalId: bigint | undefined = undefined;
+    let resolvedHsnCodeInternalId: bigint | undefined = undefined;
+
+    if (params.categoryId) {
+      const category = await categoryRepository.findByUuid(params.categoryId);
+      if (!category) {
+        return {
+          data: [],
+          meta: {
+            page: params.page ?? 1,
+            limit: params.limit ?? params.pageSize ?? 10,
+            pageSize: params.limit ?? params.pageSize ?? 10,
+            total: 0,
+            totalPages: 1,
+          },
+        };
       }
+      resolvedCategoryInternalId = category.id;
     }
 
-    const updateData: Record<string, unknown> = {};
-    if (data.name !== undefined) updateData.name = data.name;
-    if (data.slug !== undefined) updateData.slug = data.slug;
-    if (data.description !== undefined) updateData.description = data.description;
-    if (data.shortDescription !== undefined) updateData.shortDescription = data.shortDescription;
-    if (data.categoryId !== undefined) updateData.category = { connect: { id: data.categoryId } };
-    if (data.brandId !== undefined) updateData.brand = data.brandId ? { connect: { id: data.brandId } } : { disconnect: true };
-    if (data.sku !== undefined) updateData.sku = data.sku;
-    if (data.price !== undefined) updateData.price = data.price;
-    if (data.comparePrice !== undefined) updateData.comparePrice = data.comparePrice;
-    if (data.costPrice !== undefined) updateData.costPrice = data.costPrice;
-    if (data.taxRate !== undefined) updateData.taxRate = data.taxRate;
-    if (data.discountPercent !== undefined) updateData.discountPercent = data.discountPercent;
-    if (data.isActive !== undefined) updateData.isActive = data.isActive;
-    if (data.isFeatured !== undefined) updateData.isFeatured = data.isFeatured;
-    if (data.isDigital !== undefined) updateData.isDigital = data.isDigital;
-    if (data.metaTitle !== undefined) updateData.metaTitle = data.metaTitle;
-    if (data.metaDescription !== undefined) updateData.metaDescription = data.metaDescription;
+    if (params.brandId) {
+      const brand = await brandRepository.findByUuid(params.brandId);
+      if (!brand) {
+        return {
+          data: [],
+          meta: {
+            page: params.page ?? 1,
+            limit: params.limit ?? params.pageSize ?? 10,
+            pageSize: params.limit ?? params.pageSize ?? 10,
+            total: 0,
+            totalPages: 1,
+          },
+        };
+      }
+      resolvedBrandInternalId = brand.id;
+    }
 
-    return productRepository.update(id, updateData as never);
+    if (params.hsnCodeId) {
+      const hsnCode = await hsnCodeRepository.findByUuid(params.hsnCodeId);
+      if (!hsnCode) {
+        return {
+          data: [],
+          meta: {
+            page: params.page ?? 1,
+            limit: params.limit ?? params.pageSize ?? 10,
+            pageSize: params.limit ?? params.pageSize ?? 10,
+            total: 0,
+            totalPages: 1,
+          },
+        };
+      }
+      resolvedHsnCodeInternalId = hsnCode.id;
+    }
+
+    const result = await productRepository.findAdminList(
+      params,
+      resolvedCategoryInternalId,
+      resolvedBrandInternalId,
+      resolvedHsnCodeInternalId
+    );
+
+    const data = await formatAdminProductList(result.data);
+
+    return {
+      data,
+      meta: result.meta,
+    };
   },
 
-  async deleteProduct(id: number) {
-    const existing = await productRepository.findById(id);
+  async countAdminProducts(
+    params: AdminProductListInput
+  ): Promise<AdminProductsCountResponse> {
+    let resolvedCategoryInternalId: bigint | undefined = undefined;
+    let resolvedBrandInternalId: bigint | undefined = undefined;
+    let resolvedHsnCodeInternalId: bigint | undefined = undefined;
+
+    if (params.categoryId) {
+      const category = await categoryRepository.findByUuid(params.categoryId);
+      if (!category) {
+        return {
+          active: 0,
+          inactive: 0,
+          all: 0,
+        };
+      }
+      resolvedCategoryInternalId = category.id;
+    }
+
+    if (params.brandId) {
+      const brand = await brandRepository.findByUuid(params.brandId);
+      if (!brand) {
+        return {
+          active: 0,
+          inactive: 0,
+          all: 0,
+        };
+      }
+      resolvedBrandInternalId = brand.id;
+    }
+
+    if (params.hsnCodeId) {
+      const hsnCode = await hsnCodeRepository.findByUuid(params.hsnCodeId);
+      if (!hsnCode) {
+        return {
+          active: 0,
+          inactive: 0,
+          all: 0,
+        };
+      }
+      resolvedHsnCodeInternalId = hsnCode.id;
+    }
+
+    return productRepository.countAdminList(
+      params,
+      resolvedCategoryInternalId,
+      resolvedBrandInternalId,
+      resolvedHsnCodeInternalId
+    );
+  },
+
+  async getAdminProductByUuid(uuid: string): Promise<AdminProductResponse> {
+    const product = await productRepository.findByUuid(uuid);
+    if (!product) {
+      throw ApiError.notFound("Product not found");
+    }
+    return formatAdminProductResponse(product);
+  },
+
+  async updateAdminProduct(
+    uuid: string,
+    data: UpdateAdminProductInput,
+    adminEmail?: string
+  ): Promise<AdminProductResponse> {
+    const existing = await productRepository.findByUuid(uuid);
     if (!existing) {
       throw ApiError.notFound("Product not found");
     }
-    return productRepository.delete(id);
+
+    const adminId = await getAdminInternalId(adminEmail);
+    const updateData: Prisma.ProductUncheckedUpdateInput = {};
+    let cachedCategory: { uuid: string | null; name: string | null } | undefined = undefined;
+
+    if (adminId) {
+      updateData.updated_by = adminId;
+    }
+
+    // Resolve Category UUID if provided
+    if (data.categoryId !== undefined) {
+      const category = await categoryRepository.findByUuid(data.categoryId);
+      if (!category || !category.isActive) {
+        throw ApiError.badRequest("Invalid or inactive category");
+      }
+      updateData.categoryId = category.id;
+      cachedCategory = { uuid: category.uuid, name: category.name };
+    }
+
+    // Resolve Brand UUID if provided
+    if (data.brandId !== undefined) {
+      const brand = await brandRepository.findByUuid(data.brandId);
+      if (!brand || !brand.isActive) {
+        throw ApiError.badRequest("Invalid or inactive brand");
+      }
+      updateData.brandId = brand.id;
+    }
+
+    // Resolve HSN Code UUID if provided
+    if (data.hsnCodeId !== undefined) {
+      const hsnCode = await hsnCodeRepository.findByUuid(data.hsnCodeId);
+      if (!hsnCode || !hsnCode.is_active) {
+        throw ApiError.badRequest("Invalid or inactive HSN code");
+      }
+      updateData.hsn_code_id = hsnCode.id;
+    }
+
+    // Check duplicate slug if slug changes
+    if (data.slug !== undefined && data.slug !== existing.slug) {
+      const slugConflict = await productRepository.findBySlug(data.slug, uuid);
+      if (slugConflict) {
+        throw ApiError.conflict(`An active product with slug '${data.slug}' already exists`);
+      }
+      updateData.slug = data.slug;
+    }
+
+    // Check duplicate name if name changes
+    if (data.name !== undefined && data.name !== existing.name) {
+      const nameConflict = await productRepository.findByName(data.name, uuid);
+      if (nameConflict) {
+        throw ApiError.conflict(`An active product with name '${data.name}' already exists`);
+      }
+      updateData.name = data.name;
+    }
+
+    const updated = await productRepository.updateByUuid(uuid, updateData);
+    if (!updated) {
+      throw ApiError.notFound("Product not found");
+    }
+
+    return formatAdminProductResponse(updated, cachedCategory);
+  },
+
+  async deleteAdminProduct(uuid: string, adminEmail?: string) {
+    const existing = await productRepository.findByUuid(uuid);
+    if (!existing) {
+      throw ApiError.notFound("Product not found");
+    }
+
+    const adminId = await getAdminInternalId(adminEmail);
+    await productRepository.softDeleteByUuid(uuid, adminId);
+
+    return {
+      success: true,
+      message: "Product deleted successfully",
+    };
+  },
+
+  async getProduct(idOrUuid: string | number) {
+    const str = String(idOrUuid);
+    const existing = await productRepository.findByUuid(str);
+    if (existing) return formatAdminProductResponse(existing);
+    try {
+      const byId = await productRepository.findById(BigInt(str));
+      if (byId) return formatAdminProductResponse(byId);
+    } catch {}
+    throw ApiError.notFound("Product not found");
+  },
+
+  async createProduct(data: any, adminEmail?: string) {
+    return this.createAdminProduct(data, adminEmail);
+  },
+
+  async updateProduct(idOrUuid: string | number, data: any, adminEmail?: string) {
+    const str = String(idOrUuid);
+    let uuid = str;
+    const existing = await productRepository.findByUuid(str);
+    if (existing?.uuid) {
+      uuid = existing.uuid;
+    } else {
+      try {
+        const byId = await productRepository.findById(BigInt(str));
+        if (byId?.uuid) uuid = byId.uuid;
+      } catch {}
+    }
+    return this.updateAdminProduct(uuid, data, adminEmail);
+  },
+
+  async deleteProduct(idOrUuid: string | number, adminEmail?: string) {
+    const str = String(idOrUuid);
+    let uuid = str;
+    const existing = await productRepository.findByUuid(str);
+    if (existing?.uuid) {
+      uuid = existing.uuid;
+    } else {
+      try {
+        const byId = await productRepository.findById(BigInt(str));
+        if (byId?.uuid) uuid = byId.uuid;
+      } catch {}
+    }
+    return this.deleteAdminProduct(uuid, adminEmail);
   },
 };

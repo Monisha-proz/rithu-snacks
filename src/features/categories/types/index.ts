@@ -2,6 +2,7 @@ export interface CategoryListItem {
   id: number;
   name: string;
   slug: string;
+  icon?:string;
   description: string | null;
   image: string | null;
   parentId: number | null;
@@ -18,6 +19,7 @@ export interface CategoryDetail extends CategoryListItem {
   metaDescription: string | null;
   createdAt: Date;
   updatedAt: Date;
+  
   parent: {
     id: number;
     name: string;
@@ -44,6 +46,8 @@ export interface CategoryDetail extends CategoryListItem {
 }
 
 export interface GetCategoriesParams {
+  page?: number;
+  pageSize?: number;
   search?: string;
   parentId?: number | null;
 }
@@ -60,4 +64,46 @@ export interface CreateCategoryInput {
   metaDescription?: string;
 }
 
-export interface UpdateCategoryInput extends Partial<CreateCategoryInput> {}
+export type UpdateCategoryInput = Partial<CreateCategoryInput>;
+
+export interface AdminCategoryResponse {
+  id: string; // Public UUID
+  name: string;
+  slug: string;
+  description: string | null;
+  icon: string | null;
+  status: boolean;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface GetAdminCategoriesParams {
+  page?: number;
+  pageSize?: number;
+  limit?: number;
+  search?: string;
+  isActive?: boolean;
+}
+
+export interface CustomerCategoryDto {
+  id: string;
+  name: string;
+  image: string | null;
+}
+
+export interface CustomerCategoryListParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  sortBy?: "name" | "createdAt";
+  sortOrder?: "asc" | "desc";
+}
+
+export interface AdminCategoriesCountResponse {
+  active: number;
+  inactive: number;
+  all: number;
+}
+

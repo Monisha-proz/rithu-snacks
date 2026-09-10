@@ -1,283 +1,384 @@
 import { db } from "@/lib/db/prisma";
 import { ApiError } from "@/lib/api/api-error";
+import { userRepository } from "@/features/users/repositories/user.repository";
+import { formatVariantMeasurement } from "@/features/variants/utils/measurement.util";
+import { offerService } from "@/features/offers/services/offer.service";
 import { cartRepository } from "../repositories/cart.repository";
 import type {
-  AddToCartInput,
+  AddCartItemInput,
   UpdateCartItemInput,
-  CartWithItems,
-  CartSummary,
-  CartItemWithProduct,
-} from "../types";
+} from "../validations/cart.schema";
+import type {
+  CartResponse,
+  CartItemResponse,
+  CartCountResponse,
+} from "../types/cart.types";
 
-function mapCartItemToNumber(item: {
-  id: number;
-  cartId: number;
-  productId: number;
-  variantId: number | null;
-  quantity: number;
-  price: unknown;
-  createdAt: Date;
-  updatedAt: Date;
-  product: Record<string, unknown>;
-  variant: Record<string, unknown> | null;
-}): CartItemWithProduct {
-  const product = item.product as {
-    id: number;
-    name: string;
-    slug: string;
-    sku: string;
-    price: unknown;
-    comparePrice: unknown;
-    discountPercent: unknown;
-    isActive: boolean;
-    isDigital: boolean;
-    images: { id: number; url: string; altText: string | null }[];
-    category: { id: number; name: string; slug: string } | null;
-  };
-  const variant = item.variant as {
-    id: number;
-    name: string;
-    sku: string;
-    price: unknown;
-    comparePrice: unknown;
-    stockQuantity: number;
-    isActive: boolean;
-  } | null;
+type DefaultUnitPrice = {
+  base_price: unknown;
+} | null | undefined;
 
-  return {
-    id: item.id,
-    cartId: item.cartId,
-    productId: item.productId,
-    variantId: item.variantId,
-    quantity: item.quantity,
-    price: Number(item.price),
-    createdAt: item.createdAt,
-    updatedAt: item.updatedAt,
-    product: {
-      id: product.id,
-      name: product.name,
-      slug: product.slug,
-      sku: product.sku,
-      price: Number(product.price),
-      comparePrice: product.comparePrice ? Number(product.comparePrice) : null,
-      discountPercent: Number(product.discountPercent),
-      isActive: product.isActive,
-      isDigital: product.isDigital,
-      stockQuantity: variant ? variant.stockQuantity : 0,
-      images: product.images,
-      category: product.category,
-    },
-    variant: variant
-      ? {
-          id: variant.id,
-          name: variant.name,
-          sku: variant.sku,
-          price: Number(variant.price),
-          comparePrice: variant.comparePrice ? Number(variant.comparePrice) : null,
-          stockQuantity: variant.stockQuantity,
-          isActive: variant.isActive,
-        }
-      : null,
-  };
+/**
+ * The catalog price of one unit. Offers are applied on top of this by
+ * `formatCartResponse`, via the shared offer engine - never here, because a
+ * minimum-cart-value offer can only be judged once every line is known.
+ */
+function calculateVariantPrice(unitPrice: DefaultUnitPrice): number {
+  const basePrice =
+    unitPrice?.base_price !== null && unitPrice?.base_price !== undefined
+      ? Number(unitPrice.base_price)
+      : 0;
+
+  return basePrice;
 }
 
-function calculateCartSummary(items: CartItemWithProduct[]): CartSummary {
-  let subtotal = 0;
-  let totalItems = 0;
+const EMPTY_CART: CartResponse = {
+  id: null,
+  items: [],
+  subtotal: 0,
+  totalDiscount: 0,
+  totalSavings: 0,
+  total: 0,
+  totalItems: 0,
+};
 
-  for (const item of items) {
-    const effectivePrice = Number(item.price);
-    subtotal += effectivePrice * item.quantity;
-    totalItems += item.quantity;
+async function formatCartResponse(
+  cart: Awaited<ReturnType<typeof cartRepository.findActiveCartByUserId>>
+): Promise<CartResponse> {
+  if (!cart) return { ...EMPTY_CART };
+
+  type CartRow = (typeof cart.items)[number];
+  type PricedCartRow = CartRow & {
+    variant_unit_price: NonNullable<CartRow["variant_unit_price"]>;
+    product: NonNullable<CartRow["product"]>;
+  };
+
+  const rows = cart.items.filter(
+    (item): item is PricedCartRow =>
+      Boolean(item.variant_unit_price) && Boolean(item.product) && item.is_active
+  );
+
+  if (rows.length === 0) {
+    return { ...EMPTY_CART, id: cart.uuid || String(cart.id) };
   }
 
-  const totalDiscount = 0;
-  const tax = 0;
-  const shippingCharge = 0;
+  // One engine call for the whole cart, so offers gated on the cart value see
+  // the real subtotal and every line is priced consistently.
+  const pricing = await offerService.priceCartItems(
+    rows.map((item) => ({
+      itemId: item.variant_unit_price.uuid,
+      quantity: item.quantity,
+      unitPrice: calculateVariantPrice(item.variant_unit_price),
+    }))
+  );
 
-  const grandTotal = Math.max(0, subtotal - totalDiscount + tax + shippingCharge);
+  let totalItems = 0;
+
+  const items: CartItemResponse[] = rows.map((item, index) => {
+    const unitPrice = item.variant_unit_price;
+    const variant = unitPrice.variant;
+    const product = item.product;
+    const line = pricing.lines[index];
+
+    const basePrice = calculateVariantPrice(unitPrice);
+    const priceAtAdd = Number(item.price_at_add);
+    totalItems += item.quantity;
+
+    const primaryImg =
+      variant.product_variant_images?.[0]?.image_url ||
+      product.images?.[0]?.image_url ||
+      null;
+
+    const measurement = formatVariantMeasurement(
+      unitPrice.product_units,
+      unitPrice.unit_value ?? 0
+    );
+
+    const variantName =
+      variant.variant_name ||
+      `${unitPrice.unit_value ?? ""} ${unitPrice.product_units?.code || ""}`.trim();
+
+    return {
+      id: item.uuid || String(item.id),
+      productId: product.uuid || String(product.id),
+      variantId: variant.uuid || String(variant.id),
+      variantUnitPriceId: unitPrice.uuid || String(unitPrice.id),
+      productName: product.name,
+      variantName,
+      measurement,
+      primaryImage: primaryImg,
+      quantity: item.quantity,
+      price: line.finalPrice,
+      priceAtAdd,
+      basePrice,
+      currentPrice: line.finalPrice,
+      // Compared against the catalog price, so an offer starting or ending
+      // does not read as "the price of this product changed".
+      priceChanged: priceAtAdd !== basePrice,
+      discountAmount: line.discountAmount,
+      offer: line.offer,
+      freeQuantity: line.freeQuantity,
+      originalItemTotal: line.originalLineTotal,
+      itemTotal: line.finalLineTotal,
+    };
+  });
 
   return {
-    subtotal: Math.round(subtotal * 100) / 100,
-    discount: Math.round(totalDiscount * 100) / 100,
-    tax: Math.round(tax * 100) / 100,
-    shippingCharge: Math.round(shippingCharge * 100) / 100,
-    grandTotal: Math.round(grandTotal * 100) / 100,
+    id: cart.uuid || String(cart.id),
+    items,
+    subtotal: pricing.subtotal,
+    totalDiscount: pricing.totalDiscount,
+    totalSavings: pricing.totalSavings,
+    total: pricing.total,
     totalItems,
   };
 }
 
-export const cartService = {
-  async getCart(userId: number): Promise<CartWithItems> {
-    const cart = await cartRepository.getCartWithItems(userId);
+async function resolveInternalUserId(sessionUserId: string): Promise<bigint> {
+  const user = await userRepository.findById(sessionUserId);
+  if (!user) {
+    throw ApiError.unauthorized("Please login to access your cart");
+  }
+  if (!user.isActive || user.is_active === false) {
+    throw ApiError.forbidden("Your account is inactive or blocked. Please contact support.");
+  }
+  return BigInt(user.internalId);
+}
 
-    if (!cart) {
-      return {
-        id: 0,
-        userId,
-        sessionId: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        items: [],
-        summary: {
-          subtotal: 0,
-          discount: 0,
-          tax: 0,
-          shippingCharge: 0,
-          grandTotal: 0,
-          totalItems: 0,
-        },
-      };
+export const cartService = {
+  async getCart(sessionUserId: string): Promise<CartResponse> {
+    const userId = await resolveInternalUserId(sessionUserId);
+    const cart = await cartRepository.findActiveCartByUserId(userId);
+    return formatCartResponse(cart);
+  },
+
+  async addItem(
+    sessionUserId: string,
+    input: AddCartItemInput
+  ): Promise<CartResponse> {
+    const userId = await resolveInternalUserId(sessionUserId);
+
+    // 1. Validate requested variant unit price (exact pack size) & parents
+    let unitPrice = input.variantUnitPriceId
+      ? await db.variantUnitPrice.findFirst({
+          where: {
+            uuid: input.variantUnitPriceId,
+            deleted_at: null,
+          },
+          include: {
+            variant: { include: { product: true } },
+          },
+        })
+      : null;
+
+    // If not found by unit price UUID or variantId was passed directly, try finding by variant UUID
+    if (!unitPrice) {
+      const variantUuid = input.variantId || input.variantUnitPriceId;
+      if (variantUuid) {
+        // Try finding default unit price of variant
+        unitPrice = await db.variantUnitPrice.findFirst({
+          where: {
+            variant: { uuid: variantUuid },
+            deleted_at: null,
+          },
+          orderBy: [{ is_default: "desc" }, { createdAt: "asc" }],
+          include: {
+            variant: { include: { product: true } },
+          },
+        });
+      }
     }
 
-    const mappedItems = cart.items.map(mapCartItemToNumber);
-    const summary = calculateCartSummary(mappedItems);
+    if (!unitPrice) {
+      throw ApiError.notFound("Product pack size not found");
+    }
+
+    const variant = unitPrice.variant;
+
+    if (
+      !unitPrice.isActive ||
+      !variant ||
+      !variant.isActive ||
+      variant.deleted_at !== null ||
+      !variant.product ||
+      !variant.product.isActive ||
+      variant.product.deleted_at !== null
+    ) {
+      throw ApiError.badRequest("Product variant is unavailable");
+    }
+
+    const currentPrice = calculateVariantPrice(unitPrice);
+
+    // 2. Add to cart in transaction
+    const updatedCart = await cartRepository.addItemToCart({
+      userId,
+      productId: variant.productId,
+      variantId: variant.id,
+      variantUnitPriceId: unitPrice.id,
+      quantity: input.quantity,
+      currentPrice,
+      adminOrUserId: userId,
+    });
+
+    return formatCartResponse(updatedCart);
+  },
+
+  async getCartItem(
+    sessionUserId: string,
+    identifier: string
+  ): Promise<CartItemResponse> {
+    const userId = await resolveInternalUserId(sessionUserId);
+
+    const item = await cartRepository.findCartItem({
+      userId,
+      identifier,
+    });
+
+    if (!item) {
+      throw ApiError.notFound("Cart item not found");
+    }
+
+    const unitPrice = item.variant_unit_price;
+    const variant = unitPrice?.variant;
+    const product = item.product;
+
+    const basePrice = unitPrice
+      ? calculateVariantPrice(unitPrice)
+      : Number(item.price_at_add);
+    const priceAtAdd = Number(item.price_at_add);
+    const priceChanged = priceAtAdd !== basePrice;
+
+    // Priced on its own, so the cart-value gate is judged against this line
+    // alone; the full-cart view re-prices it against the real subtotal.
+    const [line] = unitPrice
+      ? await offerService.priceItems(
+          [
+            {
+              itemId: unitPrice.uuid,
+              quantity: item.quantity,
+              unitPrice: basePrice,
+            },
+          ],
+          { trustUnitPrice: true }
+        )
+      : [];
+
+    const primaryImg =
+      variant?.product_variant_images?.[0]?.image_url ||
+      product?.images?.[0]?.image_url ||
+      null;
+
+    const measurement = formatVariantMeasurement(
+      unitPrice?.product_units,
+      unitPrice?.unit_value ?? 0
+    );
+
+    const variantName =
+      variant?.variant_name ||
+      `${unitPrice?.unit_value ?? ""} ${unitPrice?.product_units?.code || ""}`.trim();
 
     return {
-      id: cart.id,
-      userId: cart.userId,
-      sessionId: cart.sessionId,
-      createdAt: cart.createdAt,
-      updatedAt: cart.updatedAt,
-      items: mappedItems,
-      summary,
+      id: item.uuid || String(item.id),
+      productId: product?.uuid || String(item.productId),
+      variantId: variant?.uuid || "",
+      variantUnitPriceId: unitPrice?.uuid || String(item.variantUnitPriceId),
+      productName: product?.name || "",
+      variantName,
+      measurement,
+      primaryImage: primaryImg,
+      quantity: item.quantity,
+      price: line?.finalPrice ?? basePrice,
+      priceAtAdd,
+      basePrice,
+      currentPrice: line?.finalPrice ?? basePrice,
+      priceChanged,
+      discountAmount: line?.discountAmount ?? 0,
+      offer: line?.offer ?? null,
+      freeQuantity: line?.freeQuantity ?? 0,
+      originalItemTotal: line?.originalLineTotal ?? basePrice * item.quantity,
+      itemTotal: line?.finalLineTotal ?? basePrice * item.quantity,
     };
   },
 
-  async addToCart(userId: number, input: AddToCartInput): Promise<CartWithItems> {
-    const product = await db.product.findUnique({
-      where: { id: input.productId },
-      include: { variants: true },
+  async updateItemQuantity(
+    sessionUserId: string,
+    identifier: string,
+    input: UpdateCartItemInput
+  ): Promise<CartResponse> {
+    const userId = await resolveInternalUserId(sessionUserId);
+
+    const existingItem = await cartRepository.findCartItem({
+      userId,
+      identifier,
     });
 
-    if (!product || !product.isActive) {
-      throw new ApiError("Product not found or inactive", 404);
+    if (!existingItem) {
+      throw ApiError.notFound("Cart item not found");
     }
 
-    const quantity = input.quantity ?? 1;
-    let price = Number(product.price);
-    let stockQuantity = 0;
+    const unitPrice = existingItem.variant_unit_price;
+    const variant = unitPrice?.variant;
 
-    if (input.variantId) {
-      const variant = product.variants.find((v) => v.id === input.variantId);
-      if (!variant || !variant.isActive) {
-        throw new ApiError("Product variant not found or inactive", 404);
-      }
-      price = Number(variant.price);
-      stockQuantity = variant.stockQuantity;
-    } else {
-      const inventory = await db.inventory.findFirst({
-        where: { productId: input.productId, variantId: null },
-      });
-      stockQuantity = inventory?.quantity ?? 0;
+    if (
+      !unitPrice ||
+      !unitPrice.isActive ||
+      unitPrice.deleted_at !== null ||
+      !variant ||
+      !variant.isActive ||
+      variant.deleted_at !== null ||
+      !existingItem.product ||
+      !existingItem.product.isActive ||
+      existingItem.product.deleted_at !== null
+    ) {
+      throw ApiError.badRequest("Product variant is unavailable");
     }
 
-    if (stockQuantity < quantity) {
-      throw new ApiError(
-        `Insufficient stock. Available: ${stockQuantity}`,
-        400
-      );
+    const currentPrice = calculateVariantPrice(unitPrice);
+
+    const updatedCart = await cartRepository.updateItemQuantity({
+      userId,
+      variantUnitPriceUuid: identifier,
+      quantity: input.quantity,
+      currentPrice,
+      adminOrUserId: userId,
+    });
+
+    if (!updatedCart) {
+      throw ApiError.notFound("Cart item not found");
     }
 
-    let cart = await cartRepository.findByUserId(userId);
-    if (!cart) {
-      cart = await cartRepository.createCart(userId);
-    }
-
-    const existingItem = await cartRepository.findItemByProduct(
-      cart.id,
-      input.productId,
-      input.variantId ?? null
-    );
-
-    if (existingItem) {
-      const newQuantity = existingItem.quantity + quantity;
-      if (stockQuantity < newQuantity) {
-        throw new ApiError(
-          `Insufficient stock. Available: ${stockQuantity}, in cart: ${existingItem.quantity}`,
-          400
-        );
-      }
-      await cartRepository.updateItemQuantity(existingItem.id, newQuantity);
-    } else {
-      await cartRepository.addItem(
-        cart.id,
-        input.productId,
-        input.variantId ?? null,
-        quantity,
-        price
-      );
-    }
-
-    return this.getCart(userId);
+    return formatCartResponse(updatedCart);
   },
 
-  async updateCartItem(
-    userId: number,
-    input: UpdateCartItemInput,
-    itemId: number
-  ): Promise<CartWithItems> {
-    const cart = await cartRepository.findByUserId(userId);
-    if (!cart) {
-      throw new ApiError("Cart not found", 404);
+  async removeItem(
+    sessionUserId: string,
+    identifier: string
+  ): Promise<CartResponse> {
+    const userId = await resolveInternalUserId(sessionUserId);
+
+    const updatedCart = await cartRepository.removeCartItem({
+      userId,
+      variantUnitPriceUuid: identifier,
+      adminOrUserId: userId,
+    });
+
+    if (!updatedCart) {
+      throw ApiError.notFound("Cart item not found");
     }
 
-    const cartItem = await cartRepository.findItemById(itemId, cart.id);
-    if (!cartItem) {
-      throw new ApiError("Cart item not found", 404);
-    }
-
-    let stockQuantity = 0;
-    if (cartItem.variantId) {
-      const variant = await db.productVariant.findUnique({
-        where: { id: cartItem.variantId },
-      });
-      stockQuantity = variant?.stockQuantity ?? 0;
-    } else {
-      const inventory = await db.inventory.findFirst({
-        where: { productId: cartItem.productId, variantId: null },
-      });
-      stockQuantity = inventory?.quantity ?? 0;
-    }
-
-    if (stockQuantity < input.quantity) {
-      throw new ApiError(
-        `Insufficient stock. Available: ${stockQuantity}`,
-        400
-      );
-    }
-
-    await cartRepository.updateItemQuantity(itemId, input.quantity);
-    return this.getCart(userId);
+    return formatCartResponse(updatedCart);
   },
 
-  async removeCartItem(userId: number, itemId: number): Promise<CartWithItems> {
-    const cart = await cartRepository.findByUserId(userId);
-    if (!cart) {
-      throw new ApiError("Cart not found", 404);
-    }
-
-    const cartItem = await cartRepository.findItemById(itemId, cart.id);
-    if (!cartItem) {
-      throw new ApiError("Cart item not found", 404);
-    }
-
-    await cartRepository.removeItem(itemId);
-    return this.getCart(userId);
+  async clearCart(sessionUserId: string): Promise<void> {
+    const userId = await resolveInternalUserId(sessionUserId);
+    await cartRepository.clearCart({
+      userId,
+      adminOrUserId: userId,
+    });
   },
 
-  async clearCart(userId: number): Promise<CartWithItems> {
-    const cart = await cartRepository.findByUserId(userId);
-    if (!cart) {
-      throw new ApiError("Cart not found", 404);
-    }
-
-    await cartRepository.clearCart(cart.id);
-    return this.getCart(userId);
-  },
-
-  async getCartSummary(userId: number): Promise<CartSummary> {
-    const cart = await this.getCart(userId);
-    return cart.summary;
+  async getCartCount(sessionUserId: string): Promise<CartCountResponse> {
+    const userId = await resolveInternalUserId(sessionUserId);
+    return cartRepository.getCartItemCount(userId);
   },
 };

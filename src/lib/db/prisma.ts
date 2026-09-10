@@ -13,13 +13,14 @@ function createPrismaClient() {
 
   const url = new URL(databaseUrl);
   const adapter = new PrismaMariaDb({
-    host: url.hostname,
-    port: parseInt(url.port || "3306"),
-    user: url.username,
-    password: url.password,
-    database: url.pathname.replace("/", ""),
-    connectionLimit: 5,
-  });
+  host: url.hostname === "localhost" ? "127.0.0.1" : url.hostname,
+  port: Number(url.port || 3306),
+  user: decodeURIComponent(url.username),
+  password: decodeURIComponent(url.password),
+  database: url.pathname.slice(1),
+  connectionLimit: 10,
+  allowPublicKeyRetrieval: true,
+});
 
   return new PrismaClient({ adapter });
 }
@@ -27,3 +28,4 @@ function createPrismaClient() {
 export const db = globalForPrisma.prisma ?? createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
+

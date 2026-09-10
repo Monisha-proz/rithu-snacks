@@ -11,10 +11,8 @@ export type GetBrandsQueryInput = z.infer<typeof getBrandsQuerySchema>;
 
 export const createBrandSchema = z.object({
   name: z.string().min(1, "Brand name is required").max(255),
-  slug: z.string().max(255).optional(),
+  slug: z.string().trim().min(1, "Brand code is required").max(255),
   description: z.string().max(1000).optional(),
-  logo: z.string().max(500).optional(),
-  isActive: z.boolean().optional(),
 });
 
 export type CreateBrandSchemaInput = z.infer<typeof createBrandSchema>;

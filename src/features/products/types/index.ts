@@ -87,3 +87,91 @@ export interface CreateProductInput {
 }
 
 export interface UpdateProductInput extends Partial<CreateProductInput> {}
+
+export interface AdminProductResponse {
+  id: string; // Public Product UUID
+  categoryId: string | null; // Public Category UUID
+  categoryName: string | null;
+  brandId: string | null; // Public Brand UUID
+  brandName: string | null;
+  hsnCodeId: string | null; // Public HSN Code UUID
+  hsnCodeName: string | null;
+  name: string;
+  slug: string;
+  status: boolean;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface GetAdminProductsParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+}
+
+export interface AdminProductListParams {
+  page?: number;
+  limit?: number;
+  pageSize?: number;
+  search?: string;
+  isActive?: boolean;
+  categoryId?: string;
+  brandId?: string;
+  hsnCodeId?: string;
+  status?: boolean;
+  vegType?: string;
+  isFeatured?: boolean;
+  sortBy?: "name" | "slug" | "createdAt" | "updatedAt" | "status" | "isActive";
+  sortOrder?: "asc" | "desc";
+}
+
+export interface GetAdminProductsResult {
+  data: AdminProductResponse[];
+  meta?: {
+    page: number;
+    limit: number;
+    pageSize?: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface AdminProductsCountResponse {
+  active: number;
+  inactive: number;
+  all: number;
+}
+
+export interface AdminProductImageResponse {
+  id: string; // Public Product Image ID
+  imageUrl: string;
+  sortOrder: number;
+  isPrimary: boolean;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Customer-facing product/variant DTOs (real schema-backed shapes, used by the
+// storefront - see src/features/customers/types/catalog.types.ts for the
+// source of truth).
+export type {
+  CustomerProductListItemDto,
+  CustomerProductDetailDto,
+  CustomerVariantListItemDto,
+  CustomerVariantUnitPriceDto,
+} from "@/features/customers/types";
+
+export interface CustomerProductListParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  brandIds?: string[];
+  categoryIds?: string[];
+  minPrice?: number | null;
+  maxPrice?: number | null;
+  sortBy?: "name" | "price" | "createdAt";
+  sortOrder?: "asc" | "desc";
+}
+

@@ -10,7 +10,7 @@ import { z } from "zod";
 import {
   FormModal,
 } from "@/components/common/FormModal";
-import { LoadingState } from "@/components/ui/loading-state";
+import { AdminTableSkeleton } from "@/components/admin/AdminTableSkeleton";
 import { ErrorState } from "@/components/ui/error-state";
 import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
 import {
@@ -181,13 +181,13 @@ export default function InventoryStockPage() {
     });
   };
 
-  if (isLoading) return <LoadingState />;
+  if (isLoading) return <AdminTableSkeleton />;
   if (error) return <ErrorState message={error.message} />;
 
   const inventoryData = data?.data?.data ?? [];
 
   return (
-    <div>
+    <div className="flex flex-1 min-h-0 flex-col">
       <AdminBreadcrumb
         items={[
           { label: "Dashboard", href: "/admin/dashboard" },
@@ -198,14 +198,18 @@ export default function InventoryStockPage() {
       <AdminPageHeader
         title="Inventory Stock"
         description="Manage your inventory stock levels"
-      >
-        <Button onClick={() => setCreateOpen(true)}>Add Inventory</Button>
-      </AdminPageHeader>
-      <AdminContent>
-        <DataTable
-          columns={columns}
-          data={inventoryData}
-        />
+        actions={
+          <Button onClick={() => setCreateOpen(true)}>Add Inventory</Button>
+        }
+      />
+      <AdminContent className="flex-1 min-h-0 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          <DataTable
+            columns={columns}
+            data={inventoryData}
+            className="bg-white border border-neutral-200"
+          />
+        </div>
       </AdminContent>
 
       <FormModal
@@ -224,12 +228,14 @@ export default function InventoryStockPage() {
       >
         <div className="space-y-4">
           <div>
-            <label className="text-sm font-medium">Inventory Item</label>
+            <label className="text-sm font-medium">Inventory Item <span className="text-red-500">*</span></label>
             <select
               className="w-full border rounded-md p-2"
               {...adjustForm.register("inventoryId", { valueAsNumber: true })}
             >
-              <option value={0}>Select item</option>
+              <option value={0} disabled>
+                Select item
+              </option>
               {inventoryData?.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.productName}
@@ -239,7 +245,7 @@ export default function InventoryStockPage() {
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium">Type</label>
+            <label className="text-sm font-medium">Type <span className="text-red-500">*</span></label>
             <select
               className="w-full border rounded-md p-2"
               {...adjustForm.register("type")}
@@ -253,7 +259,7 @@ export default function InventoryStockPage() {
           </div>
           <div>
             <label className="text-sm font-medium">
-              Quantity (negative for out)
+              Quantity (negative for out) <span className="text-red-500">*</span>
             </label>
             <input
               type="number"
@@ -287,7 +293,7 @@ export default function InventoryStockPage() {
       >
         <div className="space-y-4">
           <div>
-            <label className="text-sm font-medium">Product ID</label>
+            <label className="text-sm font-medium">Product ID <span className="text-red-500">*</span></label>
             <input
               type="number"
               className="w-full border rounded-md p-2"
@@ -305,7 +311,7 @@ export default function InventoryStockPage() {
             />
           </div>
           <div>
-            <label className="text-sm font-medium">Quantity</label>
+            <label className="text-sm font-medium">Quantity <span className="text-red-500">*</span></label>
             <input
               type="number"
               className="w-full border rounded-md p-2"

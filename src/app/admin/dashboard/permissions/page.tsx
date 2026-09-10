@@ -12,7 +12,7 @@ import {
 import { DataTable } from "@/components/admin/data-table/DataTable";
 import { AdminPageHeader, AdminContent } from "@/components/admin/AdminPageHeader";
 import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
-import { LoadingState } from "@/components/ui/loading-state";
+import { AdminTableSkeleton } from "@/components/admin/AdminTableSkeleton";
 import { ErrorState } from "@/components/ui/error-state";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -127,20 +127,20 @@ export default function AdminPermissionsPage() {
             size="icon"
             onClick={() => setDeleteId(row.original.id)}
           >
-            <Trash2 className="h-4 w-4 text-destructive" />
+            <Trash2 className="h-4 w-4 text-error-600" />
           </Button>
         </div>
       ),
     },
   ];
 
-  if (isLoading) return <LoadingState text="Loading permissions..." />;
+  if (isLoading) return <AdminTableSkeleton />;
   if (error) return <ErrorState message="Failed to load permissions" onRetry={() => refetch()} />;
 
   const isMutating = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div>
+    <div className="flex flex-1 min-h-0 flex-col">
       <AdminBreadcrumb items={[{ label: "Permissions" }]} />
       <AdminPageHeader
         title="Permissions"
@@ -152,14 +152,17 @@ export default function AdminPermissionsPage() {
           </Button>
         }
       />
-      <AdminContent>
-        <DataTable
-          columns={columns}
-          data={permissions}
-          searchKey="name"
-          searchPlaceholder="Search permissions..."
-          pageSize={20}
-        />
+      <AdminContent className="flex-1 min-h-0 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          <DataTable
+            columns={columns}
+            data={permissions}
+            searchKey="name"
+            searchPlaceholder="Search permissions..."
+            pageSize={20}
+            className="bg-white border border-neutral-200"
+          />
+        </div>
       </AdminContent>
 
       <FormModal
@@ -194,7 +197,7 @@ export default function AdminPermissionsPage() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Name <span className="text-destructive">*</span>
+              Name <span className="text-error-600">*</span>
             </label>
             <input
               {...register("name")}
@@ -202,13 +205,13 @@ export default function AdminPermissionsPage() {
               placeholder="e.g. products.create"
             />
             {errors.name && (
-              <p className="mt-1 text-sm text-destructive">{errors.name.message}</p>
+              <p className="mt-1 text-sm text-error-600">{errors.name.message}</p>
             )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Module <span className="text-destructive">*</span>
+              Module <span className="text-error-600">*</span>
             </label>
             <input
               {...register("module")}
@@ -216,7 +219,7 @@ export default function AdminPermissionsPage() {
               placeholder="e.g. products"
             />
             {errors.module && (
-              <p className="mt-1 text-sm text-destructive">{errors.module.message}</p>
+              <p className="mt-1 text-sm text-error-600">{errors.module.message}</p>
             )}
           </div>
 
@@ -231,7 +234,7 @@ export default function AdminPermissionsPage() {
               placeholder="Permission description"
             />
             {errors.description && (
-              <p className="mt-1 text-sm text-destructive">{errors.description.message}</p>
+              <p className="mt-1 text-sm text-error-600">{errors.description.message}</p>
             )}
           </div>
         </form>
