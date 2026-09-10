@@ -17,7 +17,6 @@ interface AccountShellProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
 }
-
 export function AccountShell({ activeTab, onTabChange }: AccountShellProps) {
   const { data: profile, isLoading: profileLoading } = useCustomerProfile();
   const {
@@ -118,18 +117,16 @@ export function AccountShell({ activeTab, onTabChange }: AccountShellProps) {
                 key={item.id}
                 type="button"
                 onClick={() => handleNavClick(item.id)}
-                className={`flex-shrink-0 rounded-full px-4 py-2.5 text-xs font-semibold whitespace-nowrap transition-colors min-h-[44px] cursor-pointer flex items-center gap-1.5 ${
-                  isActive
+                className={`flex-shrink-0 rounded-full px-4 py-2.5 text-xs font-semibold whitespace-nowrap transition-colors min-h-[44px] cursor-pointer flex items-center gap-1.5 ${isActive
                     ? "bg-theme-primary text-theme-primary-fg border border-theme-primary"
                     : "bg-theme-surface text-theme-text-subtle border border-theme-border hover:bg-theme-surface-alt"
-                }`}
+                  }`}
               >
                 <span>{item.label}</span>
                 {item.badge && (
                   <span
-                    className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                      isActive ? "bg-theme-secondary text-theme-secondary-fg" : "bg-theme-border text-theme-text-muted"
-                    }`}
+                    className={`text-[10px] px-1.5 py-0.5 rounded-full ${isActive ? "bg-theme-secondary text-theme-secondary-fg" : "bg-theme-border text-theme-text-muted"
+                      }`}
                   >
                     {item.badge}
                   </span>
@@ -185,26 +182,23 @@ export function AccountShell({ activeTab, onTabChange }: AccountShellProps) {
                   key={item.id}
                   type="button"
                   onClick={() => handleNavClick(item.id)}
-                  className={`flex items-center gap-3 w-full text-left rounded-xl px-3.5 py-3 transition-colors cursor-pointer min-h-[44px] ${
-                    isActive
+                  className={`flex items-center gap-3 w-full text-left rounded-xl px-3.5 py-3 transition-colors cursor-pointer min-h-[44px] ${isActive
                       ? "bg-theme-primary text-theme-primary-fg font-semibold"
                       : isLogout
-                      ? "text-theme-status-can-fg hover:bg-theme-status-can-bg font-medium"
-                      : "text-theme-text-subtle hover:bg-theme-surface-alt font-medium"
-                  }`}
+                        ? "text-theme-status-can-fg hover:bg-theme-status-can-bg font-medium"
+                        : "text-theme-text-subtle hover:bg-theme-surface-alt font-medium"
+                    }`}
                 >
                   {/* Rotated Diamond Indicator */}
                   <span
-                    className={`w-2 h-2 rotate-45 rounded-2xs flex-shrink-0 transition-colors ${
-                      isActive ? "bg-theme-secondary" : isLogout ? "bg-red-300" : "bg-theme-border"
-                    }`}
+                    className={`w-2 h-2 rotate-45 rounded-2xs flex-shrink-0 transition-colors ${isActive ? "bg-theme-secondary" : isLogout ? "bg-red-300" : "bg-theme-border"
+                      }`}
                   />
                   <span className="flex-1 text-xs sm:text-sm">{item.label}</span>
                   {item.badge && (
                     <span
-                      className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                        isActive ? "text-theme-secondary" : "text-theme-text-muted"
-                      }`}
+                      className={`text-xs font-semibold px-2 py-0.5 rounded-full ${isActive ? "text-theme-secondary" : "text-theme-text-muted"
+                        }`}
                     >
                       {item.badge}
                     </span>
