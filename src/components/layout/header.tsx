@@ -102,7 +102,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full bg-white shadow-xs header-font">
-      <div className="max-w-[1400px] mx-auto h-20 sm:h-24 px-2 sm:px-4 md:px-8 flex items-center justify-between">
+      <div className="w-full max-w-[1400px] 2xl:max-w-[1600px] 3xl:max-w-[1800px] mx-auto h-20 sm:h-24 px-4 sm:px-6 md:px-8 flex items-center justify-between">
         {/* Left Section (Logo + Brand Title) */}
         <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
           <Link href="/" className="inline-block">

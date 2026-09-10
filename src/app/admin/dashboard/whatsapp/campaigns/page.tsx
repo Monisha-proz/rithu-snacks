@@ -13,7 +13,6 @@ import {
   RotateCcw,
   Clock,
   CheckCircle2,
-  AlertTriangle,
   RefreshCw,
   Trash2,
   Users,
@@ -46,7 +45,8 @@ export default function WhatsAppCampaignsPage() {
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
-  const fetchCampaigns = async () => {
+  const loadCampaigns = React.useCallback(async (showSpinner = false) => {
+    if (showSpinner) setIsLoading(true);
     try {
       const url =
         filterStatus === "ALL"
@@ -57,16 +57,17 @@ export default function WhatsAppCampaignsPage() {
       if (json.success && Array.isArray(json.data)) {
         setCampaigns(json.data);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Failed to load campaigns:", err);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [filterStatus]);
 
   useEffect(() => {
-    fetchCampaigns();
-  }, [filterStatus]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadCampaigns(false);
+  }, [loadCampaigns]);
 
   // Fast polling if any campaign is currently RUNNING to animate progress bar
   useEffect(() => {
@@ -75,12 +76,12 @@ export default function WhatsAppCampaignsPage() {
 
     const interval = setInterval(() => {
       if (!document.hidden) {
-        fetchCampaigns();
+        loadCampaigns(false);
       }
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [campaigns]);
+  }, [campaigns, loadCampaigns]);
 
   // Execute Action (Pause, Resume, Cancel, Retry Failed)
   const handleAction = async (
@@ -96,12 +97,12 @@ export default function WhatsAppCampaignsPage() {
       });
       const json = await res.json();
       if (json.success) {
-        await fetchCampaigns();
+        await loadCampaigns(false);
       } else {
         alert(json.message || "Failed to perform action");
       }
-    } catch (err: any) {
-      alert(err?.message || "Action failed");
+    } catch (err: unknown) {
+      alert((err as Error)?.message || "Action failed");
     } finally {
       setActionLoadingId(null);
     }
@@ -124,8 +125,8 @@ export default function WhatsAppCampaignsPage() {
       } else {
         alert(json.message || "Failed to delete campaign");
       }
-    } catch (err: any) {
-      alert(err?.message || "Delete failed");
+    } catch (err: unknown) {
+      alert((err as Error)?.message || "Delete failed");
     } finally {
       setActionLoadingId(null);
     }
@@ -164,22 +165,22 @@ export default function WhatsAppCampaignsPage() {
         </div>
 
         <div className="bg-white rounded-2xl border border-neutral-200/80 p-5 shadow-xs flex items-center gap-4">
-          <div className="h-11 w-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+          <div className="h-11 w-11 rounded-xl bg-success-50 text-success-700 flex items-center justify-center">
             <Play className="h-5 w-5" />
           </div>
           <div>
             <p className="text-xs font-medium text-neutral-500">Running Now</p>
-            <p className="text-xl font-bold text-emerald-600">{runningCampaigns}</p>
+            <p className="text-xl font-bold text-success-700">{runningCampaigns}</p>
           </div>
         </div>
 
         <div className="bg-white rounded-2xl border border-neutral-200/80 p-5 shadow-xs flex items-center gap-4">
-          <div className="h-11 w-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+          <div className="h-11 w-11 rounded-xl bg-primary-50 text-primary-800 flex items-center justify-center">
             <Clock className="h-5 w-5" />
           </div>
           <div>
             <p className="text-xs font-medium text-neutral-500">Scheduled</p>
-            <p className="text-xl font-bold text-amber-600">{scheduledCampaigns}</p>
+            <p className="text-xl font-bold text-primary-800">{scheduledCampaigns}</p>
           </div>
         </div>
 
@@ -216,16 +217,16 @@ export default function WhatsAppCampaignsPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={fetchCampaigns}
+            onClick={() => loadCampaigns(true)}
             disabled={isLoading}
-            className="h-8 text-xs font-medium gap-1.5"
+            className="h-8 text-xs font-medium gap-1.5 border-neutral-200"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
 
           <Link href="/admin/dashboard/whatsapp/campaigns/create">
-            <Button size="sm" className="h-8 text-xs font-semibold gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white">
+            <Button size="sm" className="h-8 text-xs font-semibold gap-1.5 bg-secondary-600 hover:bg-secondary-700 text-white shadow-xs">
               <PlusCircle className="h-3.5 w-3.5" />
               New Campaign
             </Button>
@@ -252,7 +253,7 @@ export default function WhatsAppCampaignsPage() {
             </p>
           </div>
           <Link href="/admin/dashboard/whatsapp/campaigns/create">
-            <Button size="md" className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs">
+            <Button size="md" className="gap-2 bg-secondary-600 hover:bg-secondary-700 text-white font-semibold text-xs shadow-xs">
               <PlusCircle className="h-4 w-4" />
               Create Your First Campaign
             </Button>

@@ -193,9 +193,13 @@ export const orderService = {
     }
 
     const paymentMethod = input.paymentMethod || "CARD";
-    const isPaid = paymentMethod === "CARD" || paymentMethod === "UPI";
-    const paymentStatus: "paid" | "pending" = isPaid ? "paid" : "pending";
-    const orderStatus: "confirmed" | "pending" = isPaid ? "confirmed" : "pending";
+    const isOnlinePayment = paymentMethod === "CARD" || paymentMethod === "UPI" || (paymentMethod as string) === "ONLINE" || (paymentMethod as string) === "RAZORPAY";
+    // If explicitly verified through Razorpay, mark paid and confirmed; if COD, confirm order with payment pending; otherwise pending.
+    const isVerifiedPaid = input.paymentDetails?.isPaid === true || (!isOnlinePayment && input.paymentDetails?.isSimulated === true);
+    const paymentStatus: "paid" | "pending" = isVerifiedPaid ? "paid" : "pending";
+    const orderStatus: "confirmed" | "pending" = paymentMethod === "COD" || isVerifiedPaid ? "confirmed" : "pending";
+
+
 
     // Free delivery is judged on what the customer actually pays, after offers.
     const payableBeforeShipping = subtotal - offerDiscount;

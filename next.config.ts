@@ -27,7 +27,9 @@ const nextConfig: NextConfig = {
     "mariadb",
     "@whiskeysockets/baileys",
     "pino",
+    "razorpay",
   ],
+
   experimental: {
     optimizePackageImports: [
       "lucide-react",

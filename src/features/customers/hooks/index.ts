@@ -60,3 +60,8 @@ export {
   useCustomerCompany,
   CUSTOMER_COMPANY_QUERY_KEY,
 } from "./use-customer-company";
+export {
+  useCreateRazorpayOrder,
+  useVerifyRazorpayPayment,
+} from "./use-customer-payment";
+

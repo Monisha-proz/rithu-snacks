@@ -167,7 +167,7 @@ export function Footer() {
 
       {/* Main Brown Footer Area */}
       <div className="bg-[var(--brown-700)] min-h-[350px] pt-10 lg:pt-24 text-white">
-        <div className="max-w-[1400px] mx-auto px-6 lg:px-10">
+        <div className="w-full max-w-[1400px] 2xl:max-w-[1600px] 3xl:max-w-[1800px] mx-auto px-6 lg:px-10">
           <div className="flex flex-col gap-10 lg:justify-between lg:flex-row">
             {/* Column 1: Ready to Assist */}
             <FooterLinks
@@ -283,7 +283,7 @@ export function Footer() {
         <div className="mt-8 h-[3px] bg-[var(--brown-600)]" />
 
         {/* Copyright Bar */}
-        <div className="flex flex-col gap-2 py-5 text-sm text-gray-200 header-font text-center lg:flex-row lg:justify-between lg:items-center lg:text-left lg:px-8 max-w-[1400px] mx-auto">
+        <div className="flex flex-col gap-2 py-5 text-sm text-gray-200 header-font text-center lg:flex-row lg:justify-between lg:items-center lg:text-left lg:px-8 w-full max-w-[1400px] 2xl:max-w-[1600px] 3xl:max-w-[1800px] mx-auto">
           <p className="header-font">
             Copyright © {new Date().getFullYear()} {companyName}. All Rights Reserved.
           </p>
