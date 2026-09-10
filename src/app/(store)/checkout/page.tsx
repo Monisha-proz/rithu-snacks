@@ -38,8 +38,10 @@ import {
   useCreateCustomerOrder,
   CUSTOMER_ORDERS_QUERY_KEY,
 } from "@/features/customers/hooks/use-customer-orders";
+import { customerPaymentApi } from "@/features/customers/api/customer-payment.api";
 import { useCheckout } from "@/features/checkout/checkout-context";
 import type { CustomerAddressResponse } from "@/features/customers/types/customer-address.types";
+
 
 function CheckoutSkeleton() {
   return (
@@ -106,6 +108,12 @@ export default function CheckoutPage() {
   const [orderNotes, setOrderNotes] = useState<string>("");
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
+  // Redirect payment in-flight guard
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [isVerifyingPayment] = useState(false); // kept for UI compat
+  const [pendingOrder] = useState<null>(null); // no longer used (redirect flow)
+
+
   // Add Address Modal state
   const [isAddingAddress, setIsAddingAddress] = useState(false);
   const [newAddressForm, setNewAddressForm] = useState({
@@ -123,11 +131,6 @@ export default function CheckoutPage() {
   });
   const [addressFormError, setAddressFormError] = useState<string | null>(null);
 
-  // Pre-filled Simulated Card Details
-  const [cardNumber, setCardNumber] = useState("4242 4242 4242 4242");
-  const [cardExpiry, setCardExpiry] = useState("12/28");
-  const [cardCvv, setCardCvv] = useState("123");
-  const [cardName, setCardName] = useState("Demo Customer");
 
   // Effective selected address (fall back to default or first available)
   const effectiveAddressId = useMemo(() => {
@@ -179,6 +182,11 @@ export default function CheckoutPage() {
     );
   }
 
+  // With redirect flow, pendingOrder is always null — this guard is kept for safety.
+  if (pendingOrder && !isOrderPlaced) {
+    return null;
+  }
+
   // Empty cart guard
   if (items.length === 0) {
     return (
@@ -202,6 +210,7 @@ export default function CheckoutPage() {
       </div>
     );
   }
+
 
   // Handle address form creation
   const handleCreateAddress = async (e: React.FormEvent) => {
@@ -269,6 +278,36 @@ export default function CheckoutPage() {
     }
   };
 
+  // Launch redirect-based Razorpay payment
+  const launchRedirectPayment = async (targetAddressId?: string) => {
+    setIsProcessingPayment(true);
+    setCheckoutError(null);
+
+    const shippingId = targetAddressId || effectiveAddressId;
+    if (!shippingId) {
+      setIsProcessingPayment(false);
+      setCheckoutError("Please select or add a delivery address first.");
+      return;
+    }
+
+    try {
+      // Call backend to create Razorpay order + one-time token
+      const result = await customerPaymentApi.initiateRedirectPayment({
+        shippingAddressId: shippingId,
+        billingAddressId: shippingId,
+        notes: orderNotes.trim() || undefined,
+      });
+
+      // Redirect browser to payment app
+      window.location.href = result.paymentUrl;
+    } catch (err: any) {
+      setIsProcessingPayment(false);
+      setCheckoutError(
+        err.message || "Failed to initiate payment. Please check your details and try again."
+      );
+    }
+  };
+
   // Place Order Handler
   const handlePlaceOrder = async () => {
     setCheckoutError(null);
@@ -278,63 +317,58 @@ export default function CheckoutPage() {
       return;
     }
 
-    try {
-      const orderRes = await createOrderMutation.mutateAsync({
-        shippingAddressId: effectiveAddressId,
-        paymentMethod,
-        notes: orderNotes.trim() || undefined,
-        paymentDetails:
-          paymentMethod === "CARD"
-            ? {
-                last4: cardNumber.replace(/\s/g, "").slice(-4) || "4242",
-                brand: "visa",
-                status: "succeeded",
-                isSimulated: true,
-              }
-            : paymentMethod === "UPI"
-            ? {
-                upiId: "rithu.customer@okaxis",
-                status: "succeeded",
-                isSimulated: true,
-              }
-            : {
-                method: "COD",
-                status: "pending",
-              },
-      });
-
-      // Safely resolve order id and order number across any response shape
-      const order =
-        (orderRes as any)?.data?.data ||
-        (orderRes as any)?.data ||
-        orderRes;
-      const orderId = order?.id;
-      const orderNumber = order?.orderNumber;
-
-      // Mark order as placed immediately to transition stepper to "Done" and prevent empty cart screen
-      setIsOrderPlaced(true);
-
-      // Invalidate customer orders and carts in background without blocking route transition
-      queryClient.invalidateQueries({ queryKey: CUSTOMER_ORDERS_QUERY_KEY, refetchType: "all" });
-      queryClient.invalidateQueries({ queryKey: ["customer", "cart"], refetchType: "all" });
-      queryClient.invalidateQueries({ queryKey: ["cart"], refetchType: "all" });
-
-      // Navigate to the order success page immediately
-      const params = new URLSearchParams();
-      if (orderId && String(orderId) !== "undefined" && String(orderId) !== "null") {
-        params.set("orderId", String(orderId));
-      }
-      if (orderNumber && String(orderNumber) !== "undefined" && String(orderNumber) !== "null") {
-        params.set("orderNumber", String(orderNumber));
-      }
-      router.push(`/checkout/success${params.toString() ? `?${params.toString()}` : ""}`);
-    } catch (err: any) {
-      setIsOrderPlaced(false);
-      setCheckoutError(
-        err.message || "Failed to place order. Please check details and try again."
-      );
+    if (isProcessingPayment || isVerifyingPayment || createOrderMutation.isPending) {
+      return;
     }
+
+    // 1. Cash on Delivery (COD) flow
+    if (paymentMethod === "COD") {
+      try {
+        const orderRes = await createOrderMutation.mutateAsync({
+          shippingAddressId: effectiveAddressId,
+          paymentMethod: "COD",
+          notes: orderNotes.trim() || undefined,
+          paymentDetails: {
+            method: "COD",
+            status: "pending",
+          },
+        });
+
+        const order =
+          (orderRes as any)?.data?.data ||
+          (orderRes as any)?.data ||
+          orderRes;
+        const orderId = order?.id;
+        const orderNumber = order?.orderNumber;
+
+        setIsOrderPlaced(true);
+        queryClient.invalidateQueries({ queryKey: CUSTOMER_ORDERS_QUERY_KEY, refetchType: "all" });
+        queryClient.invalidateQueries({ queryKey: ["customer", "cart"], refetchType: "all" });
+        queryClient.invalidateQueries({ queryKey: ["cart"], refetchType: "all" });
+
+        const params = new URLSearchParams();
+        if (orderId && String(orderId) !== "undefined" && String(orderId) !== "null") {
+          params.set("orderId", String(orderId));
+        }
+        if (orderNumber && String(orderNumber) !== "undefined" && String(orderNumber) !== "null") {
+          params.set("orderNumber", String(orderNumber));
+        }
+        router.push(`/checkout/success${params.toString() ? `?${params.toString()}` : ""}`);
+      } catch (err: any) {
+        setIsOrderPlaced(false);
+        setCheckoutError(
+          err.message || "Failed to place COD order. Please check details and try again."
+        );
+      }
+      return;
+    }
+
+    // 2. Online Payment (Razorpay) — Redirect to payment app
+    // No popup. Browser navigates to the payment domain.
+    // Order is only created after payment verification on the backend.
+    await launchRedirectPayment(effectiveAddressId);
   };
+
 
   return (
     <div className="container mx-auto px-4 py-8 sm:py-10 max-w-7xl">
@@ -712,7 +746,7 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* 3. Payment Method Card (with Dummy Card) */}
+          {/* 3. Payment Method Card */}
           <div className="rounded-2xl border border-theme-border bg-theme-surface shadow-xs p-5 sm:p-6">
             <div className="flex items-center justify-between gap-4 mb-4 pb-3 border-b border-theme-border-subtle">
               <div className="flex items-center gap-2.5">
@@ -725,189 +759,105 @@ export default function CheckoutPage() {
                 </h2>
               </div>
 
-              <span className="rounded-full bg-theme-status-out-bg border border-theme-border-accent px-3 py-0.5 text-[11px] font-bold text-theme-status-out-fg">
-                Simulated Test Mode
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-0.5 text-[11px] font-bold text-emerald-700">
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                Razorpay Secured
               </span>
             </div>
 
             {/* Payment Method Selector Tabs */}
-            <div className="grid grid-cols-3 gap-2.5 mb-5">
+            <div className="grid grid-cols-2 gap-3 mb-5">
               <button
                 type="button"
                 onClick={() => setPaymentMethod("CARD")}
-                className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all min-h-[56px] ${
-                  paymentMethod === "CARD"
+                className={`flex flex-col items-center justify-center p-3.5 rounded-xl border text-center transition-all min-h-[64px] ${
+                  paymentMethod === "CARD" || paymentMethod === "UPI"
                     ? "border-theme-primary bg-theme-surface-alt font-bold text-theme-primary shadow-xs ring-1 ring-theme-primary"
                     : "border-theme-border bg-theme-surface text-theme-text-subtle hover:bg-theme-surface-warm"
                 }`}
               >
-                <CreditCard className="h-4 w-4 mb-1" />
-                <span className="text-xs">Card (Test)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPaymentMethod("UPI")}
-                className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all min-h-[56px] ${
-                  paymentMethod === "UPI"
-                    ? "border-theme-primary bg-theme-surface-alt font-bold text-theme-primary shadow-xs ring-1 ring-theme-primary"
-                    : "border-theme-border bg-theme-surface text-theme-text-subtle hover:bg-theme-surface-warm"
-                }`}
-              >
-                <span className="text-xs font-black mb-0.5">UPI</span>
-                <span className="text-xs">UPI QR (Test)</span>
+                <div className="flex items-center gap-2 mb-1">
+                  <CreditCard className="h-4 w-4 text-theme-primary" />
+                  <span className="text-xs font-black">UPI / Cards / NetBanking</span>
+                </div>
+                <span className="text-[11px] font-medium text-theme-text-muted">Online via Razorpay</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setPaymentMethod("COD")}
-                className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all min-h-[56px] ${
+                className={`flex flex-col items-center justify-center p-3.5 rounded-xl border text-center transition-all min-h-[64px] ${
                   paymentMethod === "COD"
                     ? "border-theme-primary bg-theme-surface-alt font-bold text-theme-primary shadow-xs ring-1 ring-theme-primary"
                     : "border-theme-border bg-theme-surface text-theme-text-subtle hover:bg-theme-surface-warm"
                 }`}
               >
-                <Truck className="h-4 w-4 mb-1" />
-                <span className="text-xs">Cash on Delivery</span>
+                <div className="flex items-center gap-2 mb-1">
+                  <Truck className="h-4 w-4 text-theme-secondary" />
+                  <span className="text-xs font-black">Cash on Delivery</span>
+                </div>
+                <span className="text-[11px] font-medium text-theme-text-muted">Pay upon delivery</span>
               </button>
             </div>
 
             {/* Payment Details Container */}
-            {paymentMethod === "CARD" && (
-              <div className="rounded-xl border border-theme-border-subtle bg-theme-surface-alt/50 p-4 sm:p-5 space-y-4">
-                {/* Simulated Card Preview */}
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-tr from-[#5C1512] via-[#7A211B] to-[#9E2E27] p-5 text-white shadow-md">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-1.5">
-                      <Sparkles className="h-4 w-4 text-theme-secondary" />
-                      <span className="text-xs font-extrabold tracking-wider uppercase text-theme-secondary">
-                        Rithu Snacks Pay
-                      </span>
-                    </div>
-                    <span className="rounded bg-white/20 px-2 py-0.5 text-[10px] font-bold tracking-widest uppercase backdrop-blur-xs">
-                      TEST VISA
-                    </span>
+            {(paymentMethod === "CARD" || paymentMethod === "UPI") && (
+              <div className="rounded-xl border border-theme-border-subtle bg-theme-surface-alt/60 p-4 sm:p-5 space-y-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-xs font-bold text-theme-text-primary">
+                      Official Razorpay Payment Gateway
+                    </h3>
+                    <p className="text-[11px] text-theme-text-subtle mt-0.5">
+                      Fast, safe, and encrypted payment with instant order confirmation.
+                    </p>
                   </div>
-
-                  <div className="space-y-4">
-                    <div className="font-mono text-base sm:text-lg tracking-widest font-bold drop-shadow">
-                      {cardNumber}
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs pt-1 border-t border-white/20">
-                      <div>
-                        <div className="text-[9px] uppercase tracking-wider text-white/70">
-                          Cardholder
-                        </div>
-                        <div className="font-semibold">{cardName}</div>
-                      </div>
-                      <div>
-                        <div className="text-[9px] uppercase tracking-wider text-white/70">
-                          Expires
-                        </div>
-                        <div className="font-mono font-semibold">{cardExpiry}</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-[11px] text-theme-text-subtle bg-white border border-theme-border rounded-xl p-3 flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-theme-status-del-fg shrink-0" />
-                  <span>
-                    <strong>Dummy test card details are pre-filled</strong> for your
-                    convenience. Clicking &ldquo;Place Order&rdquo; simulates an instant
-                    successful payment without real charges.
+                  <span className="rounded bg-white border border-theme-border px-2 py-0.5 text-[10px] font-bold text-theme-text-secondary shadow-2xs">
+                    256-bit SSL
                   </span>
                 </div>
 
-                {/* Card input fields (editable if user wishes to test validation) */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="sm:col-span-3">
-                    <label className="block text-xs font-semibold text-theme-text-secondary mb-1">
-                      Card Number
-                    </label>
-                    <input
-                      type="text"
-                      value={cardNumber}
-                      onChange={(e) => setCardNumber(e.target.value)}
-                      className="w-full min-h-[44px] font-mono rounded-xl border border-theme-border-input bg-white px-3 text-xs text-theme-text-primary focus:border-theme-primary focus:outline-none"
-                    />
+                {/* Badges of accepted methods */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                  <div className="rounded-lg bg-white border border-theme-border/80 px-2.5 py-2 text-center shadow-2xs">
+                    <span className="text-[11px] font-bold text-theme-text-primary block">UPI</span>
+                    <span className="text-[10px] text-theme-text-muted">GPay, PhonePe, Paytm</span>
                   </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-theme-text-secondary mb-1">
-                      Expiry Date
-                    </label>
-                    <input
-                      type="text"
-                      value={cardExpiry}
-                      onChange={(e) => setCardExpiry(e.target.value)}
-                      className="w-full min-h-[44px] font-mono rounded-xl border border-theme-border-input bg-white px-3 text-xs text-theme-text-primary focus:border-theme-primary focus:outline-none"
-                    />
+                  <div className="rounded-lg bg-white border border-theme-border/80 px-2.5 py-2 text-center shadow-2xs">
+                    <span className="text-[11px] font-bold text-theme-text-primary block">Cards</span>
+                    <span className="text-[10px] text-theme-text-muted">Visa, Master, RuPay</span>
                   </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-theme-text-secondary mb-1">
-                      CVV / CVC
-                    </label>
-                    <input
-                      type="password"
-                      maxLength={4}
-                      value={cardCvv}
-                      onChange={(e) => setCardCvv(e.target.value)}
-                      className="w-full min-h-[44px] font-mono rounded-xl border border-theme-border-input bg-white px-3 text-xs text-theme-text-primary focus:border-theme-primary focus:outline-none"
-                    />
+                  <div className="rounded-lg bg-white border border-theme-border/80 px-2.5 py-2 text-center shadow-2xs">
+                    <span className="text-[11px] font-bold text-theme-text-primary block">Net Banking</span>
+                    <span className="text-[10px] text-theme-text-muted">All major Indian banks</span>
                   </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-theme-text-secondary mb-1">
-                      Name on Card
-                    </label>
-                    <input
-                      type="text"
-                      value={cardName}
-                      onChange={(e) => setCardName(e.target.value)}
-                      className="w-full min-h-[44px] rounded-xl border border-theme-border-input bg-white px-3 text-xs text-theme-text-primary focus:border-theme-primary focus:outline-none"
-                    />
+                  <div className="rounded-lg bg-white border border-theme-border/80 px-2.5 py-2 text-center shadow-2xs">
+                    <span className="text-[11px] font-bold text-theme-text-primary block">Wallets</span>
+                    <span className="text-[10px] text-theme-text-muted">Amazon Pay & more</span>
                   </div>
                 </div>
-              </div>
-            )}
 
-            {paymentMethod === "UPI" && (
-              <div className="rounded-xl border border-theme-border-subtle bg-theme-surface-alt/50 p-4 sm:p-5 space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white border border-theme-border font-bold text-theme-primary text-xs">
-                    UPI
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-theme-text-primary">
-                      Instant Simulated UPI Transfer
-                    </p>
-                    <p className="text-[11px] text-theme-text-subtle font-mono">
-                      rithu.customer@okaxis
-                    </p>
-                  </div>
+                <div className="text-[11px] text-theme-text-subtle bg-white/90 border border-theme-border rounded-xl p-3 flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <span>
+                    Clicking <strong>&ldquo;Pay {formatPrice(grandTotal)} via Razorpay&rdquo;</strong> will open the secure checkout dialog where you can complete payment seamlessly.
+                  </span>
                 </div>
-                <p className="text-[11px] text-theme-text-subtle bg-white border border-theme-border rounded-xl p-3">
-                  Orders placed with simulated UPI will be auto-confirmed and
-                  marked as Paid immediately upon checkout.
-                </p>
               </div>
             )}
 
             {paymentMethod === "COD" && (
-              <div className="rounded-xl border border-theme-border-subtle bg-theme-surface-alt/50 p-4 sm:p-5 space-y-2">
+              <div className="rounded-xl border border-theme-border-subtle bg-theme-surface-alt/60 p-4 sm:p-5 space-y-2">
                 <p className="text-xs font-bold text-theme-text-primary">
                   Pay with Cash upon Doorstep Delivery
                 </p>
-                <p className="text-[11px] text-theme-text-subtle">
-                  Please keep the exact amount ready upon delivery. Our delivery
-                  partner will provide a digital confirmation receipt.
+                <p className="text-[11px] text-theme-text-subtle leading-relaxed">
+                  Please keep exact change ready upon delivery. Our delivery partner will verify and hand over your fresh package with a receipt.
                 </p>
               </div>
             )}
           </div>
+
 
           {/* 4. Delivery Instructions */}
           <div className="rounded-2xl border border-theme-border bg-theme-surface shadow-xs p-5 sm:p-6">
@@ -1010,28 +960,49 @@ export default function CheckoutPage() {
                 onClick={handlePlaceOrder}
                 disabled={
                   createOrderMutation.isPending ||
+                  isProcessingPayment ||
+                  isVerifyingPayment ||
                   addressesLoading ||
                   !effectiveAddressId
                 }
                 className="w-full min-h-[48px] rounded-xl bg-theme-primary hover:bg-theme-primary-hover text-white font-bold text-sm shadow-md transition-all disabled:opacity-50"
               >
-                {createOrderMutation.isPending ? (
+                {isVerifyingPayment ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Verifying Payment...
+                  </>
+                ) : isProcessingPayment ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Redirecting to Payment...
+                  </>
+                ) : createOrderMutation.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Placing Your Order...
                   </>
+                ) : paymentMethod === "COD" ? (
+                  <>
+                    <Truck className="mr-2 h-4 w-4" />
+                    Confirm COD Order ({formatPrice(grandTotal)})
+                  </>
                 ) : (
                   <>
                     <Lock className="mr-2 h-4 w-4" />
-                    Pay {formatPrice(grandTotal)} & Confirm
+                    Pay {formatPrice(grandTotal)} via Razorpay
                   </>
                 )}
               </Button>
 
               <div className="text-[11px] text-center text-theme-text-muted space-y-1 pt-1">
-                <p>🔒 100% Secure Simulated Transaction</p>
-                <p>Freshly prepared South Indian delicacies delivered with care.</p>
+                <p className="flex items-center justify-center gap-1.5 font-medium text-emerald-700">
+                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                  256-bit Bank-Grade Encryption by Razorpay
+                </p>
+                <p>Handcrafted South Indian delicacies delivered fresh to your door.</p>
               </div>
+
             </div>
           </div>
         </div>

@@ -33,8 +33,8 @@ const SORT_OPTIONS: {
 
 function ProductCatalogSkeleton() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 animate-in fade-in duration-200">
-      {[1, 2, 3, 4, 5, 6,7,8,9].map((n) => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 3xl:grid-cols-5 gap-5 sm:gap-6 animate-in fade-in duration-200">
+      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
         <div
           key={n}
           className="bg-white rounded-2xl border border-[#E8D9CD]/80 p-3.5 flex flex-col justify-between overflow-hidden shadow-2xs space-y-3"
@@ -209,6 +209,18 @@ export default function CategoryProductsPage({
     return accumulatedVariants;
   }, [page, variantsResponse?.data, accumulatedVariants]);
 
+  // Catalog container ref for smooth viewport scroll on filter change
+  const catalogContentRef = useRef<HTMLDivElement>(null);
+
+  const scrollToCatalogTop = () => {
+    if (typeof window === "undefined" || !catalogContentRef.current) return;
+    const rect = catalogContentRef.current.getBoundingClientRect();
+    if (rect.top < 80) {
+      const targetY = window.scrollY + rect.top - 90;
+      window.scrollTo({ top: Math.max(0, targetY), behavior: "smooth" });
+    }
+  };
+
   // Infinite Scroll IntersectionObserver sentinel
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -223,21 +235,27 @@ export default function CategoryProductsPage({
           meta &&
           page < meta.totalPages &&
           !isFetching &&
-          !isLoading
+          !isLoading &&
+          displayedVariants.length < (meta.total ?? 0)
         ) {
           setPage((prev) => prev + 1);
         }
       },
-      { threshold: 0.1, rootMargin: "250px" }
+      { threshold: 0.1, rootMargin: "150px" }
     );
 
-    observer.observe(sentinelRef.current);
-    return () => observer.disconnect();
-  }, [meta, page, isFetching, isLoading]);
+    const currentSentinel = sentinelRef.current;
+    observer.observe(currentSentinel);
+    return () => {
+      if (currentSentinel) observer.unobserve(currentSentinel);
+      observer.disconnect();
+    };
+  }, [meta, page, isFetching, isLoading, displayedVariants.length]);
 
   // Category Selection
   const handleCategorySelect = (categoryId: string | null) => {
     setSelectedProductIds([]);
+    scrollToCatalogTop();
     if (!categoryId) {
       setActiveCategoryOverride("all");
       setPage(1);
@@ -253,6 +271,7 @@ export default function CategoryProductsPage({
   const handleProductSelect = (productIds: string[]) => {
     setSelectedProductIds(productIds);
     setPage(1);
+    scrollToCatalogTop();
   };
 
   const hasActiveFilters =
@@ -279,6 +298,7 @@ export default function CategoryProductsPage({
       setActiveCategoryOverride(null);
     }
     setPage(1);
+    scrollToCatalogTop();
   };
 
   const activeFilterCount = [
@@ -297,7 +317,7 @@ export default function CategoryProductsPage({
     <div className="min-h-screen bg-white">
       {/* Hero / Header Banner with Warm Background */}
       <div className="border-b border-[var(--theme-border)] bg-gradient-to-b from-[#FFFDF9] via-[#FAF4ED] to-[#F5ECE1] py-8 sm:py-12">
-        <div className="container mx-auto px-4 max-w-7xl">
+        <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8">
           {/* Breadcrumb navigation */}
           <nav className="flex items-center justify-center gap-2 text-xs sm:text-sm text-[#7A6258] mb-3">
             <Link href="/" className="hover:text-[#7A2224] transition-colors">
@@ -336,7 +356,7 @@ export default function CategoryProductsPage({
       </div>
 
       <div className="w-full bg-white">
-        <div className="container mx-auto px-4 py-6 sm:py-10 max-w-7xl bg-white">
+        <div className="w-full max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 bg-white">
         {/* Mobile Filter Toggle Button */}
         <div className="lg:hidden mb-6 flex items-center justify-between gap-3 bg-white border border-[#E8D9CD] rounded-xl p-3 shadow-xs">
           <button
@@ -374,21 +394,25 @@ export default function CategoryProductsPage({
             onSearchChange={(val) => {
               setSearch(val);
               setPage(1);
+              scrollToCatalogTop();
             }}
             sortKey={sortKey}
             onSortChange={(val) => {
               setSortKey(val);
               setPage(1);
+              scrollToCatalogTop();
             }}
             stockStatus={stockStatus}
             onStockStatusChange={(val) => {
               setStockStatus(val);
               setPage(1);
+              scrollToCatalogTop();
             }}
             vegType={vegType}
             onVegTypeChange={(val) => {
               setVegType(val);
               setPage(1);
+              scrollToCatalogTop();
             }}
             minPriceLimit={0}
             maxPriceLimit={1000}
@@ -398,6 +422,7 @@ export default function CategoryProductsPage({
               setMinPrice(min);
               setMaxPrice(max);
               setPage(1);
+              scrollToCatalogTop();
             }}
             onResetFilters={handleResetFilters}
             hasActiveFilters={hasActiveFilters}
@@ -408,7 +433,7 @@ export default function CategoryProductsPage({
           />
 
           {/* Right Main Products Display (3 cards per row) */}
-          <div className="flex-1 min-w-0 w-full">
+          <div ref={catalogContentRef} className="flex-1 min-w-0 w-full min-h-[750px] lg:min-h-[850px]">
             {/* Header info bar */}
             <div className="hidden lg:flex items-center justify-between mb-6 pb-3 border-b border-[#E8D9CD]">
               <p className="text-sm text-[#7A6258]">
@@ -471,8 +496,8 @@ export default function CategoryProductsPage({
 
                 {/* Shimmer cards appended at the bottom while next infinite scroll page loads */}
                 {isFetching && page > 1 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 mt-6 animate-in fade-in duration-200">
-                    {[1, 2, 3].map((n) => (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 3xl:grid-cols-5 gap-5 sm:gap-6 mt-6 animate-in fade-in duration-200">
+                    {[1, 2, 3, 4].map((n) => (
                       <div
                         key={`append-skel-${n}`}
                         className="bg-white rounded-2xl border border-[#E8D9CD]/80 p-3.5 flex flex-col justify-between overflow-hidden shadow-2xs space-y-3"

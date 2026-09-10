@@ -13,5 +13,5 @@ export async function submitContactMessage(
     "/api/contact",
     data
   );
-  return response.data;
+  return response.data!;
 }

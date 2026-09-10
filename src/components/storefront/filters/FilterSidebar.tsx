@@ -993,7 +993,7 @@ export function FilterSidebar({
     <>
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden lg:block w-72 xl:w-80 shrink-0 bg-white border border-[#E8D9CD] rounded-2xl p-5 xl:p-6 shadow-xs sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-[#DCC7B7] scrollbar-track-transparent ${className}`}
+        className={`hidden lg:block w-72 xl:w-84 shrink-0 bg-white border border-[#E8D9CD] rounded-2xl p-5 xl:p-6 shadow-xs sticky top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-[#DCC7B7] scrollbar-track-transparent ${className}`}
       >
         {sidebarContent}
       </aside>

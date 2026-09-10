@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Image from "next/image";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { WhatsAppNavTabs } from "@/components/admin/whatsapp/WhatsAppNavTabs";
 import {
@@ -16,8 +15,6 @@ import {
   ShieldCheck,
   Zap,
   Clock,
-  Copy,
-  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,27 +49,28 @@ export default function AdminWhatsAppPage() {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [sendResult, setSendResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [copiedTemplate, setCopiedTemplate] = useState(false);
 
   // Fetch status
-  const fetchStatus = async () => {
+  const loadStatus = React.useCallback(async (showSpinner = false) => {
+    if (showSpinner) setIsLoading(true);
     try {
       const res = await fetch("/api/admin/whatsapp/status", { cache: "no-store" });
       const json = await res.json();
       if (json.success && json.data) {
         setData(json.data);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Failed to fetch WhatsApp status:", err);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   // Initial status fetch once on page mount
   useEffect(() => {
-    fetchStatus();
-  }, []);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadStatus(false);
+  }, [loadStatus]);
 
   // Poll ONLY while actively awaiting QR code scan in PAIRING mode
   useEffect(() => {
@@ -82,12 +80,12 @@ export default function AdminWhatsAppPage() {
 
     const interval = setInterval(() => {
       if (!document.hidden) {
-        fetchStatus();
+        loadStatus(false);
       }
     }, 2500);
 
     return () => clearInterval(interval);
-  }, [data.status]);
+  }, [data.status, loadStatus]);
 
   // Connect / Request QR
   const handleConnect = async () => {
@@ -183,10 +181,10 @@ export default function AdminWhatsAppPage() {
           message: json.message || "Failed to deliver message via WhatsApp.",
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setSendResult({
         success: false,
-        message: err?.message || "An unexpected error occurred while sending.",
+        message: (err as Error)?.message || "An unexpected error occurred while sending.",
       });
     } finally {
       setIsSending(false);
@@ -225,9 +223,9 @@ export default function AdminWhatsAppPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={fetchStatus}
+              onClick={() => loadStatus(true)}
               disabled={isLoading}
-              className="gap-1.5 h-8 text-xs font-medium"
+              className="gap-1.5 h-8 text-xs font-medium border-neutral-200"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
               Refresh
@@ -402,7 +400,7 @@ export default function AdminWhatsAppPage() {
                   size="md"
                   onClick={handleConnect}
                   disabled={isConnecting}
-                  className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs"
+                  className="w-full gap-2 bg-secondary-600 hover:bg-secondary-700 text-white font-semibold text-xs shadow-xs"
                 >
                   <MessageCircle className="h-4 w-4" />
                   {isConnecting ? "Starting WhatsApp..." : "Link WhatsApp Device"}
@@ -564,7 +562,7 @@ export default function AdminWhatsAppPage() {
                   variant="primary"
                   size="md"
                   disabled={isSending || data.status !== "CONNECTED"}
-                  className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs min-w-[160px]"
+                  className="gap-2 bg-secondary-600 hover:bg-secondary-700 text-white font-semibold text-xs min-w-[160px] shadow-xs"
                 >
                   <Send className={`h-3.5 w-3.5 ${isSending ? "animate-pulse" : ""}`} />
                   {isSending

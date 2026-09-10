@@ -154,6 +154,8 @@ export function useCustomerGlobalVariants(
   return useQuery({
     queryKey: CUSTOMER_CATALOG_QUERY_KEYS.globalVariants(params),
     queryFn: () => customerCatalogApi.getAllVariants(params),
+    placeholderData: keepPreviousData,
+    staleTime: 1000 * 60,
     ...options,
   });
 }
