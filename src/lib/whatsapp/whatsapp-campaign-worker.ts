@@ -236,10 +236,21 @@ async function processActiveCampaigns() {
   }
 }
 
+function isBuildTime(): boolean {
+  return (
+    process.env.NEXT_PHASE === "phase-production-build" ||
+    process.env.npm_lifecycle_event === "build" ||
+    Boolean(process.env.NEXT_IS_EXPORT) ||
+    Boolean(process.env.CI && process.env.NODE_ENV === "production" && !process.env.PORT)
+  );
+}
+
 /**
  * Scheduler Tick - Checks scheduled campaigns and starts them at due date/time
  */
 export async function tickCampaignScheduler() {
+  if (isBuildTime()) return;
+
   try {
     const now = new Date();
     const dueCampaigns = await db.whatsAppCampaign.findMany({
@@ -264,8 +275,12 @@ export async function tickCampaignScheduler() {
     if (dueCampaigns.length > 0) {
       triggerWorker();
     }
-  } catch (schedErr) {
-    console.error("[WhatsApp Scheduler] Tick error:", schedErr);
+  } catch (schedErr: any) {
+    if (schedErr?.code === "P2021" || schedErr?.meta?.driverAdapterError?.message?.includes("TableDoesNotExist")) {
+      // Table doesn't exist in the database yet
+      return;
+    }
+    console.error("[WhatsApp Scheduler] Tick error:", schedErr?.message || schedErr);
   }
 }
 
@@ -273,13 +288,16 @@ export async function tickCampaignScheduler() {
  * Trigger worker manually (e.g. after clicking 'Send Now' or 'Resume')
  */
 export function triggerWorker() {
-  if (!globalThis.__whatsapp_scheduler_interval__) {
-    globalThis.__whatsapp_scheduler_interval__ = setInterval(tickCampaignScheduler, 15000);
+  if (typeof window === "undefined" && !isBuildTime()) {
+    if (!globalThis.__whatsapp_scheduler_interval__) {
+      globalThis.__whatsapp_scheduler_interval__ = setInterval(tickCampaignScheduler, 15000);
+    }
+    setImmediate(processActiveCampaigns);
   }
-  setImmediate(processActiveCampaigns);
 }
 
-// Ensure scheduler is active in Node process
-if (!globalThis.__whatsapp_scheduler_interval__) {
+// Ensure scheduler is active in Node server process (only during live runtime, not build time)
+if (typeof window === "undefined" && !isBuildTime() && !globalThis.__whatsapp_scheduler_interval__) {
   globalThis.__whatsapp_scheduler_interval__ = setInterval(tickCampaignScheduler, 15000);
 }
+
