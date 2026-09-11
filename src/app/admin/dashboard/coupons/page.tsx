@@ -162,7 +162,7 @@ export default function AdminCouponsPage() {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center justify-center gap-1.5">
           <Button
             variant="ghost"
             size="icon"
@@ -250,7 +250,7 @@ export default function AdminCouponsPage() {
               placeholder="e.g. SUMMER20"
             />
             {errors.code && (
-              <p className="mt-1 text-sm text-error-600">{errors.code.message}</p>
+              <p className="mt-1 text-xs text-red-500 font-medium">{errors.code.message}</p>
             )}
           </div>
 
@@ -280,7 +280,7 @@ export default function AdminCouponsPage() {
                 placeholder="0"
               />
               {errors.value && (
-                <p className="mt-1 text-sm text-error-600">{errors.value.message}</p>
+                <p className="mt-1 text-xs text-red-500 font-medium">{errors.value.message}</p>
               )}
             </div>
           </div>

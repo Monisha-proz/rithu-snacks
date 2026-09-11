@@ -3,15 +3,17 @@
 import * as React from "react";
 import Image from "next/image";
 import { LOGOS } from "@/constants/storefront";
+import { cn } from "@/lib/utils";
 
 export interface SectionHeadingProps {
   title: string;
+  className?: string;
 }
 
-export function SectionHeading({ title }: SectionHeadingProps) {
+export function SectionHeading({ title, className = "" }: SectionHeadingProps) {
   return (
-    <div className="flex justify-center ">
-      <div className="inline-flex flex-col items-center">
+    <div className={cn("flex justify-center mb-8 sm:mb-10 md:mb-12", className)}>
+      <div className="inline-flex flex-col items-center text-center">
         <h2
           className="
             text-2xl
@@ -27,7 +29,7 @@ export function SectionHeading({ title }: SectionHeadingProps) {
           {title}
         </h2>
 
-        <div className="flex items-center mt-1 w-full">
+        <div className="flex items-center mt-2 sm:mt-2.5 w-full">
           <div className="flex-1 h-[2px] bg-[var(--brown-800)]" />
 
           <Image

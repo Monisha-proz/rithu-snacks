@@ -312,7 +312,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         )}
 
         {/* Error message */}
-        {error && <p className="mt-1 text-xs text-theme-status-can-fg font-medium">{error}</p>}
+        {error && <p className="mt-1 text-xs text-red-500 font-medium">{error}</p>}
       </div>
     );
   }

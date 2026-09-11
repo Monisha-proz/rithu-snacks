@@ -83,7 +83,7 @@ export function ProductSection({ selectedCategoryId }: ProductSectionProps) {
   const visibleProducts = showAll ? products : products.slice(0, 4);
 
   return (
-    <Section className="py-12 relative">
+    <Section className="relative">
       {/* Toast alert feedback */}
       {toastMessage && (
         <div className="fixed top-24 right-4 z-50 rounded-xl bg-[var(--brown-800)] text-white px-5 py-3 shadow-xl text-sm font-medium animate-in fade-in-0 duration-200">

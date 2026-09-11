@@ -7,7 +7,7 @@ import { InfoCard } from "./cards/InfoCard";
 
 export function Features() {
   return (
-    <Section className="py-8">
+    <Section>
       <div className="grid lg:grid-cols-5 grid-cols-2 gap-6">
         {features.map((item, index) => (
           <InfoCard

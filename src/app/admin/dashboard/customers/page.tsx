@@ -338,7 +338,7 @@ export default function AdminCustomersPage() {
           item.status === "inactive";
 
         return (
-          <div className="flex items-center justify-end gap-1.5">
+          <div className="flex items-center justify-center gap-1.5">
             <Link
               href={`/admin/dashboard/customers/${item.id}`}
               className="inline-flex items-center h-8 gap-1 px-2.5 rounded-lg text-xs font-semibold text-secondary-600 hover:text-secondary-700 hover:bg-secondary-50 cursor-pointer transition-colors"

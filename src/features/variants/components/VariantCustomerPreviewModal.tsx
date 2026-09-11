@@ -362,7 +362,7 @@ export function VariantCustomerPreviewModal({
 
           {activeView === "cart" && (
             <div className="w-full max-w-lg bg-white rounded-2xl border border-gray-200 p-5 shadow-xs">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-3 flex items-center gap-1.5">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-900 mb-3 flex items-center gap-1.5">
                 <ShoppingBag className="h-4 w-4 text-[var(--color-secondary-600)]" />
                 <span>Simulated Cart Item</span>
               </h4>
@@ -403,15 +403,15 @@ export function VariantCustomerPreviewModal({
                   <h5 className="text-sm font-bold text-neutral-900 truncate">
                     {variant.productName || "Product"}
                   </h5>
-                  <p className="text-xs text-neutral-500 font-medium mt-0.5">
+                  <p className="text-xs text-neutral-600 font-medium mt-0.5">
                     Variant:{" "}
                     <span className="text-neutral-800 font-semibold">
                       {variant.variantName}
                     </span>
                   </p>
-                  <p className="text-xs text-neutral-400">
+                  <p className="text-xs text-neutral-600 font-medium">
                     Weight:{" "}
-                    <span className="font-semibold text-neutral-700">
+                    <span className="font-semibold text-neutral-800">
                       {measurementStr}
                     </span>
                   </p>
@@ -469,33 +469,35 @@ export function VariantCustomerPreviewModal({
         {/* Technical Variant Metadata Summary Banner */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl bg-cream-50 border border-cream-border text-xs">
           <div>
-            <span className="text-neutral-400 font-medium block">SKU Code</span>
-            <span className="font-mono font-bold text-neutral-800">
+            <span className="text-neutral-700 font-semibold block mb-0.5">
+              SKU Code
+            </span>
+            <span className="font-mono font-bold text-neutral-900">
               {variant.sku}
             </span>
           </div>
           <div>
-            <span className="text-neutral-400 font-medium block">
+            <span className="text-neutral-700 font-semibold block mb-0.5">
               Active Status
             </span>
             <span
               className={`font-bold ${
-                variant.isActive ? "text-emerald-700" : "text-neutral-500"
+                variant.isActive ? "text-emerald-700" : "text-neutral-600"
               }`}
             >
               {variant.isActive ? "Active (In Catalog)" : "Inactive (Hidden)"}
             </span>
           </div>
           <div>
-            <span className="text-neutral-400 font-medium block">
+            <span className="text-neutral-700 font-semibold block mb-0.5">
               Base Price / MRP
             </span>
-            <span className="font-semibold text-neutral-800">
+            <span className="font-semibold text-neutral-900">
               ₹{variant.basePrice}.00
             </span>
           </div>
           <div>
-            <span className="text-neutral-400 font-medium block">
+            <span className="text-neutral-700 font-semibold block mb-0.5">
               Total Images
             </span>
             <span className="font-bold text-secondary-700">

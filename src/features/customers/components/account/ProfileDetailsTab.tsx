@@ -178,7 +178,7 @@ export function ProfileDetailsTab({
               }`}
             />
             {fieldErrors.name && (
-              <span className="text-[11px] text-red-600">{fieldErrors.name}</span>
+              <span className="text-xs text-red-500 font-medium">{fieldErrors.name}</span>
             )}
           </label>
 
@@ -221,7 +221,7 @@ export function ProfileDetailsTab({
               }`}
             />
             {fieldErrors.dob && (
-              <span className="text-[11px] text-red-600">{fieldErrors.dob}</span>
+              <span className="text-xs text-red-500 font-medium">{fieldErrors.dob}</span>
             )}
           </label>
 
@@ -270,7 +270,7 @@ export function ProfileDetailsTab({
                   }`}
                 />
                 {fieldErrors.whatsappNo && (
-                  <span className="text-[11px] text-red-600">{fieldErrors.whatsappNo}</span>
+                  <span className="text-xs text-red-500 font-medium">{fieldErrors.whatsappNo}</span>
                 )}
               </div>
             )}

@@ -266,7 +266,7 @@ export function OfferTargetPicker({
       )}
 
       {error && (
-        <p className="text-sm font-medium text-error-600" role="alert">
+        <p className="mt-1 text-xs text-red-500 font-medium" role="alert">
           {error}
         </p>
       )}

@@ -159,7 +159,7 @@ export function CustomDropdown({
         </div>
       )}
 
-      {error && <span className="text-[11px] text-red-600">{error}</span>}
+      {error && <span className="mt-1 text-xs text-red-500 font-medium">{error}</span>}
     </div>
   );
 }

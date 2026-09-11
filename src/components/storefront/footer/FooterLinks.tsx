@@ -6,15 +6,15 @@ export interface FooterLinksProps {
   title: string;
   items: string[];
   className?: string;
+  onItemClick?: (item: string) => void;
 }
 
 export function FooterLinks({
   title,
   items,
   className = "",
+  onItemClick,
 }: FooterLinksProps) {
-  const footerLinkClass =
-    "cursor-pointer transition-colors duration-300 hover:text-white";
 
   return (
     <div className={className}>
@@ -24,8 +24,21 @@ export function FooterLinks({
 
       <ul className="space-y-3 text-gray-200 header-font">
         {items.map((item) => (
-          <li key={item} className={footerLinkClass}>
-            {item}
+          <li key={item}>
+            <span
+              className="inline-block cursor-pointer select-none transition-all duration-200 hover:text-amber-300 hover:translate-x-1.5"
+              onClick={() => onItemClick?.(item)}
+              role={onItemClick ? "button" : undefined}
+              tabIndex={onItemClick ? 0 : undefined}
+              onKeyDown={(e) => {
+                if (onItemClick && (e.key === "Enter" || e.key === " ")) {
+                  e.preventDefault();
+                  onItemClick(item);
+                }
+              }}
+            >
+              {item}
+            </span>
           </li>
         ))}
       </ul>

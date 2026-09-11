@@ -114,7 +114,7 @@ export default function AdminPermissionsPage() {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center justify-center gap-1.5">
           <Button
             variant="ghost"
             size="icon"
@@ -205,7 +205,7 @@ export default function AdminPermissionsPage() {
               placeholder="e.g. products.create"
             />
             {errors.name && (
-              <p className="mt-1 text-sm text-error-600">{errors.name.message}</p>
+              <p className="mt-1 text-xs text-red-500 font-medium">{errors.name.message}</p>
             )}
           </div>
 
@@ -219,7 +219,7 @@ export default function AdminPermissionsPage() {
               placeholder="e.g. products"
             />
             {errors.module && (
-              <p className="mt-1 text-sm text-error-600">{errors.module.message}</p>
+              <p className="mt-1 text-xs text-red-500 font-medium">{errors.module.message}</p>
             )}
           </div>
 
@@ -234,7 +234,7 @@ export default function AdminPermissionsPage() {
               placeholder="Permission description"
             />
             {errors.description && (
-              <p className="mt-1 text-sm text-error-600">{errors.description.message}</p>
+              <p className="mt-1 text-xs text-red-500 font-medium">{errors.description.message}</p>
             )}
           </div>
         </form>
