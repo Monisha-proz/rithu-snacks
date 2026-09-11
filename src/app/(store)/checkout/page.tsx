@@ -198,12 +198,12 @@ export default function CheckoutPage() {
           Your Cart is Empty
         </h1>
         <p className="text-theme-text-subtle mb-6 text-sm max-w-md mx-auto">
-          Explore our handcrafted traditional South Indian snacks and sweets to
+          Explore our handcrafted clothing, stylish dresses, and timeless collections to
           proceed with your order.
         </p>
         <Link href="/products">
           <Button className="min-h-[44px] px-6 rounded-xl bg-theme-primary hover:bg-theme-primary-hover text-white font-semibold shadow-sm">
-            Browse Authentic Snacks
+            Browse Collections
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </Link>
@@ -454,8 +454,7 @@ export default function CheckoutPage() {
                       No saved addresses found
                     </p>
                     <p className="text-xs text-theme-text-subtle mb-4">
-                      Please add your delivery address to receive freshly packed
-                      snacks.
+                      Please add your delivery address to receive your order at your doorstep.
                     </p>
                     <Button
                       type="button"

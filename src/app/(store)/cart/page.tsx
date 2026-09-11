@@ -180,7 +180,7 @@ export default function CartPage() {
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-theme-text-subtle hover:text-theme-primary transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            Back to Snacks
+            Back to Collections
           </Link>
         </div>
         <CartEmpty />
@@ -205,7 +205,7 @@ export default function CartPage() {
             </span>
           </div>
           <p className="text-xs sm:text-sm text-theme-text-subtle">
-            Freshly prepared traditional South Indian delicacies ready for doorstep delivery.
+            Handcrafted clothing and curated fashion pieces ready for doorstep delivery.
           </p>
         </div>
 
@@ -215,7 +215,7 @@ export default function CartPage() {
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-theme-primary hover:text-theme-primary-hover bg-theme-surface border border-theme-border px-3.5 py-2 rounded-xl transition-all hover:bg-theme-surface-alt"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            Add More Snacks
+            Add More Items
           </Link>
 
           <Button

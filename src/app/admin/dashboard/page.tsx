@@ -45,16 +45,16 @@ const DUMMY_ORDERS: DummyOrder[] = [
 ];
 
 const DUMMY_TOP_PRODUCTS: DummyProduct[] = [
-  { id: "p1", name: "Classic Banana Chips", category: "Chips", unitsSold: 320, revenue: 15980 },
-  { id: "p2", name: "Masala Peanuts", category: "Namkeen", unitsSold: 275, revenue: 11350 },
-  { id: "p3", name: "Roasted Cashew Mix", category: "Nuts", unitsSold: 190, revenue: 24700 },
-  { id: "p4", name: "Ragi Murukku", category: "Snacks", unitsSold: 160, revenue: 8640 },
+  { id: "p1", name: "Silk Maxi Dress", category: "Dresses", unitsSold: 142, revenue: 354858 },
+  { id: "p2", name: "Classic Chronograph Watch", category: "Watches", unitsSold: 88, revenue: 571912 },
+  { id: "p3", name: "Embroidered Anarkali Set", category: "Ethnic Wear", unitsSold: 115, revenue: 402385 },
+  { id: "p4", name: "French Linen Relaxed Shirt", category: "Shirts", unitsSold: 160, revenue: 319840 },
 ];
 
 const DUMMY_LOW_STOCK: DummyLowStockItem[] = [
-  { id: "l1", name: "Spicy Mixture 200g", sku: "SNK-2201", stock: 4, reorderLevel: 20 },
-  { id: "l2", name: "Coconut Chips 100g", sku: "SNK-1187", stock: 7, reorderLevel: 25 },
-  { id: "l3", name: "Sweet Boondi 250g", sku: "SNK-3390", stock: 2, reorderLevel: 15 },
+  { id: "l1", name: "Blush Rose Cocktail Dress (Size M)", sku: "DRS-BLUSH-M", stock: 3, reorderLevel: 10 },
+  { id: "l2", name: "AeroChrono Watch (Black/Silver)", sku: "WTC-AERO-01", stock: 2, reorderLevel: 8 },
+  { id: "l3", name: "Italian Leather Tote Bag", sku: "BAG-TOTE-BRN", stock: 4, reorderLevel: 10 },
 ];
 
 export default function AdminDashboardPage() {

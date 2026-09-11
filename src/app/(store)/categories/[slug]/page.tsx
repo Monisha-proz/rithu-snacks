@@ -121,8 +121,8 @@ export default function CategoryProductsPage({
 
   const categoryTitle = useMemo(() => {
     if (currentCategory?.name) return currentCategory.name;
-    if (activeSlug === "all" || !activeCategoryId) return "All Snacks";
-    if (activeSlug.includes("-") && activeSlug.length > 30) return "Category Snacks";
+    if (activeSlug === "all" || !activeCategoryId) return "All Collections";
+    if (activeSlug.includes("-") && activeSlug.length > 30) return "Collections";
     return activeSlug.charAt(0).toUpperCase() + activeSlug.slice(1);
   }, [currentCategory, activeSlug, activeCategoryId]);
 
@@ -349,7 +349,7 @@ export default function CategoryProductsPage({
               {categoryTitle}
             </h1>
             <p className="mt-2 text-xs sm:text-sm text-[#7A6258] max-w-2xl mx-auto leading-relaxed">
-              Handcrafted authentic snacks and delicacies made with traditional recipes, pure ingredients, and rich heritage.
+              Handcrafted fashion, contemporary silhouettes, and timeless clothing curated with care and premium fabrics.
             </p>
           </div>
         </div>
@@ -374,7 +374,7 @@ export default function CategoryProductsPage({
           </button>
 
           <span className="text-xs text-[#7A6258] font-medium">
-            Showing <strong className="text-[#2D1810]">{meta?.total ?? displayedVariants.length}</strong> snacks
+            Showing <strong className="text-[#2D1810]">{meta?.total ?? displayedVariants.length}</strong> items
           </span>
         </div>
 
@@ -441,7 +441,7 @@ export default function CategoryProductsPage({
                 <strong className="text-[#2D1810]">
                   {meta?.total ?? displayedVariants.length}
                 </strong>{" "}
-                authentic {meta?.total === 1 ? "snack" : "snacks"} in{" "}
+                curated {meta?.total === 1 ? "item" : "items"} in{" "}
                 <strong className="text-[#7A2224] font-bold">
                   {categoryTitle}
                 </strong>
@@ -469,10 +469,10 @@ export default function CategoryProductsPage({
             {error && (
               <div className="rounded-2xl border border-[#E8D9CD] bg-[#FFFDF9] p-8 text-center max-w-md mx-auto my-8 shadow-xs">
                 <h3 className="text-base font-bold text-[#2D1810] mb-2">
-                  Unable to load snacks
+                  Unable to load items
                 </h3>
                 <p className="text-xs text-[#7A6258] mb-4">
-                  We encountered a connection issue fetching the snacks for this category.
+                  We encountered a connection issue fetching the items for this category.
                 </p>
                 <Button
                   onClick={() => refetch()}
@@ -524,13 +524,13 @@ export default function CategoryProductsPage({
                   {isFetching && page > 1 && (
                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-[#E8D9CD] shadow-xs text-xs font-bold text-[#7A2224] animate-in fade-in">
                       <Loader2 className="w-4 h-4 animate-spin text-[#7A2224]" />
-                      Loading more snacks...
+                      Loading more items...
                     </div>
                   )}
 
                   {!hasMorePages && displayedVariants.length > 0 && !isFetching && (
                     <p className="text-xs font-semibold text-[#9C8274] select-none">
-                      ✦ You have viewed all {displayedVariants.length} snacks ✦
+                      ✦ You have viewed all {displayedVariants.length} items ✦
                     </p>
                   )}
                 </div>

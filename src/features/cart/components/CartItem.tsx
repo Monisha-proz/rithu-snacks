@@ -65,7 +65,7 @@ function CartItem({
       ? item.productName
       : typeof item.product?.name === "string"
       ? item.product.name
-      : "Traditional Snack";
+      : "Fashion Item";
 
   const variantName =
     typeof item.variantName === "string"
@@ -183,7 +183,7 @@ function CartItem({
             )}
             {measurement && (
               <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-theme-status-out-bg text-theme-status-out-fg font-medium">
-                {measurement}
+                Size: {measurement}
               </span>
             )}
             {sku && <span className="text-theme-text-muted">SKU: {sku}</span>}

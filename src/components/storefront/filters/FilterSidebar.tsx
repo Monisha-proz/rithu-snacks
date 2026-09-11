@@ -430,7 +430,7 @@ export function FilterSidebar({
         <div className="flex items-center gap-2">
           <SlidersHorizontal className="w-4 h-4 text-[#7A2224]" />
           <h2 className="text-xs font-black uppercase tracking-wider text-[#2D1810]">
-            Filter Snacks
+            Filter Items
           </h2>
           {totalResultsCount !== undefined && (
             <span className="text-[11px] bg-[#F5ECE1] text-[#7A2224] px-2 py-0.5 rounded-full font-bold">
@@ -455,13 +455,13 @@ export function FilterSidebar({
         </button>
       </div>
 
-      {/* 2. Search Snack by Name */}
+      {/* 2. Search Item by Name */}
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor="filter-search-input"
           className="text-[11px] font-extrabold uppercase tracking-wider text-[#7A6258]"
         >
-          Search Snack by Name
+          Search by Name or Style
         </label>
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9C8274] pointer-events-none" />
@@ -470,7 +470,7 @@ export function FilterSidebar({
             type="text"
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
-            placeholder="e.g. Murukku, Mixture..."
+            placeholder="e.g. Dress, Kurti, Shirt..."
             className="w-full bg-[#FAF6F0] border border-[#DCC7B7] rounded-xl pl-10 pr-9 py-2.5 text-sm text-[#2D1810] placeholder-[#A0887A] focus:outline-none focus:border-[#7A2224] focus:ring-1 focus:ring-[#7A2224] transition-all"
           />
           {localSearch && (
@@ -519,7 +519,7 @@ export function FilterSidebar({
               if (isInStockDisabled) return;
               onStockStatusChange(stockStatus === "in_stock" ? "all" : "in_stock");
             }}
-            title={isInStockDisabled ? "No in-stock snacks available" : undefined}
+            title={isInStockDisabled ? "No in-stock items available" : undefined}
             className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all select-none flex items-center gap-1.5 ${
               isInStockDisabled
                 ? "opacity-35 cursor-not-allowed bg-[#FAF6F0] text-[#9C8274] border border-[#DCC7B7]/50"
@@ -543,7 +543,7 @@ export function FilterSidebar({
               if (isOutOfStockDisabled) return;
               onStockStatusChange(stockStatus === "out_of_stock" ? "all" : "out_of_stock");
             }}
-            title={isOutOfStockDisabled ? "No out-of-stock snacks available" : undefined}
+            title={isOutOfStockDisabled ? "No out-of-stock items available" : undefined}
             className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all select-none flex items-center gap-1.5 ${
               isOutOfStockDisabled
                 ? "opacity-35 cursor-not-allowed bg-[#FAF6F0] text-[#9C8274] border border-[#DCC7B7]/50"
@@ -562,85 +562,7 @@ export function FilterSidebar({
         </div>
       </div>
 
-      {/* 5. Dietary (Veg / Non-Veg) Pills */}
-      <div className="flex flex-col gap-2">
-        <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#7A6258]">
-          Dietary
-        </span>
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            disabled={isVegDisabled}
-            onClick={() => {
-              if (isVegDisabled) return;
-              onVegTypeChange(vegType === "veg" ? "all" : "veg");
-            }}
-            title={isVegDisabled ? "No pure veg snacks available" : undefined}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all select-none flex items-center gap-1.5 ${
-              isVegDisabled
-                ? "opacity-35 cursor-not-allowed bg-[#FAF6F0] text-[#9C8274] border border-[#DCC7B7]/50"
-                : vegType === "veg"
-                ? "bg-emerald-700 text-white border border-emerald-700 shadow-xs cursor-pointer"
-                : "bg-white text-emerald-800 border border-emerald-300 hover:bg-emerald-50 cursor-pointer"
-            }`}
-          >
-            <span
-              className={`w-2 h-2 rounded-full ${
-                isVegDisabled ? "bg-[#9C8274]/50" : "bg-green-500"
-              }`}
-            />
-            Veg
-          </button>
-
-          <button
-            type="button"
-            disabled={isVeganDisabled}
-            onClick={() => {
-              if (isVeganDisabled) return;
-              onVegTypeChange(vegType === "vegan" ? "all" : "vegan");
-            }}
-            title={isVeganDisabled ? "No vegan snacks available" : undefined}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all select-none flex items-center gap-1.5 ${
-              isVeganDisabled
-                ? "opacity-35 cursor-not-allowed bg-[#FAF6F0] text-[#9C8274] border border-[#DCC7B7]/50"
-                : vegType === "vegan"
-                ? "bg-teal-700 text-white border border-teal-700 shadow-xs cursor-pointer"
-                : "bg-white text-teal-800 border border-teal-300 hover:bg-teal-50 cursor-pointer"
-            }`}
-          >
-            <span
-              className={`w-2 h-2 rounded-full ${
-                isVeganDisabled ? "bg-[#9C8274]/50" : "bg-teal-500"
-              }`}
-            />
-            Vegan
-          </button>
-
-          <button
-            type="button"
-            disabled={isNonVegDisabled}
-            onClick={() => {
-              if (isNonVegDisabled) return;
-              onVegTypeChange(vegType === "non_veg" ? "all" : "non_veg");
-            }}
-            title={isNonVegDisabled ? "No non-veg snacks available" : undefined}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all select-none flex items-center gap-1.5 ${
-              isNonVegDisabled
-                ? "opacity-35 cursor-not-allowed bg-[#FAF6F0] text-[#9C8274] border border-[#DCC7B7]/50"
-                : vegType === "non_veg"
-                ? "bg-red-700 text-white border border-red-700 shadow-xs cursor-pointer"
-                : "bg-white text-red-800 border border-red-300 hover:bg-red-50 cursor-pointer"
-            }`}
-          >
-            <span
-              className={`w-2 h-2 rounded-full ${
-                isNonVegDisabled ? "bg-[#9C8274]/50" : "bg-red-500"
-              }`}
-            />
-            Non-Veg
-          </button>
-        </div>
-      </div>
+{/* Dietary filter omitted for clothing & fashion domain */}
 
       {/* 6. Categories -> Product List Nested Tree (Matching Image 3 on light theme) */}
       <div className="flex flex-col gap-2.5 pt-3 border-t border-[#F0E4D8]">
@@ -715,7 +637,7 @@ export function FilterSidebar({
                         : ""
                     }`}
                   >
-                    All Snacks
+                    All Items
                   </span>
                 </button>
               )}

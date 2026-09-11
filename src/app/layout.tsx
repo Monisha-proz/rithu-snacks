@@ -14,8 +14,8 @@ const hanken = Hanken_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "RithuSnacks - Premium Snacks",
-  description: "Premium snacks delivered to your doorstep. Quality you can taste.",
+  title: "Zelleroa — Luxury Fashion, Watches & Lifestyle",
+  description: "Discover designer dresses, luxury timepieces, handcrafted leather bags, and contemporary fashion at Zelleroa. Timeless elegance delivered to your doorstep.",
 };
 
 export default function RootLayout({

@@ -81,38 +81,37 @@ export const PHOTOS = {
 
 export const banners = [
   LOGOS.hero_banner,
-
 ];
 
 export const categories = [
   {
     id: 1,
-    name: "Flavors & Spices",
+    name: "Dresses & Gowns",
     image: CATEGORYLOGOS.flavourSpices,
   },
   {
     id: 2,
-    name: "Sweets",
+    name: "Kurtis & Ethnic Wear",
     image: CATEGORYLOGOS.sweet,
   },
   {
     id: 3,
-    name: "Healthy Bites",
+    name: "Shirts & Tops",
     image: CATEGORYLOGOS.bites,
   },
   {
     id: 4,
-    name: "Traditional Delights",
+    name: "Luxury Watches",
     image: CATEGORYLOGOS.traditional,
   },
   {
     id: 5,
-    name: "Bakery",
+    name: "Bags & Accessories",
     image: CATEGORYLOGOS.bakery,
   },
   {
     id: 6,
-    name: "Chips",
+    name: "Jeans & Trousers",
     image: CATEGORYLOGOS.chips,
   },
 ];
@@ -122,31 +121,31 @@ export const features = [
     id: 1,
     image: ICONS.shipping,
     name: "Fast, Free Shipping",
-    footer: "9.00 AM to 10.00 PM",
+    footer: "On all orders above ₹999",
   },
   {
     id: 2,
     image: ICONS.helpLine,
     name: "Dedicated Support",
-    footer: "Always Available",
+    footer: "Always Available for You",
   },
   {
     id: 3,
     image: ICONS.payment,
     name: "Secure Payments",
-    footer: "Safe Transaction",
+    footer: "100% Protected Transactions",
   },
   {
     id: 4,
     image: ICONS.quality,
-    name: "Premeium Quality",
-    footer: "Trusted Brands",
+    name: "Premium Quality",
+    footer: "Finest Handpicked Fabrics",
   },
   {
     id: 5,
     image: ICONS.season,
-    name: "Fresh & Seasonal",
-    footer: "Inspired by the Seasons",
+    name: "Trending Styles",
+    footer: "Curated Season Collections",
   },
 ];
 
@@ -169,8 +168,8 @@ export const contacts = [
     id: 3,
     icon: ICONS.mail,
     title: "Mail",
-    value: "rithanyafoods@gmail.com",
-    link: "mailto:rithanyafoods@gmail.com",
+    value: "support@zelleroa.com",
+    link: "mailto:support@zelleroa.com",
   },
 ];
 
@@ -208,8 +207,8 @@ export const readyToAssist = [
 
 export const mainMenu = [
   "Shop All",
-  "Our Snacks",
-  "Festive Gifting",
+  "Collections",
+  "New Arrivals",
   "Bulk Order",
   "About Us",
 ];
@@ -217,32 +216,32 @@ export const mainMenu = [
 export const pledges = [
   {
     id: 1,
-    name: "Vegan",
+    name: "100% Pure Cotton",
     icon: PLEDGELOGOS.vegen,
   },
   {
     id: 2,
-    name: "No Reuse Oil",
+    name: "Breathable Fabrics",
     icon: PLEDGELOGOS.reuseOil,
   },
   {
     id: 3,
-    name: "Rich in Protein",
+    name: "Artisan Craftsmanship",
     icon: PLEDGELOGOS.protein,
   },
   {
     id: 4,
-    name: "Gluten Free",
+    name: "Perfect Tailored Fit",
     icon: PLEDGELOGOS.gluten,
   },
   {
     id: 5,
-    name: "No Preservatives",
+    name: "Eco-Friendly Dyes",
     icon: PLEDGELOGOS.preservatives,
   },
   {
     id: 6,
-    name: "No Refined Sugar",
+    name: "Easy 7-Day Exchange",
     icon: PLEDGELOGOS.sugar,
   },
 ];
@@ -251,69 +250,69 @@ export const reviews = [
   {
     id: 1,
     image: PHOTOS.photo1,
-    name: "Mrs.Kavi P.,",
-    location: "Namakkal, TamilNadu",
+    name: "Priya S.,",
+    location: "Bangalore, Karnataka",
     feedback:
-      "Rithu's Snacks are the perfect balance of taste and health. Healthy, tasty, and made with care. These Snacks never disappoint. Every bite feels homemade and fresh!",
+      "Zelleroa dresses are absolutely stunning! The fabric quality and stitching are exceptionally premium. Fits true to size and feels wonderfully soft all day long.",
     bg: "--red-50",
   },
   {
     id: 2,
     image: PHOTOS.photo2,
-    name: "Mr.Muni k.,",
-    location: "Salem, TamilNadu",
+    name: "Arjun K.,",
+    location: "Chennai, Tamil Nadu",
     bg: "--green-50",
     feedback:
-      "Rithu's Snacks are the perfect balance of taste and health. Healthy, tasty, and made with care. These Snacks never disappoint. Every bite feels homemade and fresh!",
+      "Superb quality shirts and trousers. The attention to detail in collar styling and buttons is fantastic. Fast pan-India delivery and elegant packaging!",
   },
   {
     id: 3,
     image: PHOTOS.photo3,
-    name: "Mrs.Thenmozhi A.,",
-    location: "Chennai, TamilNadu",
+    name: "Deepika R.,",
+    location: "Mumbai, Maharashtra",
     bg: "--blue-50",
     feedback:
-      "Rithu's Snacks are the perfect balance of taste and health. Healthy, tasty, and made with care. These Snacks never disappoint. Every bite feels homemade and fresh!",
+      "Ordered two kurtis for festive celebrations, and both exceeded my expectations. Gorgeous vibrant colors that don't fade after washing. Highly recommended!",
   },
 ];
 
 export const traditionImages = [
   {
     id: 1,
-    name: "Seasonal Mittai",
+    name: "Festive Silk Sarees",
     image: TraditionLogos.logo1,
   },
   {
     id: 2,
-    name: "Mota Mixture",
+    name: "Casual Cotton Shirts",
     image: TraditionLogos.logo2,
   },
   {
     id: 3,
-    name: "Sugar Free",
+    name: "Embroidered Kurtis",
     image: TraditionLogos.logo3,
   },
   {
     id: 4,
-    name: "Ribbon Murukku",
+    name: "Tailored Trousers",
     image: TraditionLogos.logo4,
   },
   {
     id: 5,
-    name: "Kadalai Mittai",
+    name: "Designer Dresses",
     image: TraditionLogos.logo5,
   },
   {
     id: 6,
-    name: "Onion Murukku",
+    name: "Denim Jackets",
     image: TraditionLogos.logo6,
   },
 ];
 
 export const navigation = [
   { id: 1, text: "SHOP ALL", path: "/products" },
-  { id: 2, text: "OUR SNACKS", path: "/categories", icon: ICONS.drop_icon },
-  { id: 3, text: "FESTIVE GIFTING", path: "/festive-gifting" },
+  { id: 2, text: "COLLECTIONS", path: "/categories", icon: ICONS.drop_icon },
+  { id: 3, text: "NEW ARRIVALS", path: "/products" },
   { id: 4, text: "BULK ORDER", path: "/bulk-order" },
   { id: 5, text: "ABOUT US", path: "/about" },
 ];
@@ -333,12 +332,8 @@ export const mobileBottomIcons = [
 ];
 
 /**
- * A single sellable pack size for a storefront item, e.g. "250 g" @ Rs.99.
- * `sellingPrice` is what should be shown/charged; it already accounts for
- * any active offer/discount (currently identical to basePrice since no
- * offer engine is wired up for the storefront - see computeSellingPrice in
- * the customer catalog repository). `id` is the VariantUnitPrice UUID and
- * is what the cart/wishlist APIs actually key off.
+ * A single sellable size/variant option for a storefront clothing item, e.g. "M", "L", "XL" @ Rs.899.
+ * `sellingPrice` is what should be charged; `id` is the VariantUnitPrice UUID which cart/wishlist APIs key off.
  */
 export interface StorefrontUnitPrice {
   id: string;
@@ -350,13 +345,12 @@ export interface StorefrontUnitPrice {
 }
 
 /**
- * A single storefront item card. This corresponds to one ProductVariant
- * (e.g. "Mango Mysore Pak"), which can have any number of independently
- * priced pack sizes (unitPrices) - not a fixed 50g/100g pair.
+ * A single storefront clothing item card. Corresponds to one ProductVariant
+ * (e.g. "Floral Summer Maxi Dress"), which can have any number of size options (unitPrices).
  */
 export interface StorefrontProduct {
   id: string; // ProductVariant UUID (item-level)
-  productId: string; // Parent Product UUID (e.g. "Mysore Paks")
+  productId: string; // Parent Product UUID
   name: string;
   image: string;
   outOfStock?: boolean;

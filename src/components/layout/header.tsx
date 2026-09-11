@@ -36,7 +36,7 @@ export function Header() {
     return () => clearTimeout(timer);
   }, [status]);
   const isAuthLoading = status === "loading" && !authGraceExpired;
-  const { data: profile } = useCustomerProfile();
+  const { data: profile } = useCustomerProfile({ enabled: isAuthenticated });
 
   // Get user name and initials for authenticated header state
   const userName = profile?.name || session?.user?.name || "";
@@ -51,8 +51,8 @@ export function Header() {
   }, [userName, session?.user?.email]);
 
   // Real-time badge counts from customer endpoints (only enabled when authenticated)
-  const { data: wishlistCount = 0 } = useCustomerWishlistCount();
-  const { data: cartCountData } = useCustomerCartCount();
+  const { data: wishlistCount = 0 } = useCustomerWishlistCount({ enabled: isAuthenticated });
+  const { data: cartCountData } = useCustomerCartCount({ enabled: isAuthenticated });
   const cartCount =
     typeof cartCountData === "number"
       ? cartCountData
@@ -144,10 +144,12 @@ export function Header() {
         {/* Desktop Navigation */}
         <nav className="hidden lg:flex items-center gap-8">
           {navigation.map((item) => {
-            const isSnacks =
-              item.text === "OUR SNACKS" || item.path === "/categories";
+            const isCategories =
+              item.text === "COLLECTIONS" ||
+              item.text === "OUR SNACKS" ||
+              item.path === "/categories";
 
-            if (isSnacks) {
+            if (isCategories) {
               return (
                 <CategoryNavDropdown
                   key={item.id}
@@ -292,10 +294,12 @@ export function Header() {
 
           <nav className="flex-1 overflow-y-auto py-3 scrollbar-thin scrollbar-thumb-white/20">
             {navigation.map((item) => {
-              const isSnacks =
-                item.text === "OUR SNACKS" || item.path === "/categories";
+              const isCategories =
+                item.text === "COLLECTIONS" ||
+                item.text === "OUR SNACKS" ||
+                item.path === "/categories";
 
-              if (isSnacks) {
+              if (isCategories) {
                 return (
                   <div key={item.id} className="border-b border-white/10">
                     <button

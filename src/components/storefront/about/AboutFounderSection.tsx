@@ -16,18 +16,18 @@ export function AboutFounderSection() {
 
             {/* Heading */}
             <h2 className="text-3xl sm:text-4xl lg:text-[42px] font-bold text-about-heading leading-[1.2] tracking-tight mb-6">
-              From academician to food
+              Crafting timeless fashion with
               <br className="hidden sm:inline" />
-              {" "}entrepreneur
+              {" "}passion & purpose
             </h2>
 
             {/* Paragraphs */}
             <div className="space-y-4 text-about-body text-sm sm:text-base leading-relaxed mb-8 max-w-xl">
               <p>
-                With 17 years of experience in academics, Dr. Anita&apos;s passion for food processing inspired her to transform her career from an academician to an industrialist.
+                With a deep love for textiles, tailoring, and contemporary silhouettes, Zelleroa was founded to bring together timeless elegance, artisan detailing, and accessible luxury.
               </p>
               <p>
-                Her vision, dedication and entrepreneurial spirit laid the foundation for Rithanya Food Products and Exports. Today, that same spirit guides every recipe, every ingredient and every relationship we build.
+                Every collection is born from an uncompromising commitment to premium breathable fabrics, flattering fits, and styles that empower everyday confidence.
               </p>
             </div>
 
@@ -35,16 +35,12 @@ export function AboutFounderSection() {
             <div className="pt-6 border-t border-about-divider flex flex-wrap items-center justify-between gap-6 w-full max-w-xl">
               <div>
                 <h4 className="font-bold text-base sm:text-lg text-about-heading">
-                  Dr. S. Anita, Ph.D.
+                  Creative Direction
                 </h4>
                 <p className="text-[10px] sm:text-[11px] tracking-wider uppercase font-semibold text-neutral-500 mt-0.5">
-                  PROPRIETOR — RITHANYA FOOD PRODUCTS AND EXPORTS
+                  FOUNDER & DESIGN HEAD — ZELLEROA
                 </p>
               </div>
-
-              {/* <div className="italic text-2xl sm:text-3xl text-about-signature tracking-wide select-none font-semibold">
-                S. Anita
-              </div> */}
             </div>
           </div>
 
@@ -55,14 +51,6 @@ export function AboutFounderSection() {
               <div className="w-full p-2.5 sm:p-3 rounded-t-full bg-white/40 border border-about-divider/60 shadow-sm">
                 {/* Inner Arch Body with Image */}
                 <div className="w-full h-[380px] sm:h-[430px] rounded-t-full relative overflow-hidden shadow-inner bg-neutral-100">
-                  {/* <Image
-                    src="/images/Aboutus_founder_img.jpg"
-                    alt="Rithu Snacks - Tradition in Every Bite"
-                    fill
-                    className="object-cover object-center"
-                    sizes="(max-width: 768px) 100vw, 400px"
-                    priority
-                  /> */}
                 </div>
               </div>
 
@@ -73,7 +61,7 @@ export function AboutFounderSection() {
                   <Quote />
                 </span>
                 <p className="italic text-xs sm:text-sm text-neutral-200/95 leading-relaxed font-normal">
-                  "Passion, dedication and tradition become the foundation of Rithanya Food Products and Exports."
+                  "True style is where thoughtful design, exquisite fabrics, and effortless comfort effortlessly come together."
                 </p>
               </div>
             </div>

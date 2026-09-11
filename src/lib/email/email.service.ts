@@ -13,10 +13,10 @@ export const emailService = {
     const fromEmail =
       process.env.EMAIL_FROM ||
       process.env.EMAIL_USER ||
-      "noreply@rithusnacks.com";
+      "noreply@zelleroa.com";
     return fromEmail.includes("<")
       ? fromEmail
-      : `"Rithu Snacks" <${fromEmail}>`;
+      : `"Zelleroa" <${fromEmail}>`;
   },
 
   getTransporter() {

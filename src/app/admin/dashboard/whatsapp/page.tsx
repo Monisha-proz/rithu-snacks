@@ -274,7 +274,7 @@ export default function AdminWhatsAppPage() {
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-neutral-500">Admin Account</span>
                     <span className="font-medium text-neutral-900">
-                      {data.user?.name || "Rithu Snacks Admin"}
+                      {data.user?.name || "Zelleroa Admin"}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs">

@@ -122,7 +122,7 @@ export function BulkOrderForm() {
           <input
             {...register("productInterest")}
             className={inputClass}
-            placeholder="e.g. Butter Murukku"
+            placeholder="e.g. Evening Gowns, Festive Kurtis, Cotton Shirts"
           />
           <FieldError message={errors.productInterest?.message} />
         </div>

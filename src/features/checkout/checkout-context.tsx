@@ -25,7 +25,7 @@ interface CheckoutContextValue extends CheckoutState {
   resetCheckout: () => void;
 }
 
-const STORAGE_KEY = "rithu-checkout-state";
+const STORAGE_KEY = "zelleroa-checkout-state";
 
 const DEFAULT_STATE: CheckoutState = {
   addressId: null,

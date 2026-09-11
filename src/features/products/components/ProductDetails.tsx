@@ -268,7 +268,7 @@ function ProductDetails({ product }: ProductDetailsProps) {
                   </span>
                 )}
                 <span className="text-xs text-stone-400 block w-full mt-1">
-                  Inclusive of all taxes • Freshly packed
+                  Inclusive of all taxes • Premium Quality Handcrafted
                 </span>
               </div>
             ) : (
@@ -286,12 +286,47 @@ function ProductDetails({ product }: ProductDetailsProps) {
             />
           )}
 
-          {/* Pack Size Selection (Figma Style) */}
+          {/* Color / Variant Selection (if multiple styles/colors exist) */}
+          {variants.length > 1 && (
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs sm:text-sm font-bold tracking-wider text-stone-900 uppercase font-sans">
+                  SELECT COLOR / STYLE
+                </span>
+                {selectedVariant && (
+                  <span className="text-xs sm:text-sm text-[#8B1D1D] font-semibold">
+                    {selectedVariant.variantName}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {variants.map((v) => {
+                  const isSelected = selectedVariantId === v.id;
+                  return (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => handleSelectVariant(v.id)}
+                      className={`px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-xl border transition-all cursor-pointer select-none ${
+                        isSelected
+                          ? "border-[#7D1D20] bg-[#7D1D20] text-white shadow-xs"
+                          : "border-stone-200 bg-white text-stone-800 hover:border-stone-400 hover:bg-stone-50"
+                      }`}
+                    >
+                      {v.variantName}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Size Selection */}
           {unitPrices.length > 0 && (
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs sm:text-sm font-bold tracking-wider text-stone-900 uppercase font-sans">
-                  CHOOSE PACK SIZE
+                  SELECT SIZE
                 </span>
                 {selectedUnitPrice && (
                   <span className="text-xs sm:text-sm text-[#8B1D1D] font-semibold">
@@ -464,7 +499,7 @@ function ProductDetails({ product }: ProductDetailsProps) {
                     <div className="flex items-center gap-2.5 text-[#7D1D20]">
                       <Sparkles className="w-4 h-4 stroke-[2.2]" />
                       <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#2B1B17]">
-                        AUTHENTIC INGREDIENTS
+                        FABRIC & SPECIFICATIONS
                       </span>
                     </div>
                     <ChevronDown
@@ -489,7 +524,7 @@ function ProductDetails({ product }: ProductDetailsProps) {
                 </div>
               )}
 
-              {/* Accordion 2: Best Before & Storage Guide (Only if backend shelfLife available) */}
+              {/* Accordion 2: Wash Care & Fit Guide */}
               {hasShelfLife && (
                 <div className="rounded-2xl border border-[#F0EAE1] bg-[#FAF7F2]/40 overflow-hidden transition-all">
                   <button
@@ -500,7 +535,7 @@ function ProductDetails({ product }: ProductDetailsProps) {
                     <div className="flex items-center gap-2.5 text-[#7D1D20]">
                       <Clock className="w-4 h-4 stroke-[2.2]" />
                       <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#2B1B17]">
-                        BEST BEFORE & STORAGE GUIDE
+                        WASH CARE & FIT GUIDE
                       </span>
                     </div>
                     <ChevronDown
@@ -513,23 +548,23 @@ function ProductDetails({ product }: ProductDetailsProps) {
                   {openSections.storage && (
                     <div className="px-4 pb-4 sm:px-5 sm:pb-5 pt-1 border-t border-[#F0EAE1]/70 text-xs sm:text-[13px] text-stone-600 space-y-2.5">
                       <div className="pt-2">
-                        <span className="font-bold text-stone-800">Best Before: </span>
+                        <span className="font-bold text-stone-800">Fit Details: </span>
                         <span>{shelfLife}</span>
                       </div>
                       <div className="space-y-1">
-                        <span className="font-bold text-stone-800 block">Storage Guidelines:</span>
+                        <span className="font-bold text-stone-800 block">Care Instructions:</span>
                         <ul className="space-y-1 pl-1">
                           <li className="flex items-start gap-2">
                             <span className="text-stone-400 font-bold">•</span>
-                            <span>Store in a cool, dry place away from direct sunlight and ambient humidity.</span>
+                            <span>Gentle machine wash or hand wash in cold water with similar colors.</span>
                           </li>
                           <li className="flex items-start gap-2">
                             <span className="text-stone-400 font-bold">•</span>
-                            <span>Transfer into an airtight container immediately after opening to preserve crunch and aroma.</span>
+                            <span>Do not bleach or wring. Dry inside out in shade to preserve color vibrancy.</span>
                           </li>
                           <li className="flex items-start gap-2">
                             <span className="text-stone-400 font-bold">•</span>
-                            <span>Do not refrigerate. Use a clean, dry spoon for serving.</span>
+                            <span>Warm iron on reverse side. Avoid direct ironing on prints or embellishments.</span>
                           </li>
                         </ul>
                       </div>
@@ -570,8 +605,8 @@ function ProductDetails({ product }: ProductDetailsProps) {
             <ShieldCheck className="w-5 h-5 stroke-[1.8]" />
           </div>
           <div>
-            <h4 className="text-xs sm:text-sm font-bold text-[#2B1B17] uppercase tracking-wide">100% AUTHENTIC</h4>
-            <p className="text-xs text-stone-500 mt-0.5">Traditional South Indian recipes</p>
+            <h4 className="text-xs sm:text-sm font-bold text-[#2B1B17] uppercase tracking-wide">100% GENUINE QUALITY</h4>
+            <p className="text-xs text-stone-500 mt-0.5">Premium fabrics & fine tailoring</p>
           </div>
         </div>
 
@@ -580,13 +615,13 @@ function ProductDetails({ product }: ProductDetailsProps) {
             <RotateCcw className="w-5 h-5 stroke-[1.8]" />
           </div>
           <div>
-            <h4 className="text-xs sm:text-sm font-bold text-[#2B1B17] uppercase tracking-wide">FRESHNESS GUARANTEE</h4>
-            <p className="text-xs text-stone-500 mt-0.5">Hassle-free replacement guarantee</p>
+            <h4 className="text-xs sm:text-sm font-bold text-[#2B1B17] uppercase tracking-wide">EASY 7-DAY RETURNS</h4>
+            <p className="text-xs text-stone-500 mt-0.5">Hassle-free exchange & return policy</p>
           </div>
         </div>
       </div>
 
-      {/* Complete Your Festive Box - You May Also Like (Fully outside sticky container) */}
+      {/* Complete The Look - You May Also Like (Fully outside sticky container) */}
       {variants.length > 1 && (
         <div className="w-full pt-10 border-t border-[#F0EAE1]">
           <ProductVariantSelector

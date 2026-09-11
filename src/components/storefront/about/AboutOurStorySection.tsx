@@ -22,13 +22,13 @@ export function AboutOurStorySection() {
       id: "brand",
       icon: Award,
       label: "BRAND",
-      value: "Rithu's Snacks",
+      value: "Zelleroa",
     },
     {
       id: "range",
       icon: Package,
-      label: "PRODUCT RANGE",
-      value: "30+ varieties",
+      label: "COLLECTIONS",
+      value: "50+ styles",
     },
   ];
 
@@ -42,7 +42,7 @@ export function AboutOurStorySection() {
               <div className="relative rounded-3xl overflow-hidden shadow-xl aspect-square sm:aspect-[4/3] lg:aspect-square w-full">
                 <Image
                   src="/images/Aboutus_ourstory_img1.jpg"
-                  alt="Our Story - Rithu's Snacks"
+                  alt="Our Story - Zelleroa"
                   fill
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, 50vw"
@@ -73,14 +73,14 @@ export function AboutOurStorySection() {
 
             {/* Heading */}
             <h2 className="text-3xl sm:text-4xl lg:text-[42px] font-bold text-about-heading leading-[1.2] tracking-tight mb-5">
-              Rooted in tradition,
+              Rooted in craft,
               <br className="hidden sm:inline" />
               {" "}growing with purpose
             </h2>
 
             {/* Description */}
             <p className="text-about-body text-sm sm:text-base leading-relaxed mb-8">
-              Rithanya Food Products and Exports was established in 2021 in Namakkal, Tamil Nadu, with a vision to deliver quality food products with a traditional touch, exceptional taste, and a strong focus on health and customer satisfaction.
+              Zelleroa was established with a bold vision to deliver premium handcrafted fashion, contemporary clothing, and elegant ethnic wear with a commitment to finest fabrics, exquisite stitching, and customer delight.
             </p>
 
             {/* 2x2 Fact Cards Grid */}

@@ -30,6 +30,10 @@ export function useCustomerCartCount(options?: { enabled?: boolean }) {
     queryFn: () => customerCartApi.getCartCount(),
     staleTime: 0,
     enabled: isAuthenticated && (options?.enabled ?? true),
+    retry: (failureCount, error: any) => {
+      if (error?.status === 401 || error?.statusCode === 401) return false;
+      return failureCount < 2;
+    },
   });
 }
 

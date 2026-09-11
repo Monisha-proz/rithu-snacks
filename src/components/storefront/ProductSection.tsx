@@ -91,7 +91,7 @@ export function ProductSection({ selectedCategoryId }: ProductSectionProps) {
         </div>
       )}
 
-      <SectionHeading title="Better snacking starts here!" />
+      <SectionHeading title="Curated Styles for Every Occasion" />
 
       {/* Products Grid */}
       <div
@@ -130,10 +130,10 @@ export function ProductSection({ selectedCategoryId }: ProductSectionProps) {
       {!isLoading && !isError && products.length === 0 && (
         <div className="py-16 text-center text-sm text-[var(--color-neutral-500)]">
           <p className="text-base font-medium text-[var(--brown-800)]">
-            No snacks found in this category.
+            No items found in this collection.
           </p>
           <p className="mt-1 text-xs text-gray-400">
-            Please explore our other delicious snack categories.
+            Please explore our other fashion categories and arrivals.
           </p>
         </div>
       )}

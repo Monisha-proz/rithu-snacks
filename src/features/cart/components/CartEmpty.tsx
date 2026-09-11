@@ -17,16 +17,16 @@ function CartEmpty() {
       </div>
 
       <h2 className="text-2xl font-bold text-theme-text-primary mb-2">
-        Your Snack Box is Empty
+        Your Shopping Bag is Empty
       </h2>
       <p className="text-sm text-theme-text-subtle mb-8 max-w-md leading-relaxed">
-        You haven&apos;t added any traditional South Indian snacks to your cart yet.
-        Explore our authentic crunchy banana chips, kai murukku, mixture, and more!
+        You haven&apos;t added any dresses, shirts, or outfits to your bag yet.
+        Explore our latest arrivals, curated collections, and timeless wardrobe essentials!
       </p>
 
       <Link href="/products">
         <Button className="h-11 px-6 rounded-xl bg-theme-primary hover:bg-theme-primary-hover text-theme-primary-fg font-bold text-sm shadow-xs transition-all flex items-center gap-2 cursor-pointer">
-          <span>Explore Authentic Snacks</span>
+          <span>Explore Collections</span>
           <ArrowRight className="h-4 w-4" />
         </Button>
       </Link>

@@ -105,11 +105,11 @@ export function SnackFallbackIllustration({
         </div>
 
         {/* Brand signature & label */}
-        <span className="font-serif font-bold text-sm md:text-base tracking-wide text-[#8B1D1D]">
-          Rithu&apos;s Snacks
+        <span className="font-serif font-bold text-sm md:text-base tracking-wide text-theme-primary">
+          Zelleroa
         </span>
-        <span className="text-[11px] md:text-xs text-[#8B1D1D]/70 font-medium mt-0.5 line-clamp-1">
-          {title || "Fresh & Handcrafted"}
+        <span className="text-[11px] md:text-xs text-theme-muted font-medium mt-0.5 line-clamp-1">
+          {title || "Couture & Lifestyle"}
         </span>
       </div>
     </div>
@@ -227,7 +227,7 @@ export function ProductImage({
           {fill ? (
             <Image
               src={src!}
-              alt={alt || "Rithu Snack Product"}
+              alt={alt || "Zelleroa Product"}
               fill
               sizes={sizes}
               priority={priority}
@@ -242,7 +242,7 @@ export function ProductImage({
           ) : (
             <Image
               src={src!}
-              alt={alt || "Rithu Snack Product"}
+              alt={alt || "Zelleroa Product"}
               width={width || 400}
               height={height || 400}
               sizes={sizes}

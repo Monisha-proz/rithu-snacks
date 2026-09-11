@@ -48,7 +48,7 @@ export function WalletTab({
   const nextTierTarget = 5000;
   const progressPercent = Math.min(100, Math.round((totalSpend / nextTierTarget) * 100));
 
-  const referralCode = profile?.referralCode || "RITHU10";
+  const referralCode = profile?.referralCode || "ZELLEROA10";
 
   const handleCopy = () => {
     navigator.clipboard.writeText(referralCode);
@@ -64,10 +64,10 @@ export function WalletTab({
 
       {/* 3 Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-        {/* Snack Coins */}
+        {/* Zelleroa Coins */}
         <div className="bg-gradient-to-br from-theme-primary to-[#8C2A1E] rounded-2xl p-5 sm:p-6 text-white shadow-2xs">
           <div className="text-[11px] font-semibold uppercase tracking-widest text-theme-secondary">
-            Snack Coins
+            Zelleroa Coins
           </div>
           <div className="text-3xl sm:text-4xl font-bold mt-3">
             ₹{coinsBalance}

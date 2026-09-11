@@ -18,19 +18,19 @@ export function AboutHeroSection() {
           <div className="lg:col-span-6 flex flex-col items-start text-left">
             {/* Pill Badge */}
             <div className="inline-flex items-center px-4 py-1.5 rounded-full border border-about-hero-badge-border bg-about-hero-badge-bg backdrop-blur-xs text-about-hero-gold text-[11px] sm:text-xs tracking-widest uppercase font-semibold mb-6">
-              RITHANYA FOOD PRODUCTS & EXPORTS
+              ZELLEROA COUTURE & CLOTHING
             </div>
 
             {/* Main Title */}
             <h1 className="text-4xl sm:text-5xl lg:text-6xl text-white font-bold leading-[1.1] tracking-tight">
-              Tradition in
+              Elegance in
               <br />
-              <span className="italic text-about-hero-gold-text">Every Bite</span>
+              <span className="italic text-about-hero-gold-text">Every Stitch</span>
             </h1>
 
             {/* Subtext */}
             <p className="text-about-hero-subtext text-sm sm:text-base leading-relaxed max-w-md mt-6 mb-8 font-light">
-              Authentic South Indian flavours, crafted with care and made for today&apos;s generation.
+              Contemporary fashion, artisan ethnic wear, and modern silhouettes designed with passion for today&apos;s lifestyle.
             </p>
 
             {/* Action Buttons */}
@@ -39,7 +39,7 @@ export function AboutHeroSection() {
                 href="/products"
                 className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-about-hero-gold hover:bg-about-hero-gold-hover text-about-hero-btn-dark font-medium text-sm transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-0.5 cursor-pointer"
               >
-                Discover our range
+                Discover Collections
                 <ArrowUpRight className="w-4 h-4" />
               </Link>
 

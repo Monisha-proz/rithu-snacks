@@ -89,10 +89,10 @@ export function Footer() {
     // 3. Mail
     const companyEmail = company?.email?.trim();
     const mailValue =
-      companyEmail || defaultContacts[2]?.value || "rithanyafoods@gmail.com";
+      companyEmail || defaultContacts[2]?.value || "support@zelleroa.com";
     const mailLink = companyEmail
       ? `mailto:${companyEmail}`
-      : defaultContacts[2]?.link || "mailto:rithanyafoods@gmail.com";
+      : defaultContacts[2]?.link || "mailto:support@zelleroa.com";
 
     return [
       {
@@ -121,7 +121,7 @@ export function Footer() {
 
   // Company Name
   const companyName =
-    company?.companyName?.trim() || "Rithanya Food Products and Exports";
+    company?.companyName?.trim() || "Zelleroa";
 
   // Company Logo
   const companyLogo = company?.logo ? getImageUrl(company.logo) : LOGOS.logo;
@@ -129,7 +129,7 @@ export function Footer() {
   // Formatted Location Address
   const formattedLocation = React.useMemo(() => {
     if (!company) {
-      return "6/1033, Thillai Nagar Trichy Road, Namakkal - 637 002.";
+      return "Zelleroa Fashion Studio, Namakkal - 637 002.";
     }
 
     const parts: string[] = [];
@@ -145,7 +145,7 @@ export function Footer() {
     }
 
     if (parts.length === 0) {
-      return "6/1033, Thillai Nagar Trichy Road, Namakkal - 637 002.";
+      return "Zelleroa Fashion Studio, Namakkal - 637 002.";
     }
 
     return parts.join(", ");
@@ -153,7 +153,7 @@ export function Footer() {
 
   const mapsUrl = React.useMemo(() => {
     if (!company?.address && !company?.city) {
-      return "https://www.google.com/maps/place/RITHU'S+SNACKS/@11.1971509,78.1334803,13.77z/data=!4m6!3m5!1s0x3babcf3326ff1e47:0xafbe7c7cb1da0dd4!8m2!3d11.1995895!4d78.1815903!16s%2Fg%2F11vlt_cxvy?entry=ttu";
+      return "https://www.google.com/maps/search/?api=1&query=Zelleroa";
     }
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(formattedLocation)}`;
   }, [company, formattedLocation]);
@@ -192,8 +192,16 @@ export function Footer() {
       router.push("/products");
       return;
     }
-    if (item === "Our Snacks") {
+    if (item === "Collections" || item === "Our Snacks") {
       router.push("/categories");
+      return;
+    }
+    if (item === "New Arrivals") {
+      router.push("/products");
+      return;
+    }
+    if (item === "Lookbook") {
+      router.push("/products");
       return;
     }
     if (item === "Festive Gifting") {

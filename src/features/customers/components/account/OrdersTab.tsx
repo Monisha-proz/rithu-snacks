@@ -166,7 +166,7 @@ export function OrdersTab({
         key: rzpData.keyId,
         amount: rzpData.amount,
         currency: rzpData.currency || "INR",
-        name: "Rithu Snacks",
+        name: "Zelleroa",
         description: `Order #${order.orderNumber || rzpData.orderNumber}`,
         order_id: rzpData.razorpayOrderId,
         theme: {
@@ -338,7 +338,7 @@ export function OrdersTab({
               ? "Try a different order number or clear your search."
               : selectedStatus !== "all"
               ? `You don't have any orders currently marked as "${selectedStatus.replace(/_/g, " ")}".`
-              : "Your murukku is waiting. Browse our handcrafted festive snacks and your orders will show up here."}
+              : "Your wardrobe is waiting. Browse our handcrafted fashion collections and your orders will show up here."}
           </p>
           {searchQuery ? (
             <button
@@ -447,15 +447,15 @@ export function OrdersTab({
                         <div className="w-12 h-12 rounded-lg flex-shrink-0 overflow-hidden border border-theme-border-subtle">
                           <ProductImage
                             src={(it as any).image || (it as any).productImage || null}
-                            alt={it.productName || "Snack"}
-                            fallbackText={it.productName || "Snack"}
+                            alt={it.productName || "Fashion Item"}
+                            fallbackText={it.productName || "Fashion Item"}
                             containerClassName="w-full h-full"
                             className="w-full h-full object-cover"
                           />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-xs sm:text-sm font-semibold text-theme-text-primary truncate">
-                            {it.productName || "Snack Item"}
+                            {it.productName || "Fashion Item"}
                           </div>
                           <div className="text-[11px] text-theme-text-muted mt-0.5 flex items-center gap-2">
                             {it.quantity && <span>Qty: {it.quantity}</span>}
@@ -775,7 +775,7 @@ export function OrdersTab({
                     <div className="w-9 h-9 rounded-lg overflow-hidden border border-theme-border-subtle flex-shrink-0">
                       <ProductImage
                         src={(it as any).image || (it as any).productImage || null}
-                        alt={it.productName || "Snack"}
+                        alt={it.productName || "Fashion Item"}
                         fallbackText={it.productName}
                         containerClassName="w-full h-full"
                         className="w-full h-full object-cover"

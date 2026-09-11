@@ -37,7 +37,7 @@ export interface CategoryNavDropdownProps {
 }
 
 export function CategoryNavDropdown({
-  text = "OUR SNACKS",
+  text = "COLLECTIONS",
   icon = ICONS.drop_icon,
   isActive = false,
 }: CategoryNavDropdownProps) {

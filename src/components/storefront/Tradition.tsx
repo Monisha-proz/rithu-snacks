@@ -9,7 +9,7 @@ import { Section } from "./Section";
 export function Tradition() {
   return (
     <Section>
-      <SectionHeading title="When Tradition Meets Gourmet Excellence" />
+      <SectionHeading title="Where Heritage Craft Meets Modern Fashion" />
 
       <div className="flex flex-col gap-3 lg:flex-row lg:justify-center">
         {/* Left Column */}

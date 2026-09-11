@@ -77,14 +77,14 @@ function SuccessContent() {
         </div>
         <div className="inline-flex items-center gap-1.5 rounded-full bg-theme-surface-alt border border-theme-border px-3 py-1 text-xs font-bold text-theme-primary mb-2">
           <Sparkles className="h-3.5 w-3.5 text-theme-secondary" />
-          Traditional Taste On Its Way
+          Handcrafted Fashion On Its Way
         </div>
         <h1 className="text-2xl sm:text-3xl font-black text-theme-text-primary">
           Order Placed Successfully!
         </h1>
         <p className="mt-1.5 text-xs sm:text-sm text-theme-text-subtle max-w-md mx-auto">
-          Thank you for choosing Rithu Snacks. Your order has been confirmed and
-          our kitchen is preparing your authentic delicacies.
+          Thank you for choosing Zelleroa. Your order has been confirmed and
+          our team is carefully packing your curated selections.
         </p>
       </div>
 

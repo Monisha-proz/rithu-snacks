@@ -8,10 +8,10 @@ export function getContactAcknowledgementEmailTemplate(params: {
 } {
   const { name, subject: contactSubject } = params;
   const emailSubject = contactSubject
-    ? `We have received your message: ${contactSubject} - Rithu Snacks`
-    : `We have received your message - Rithu Snacks`;
+    ? `We have received your message: ${contactSubject} - Zelleroa`
+    : `We have received your message - Zelleroa`;
 
-  const text = `Hi ${name},\n\nThank you for contacting us. We have received your message and our team will get back to you as soon as possible.\n\nRegards,\nRithu Snacks Team`;
+  const text = `Hi ${name},\n\nThank you for contacting us. We have received your message and our team will get back to you as soon as possible.\n\nRegards,\nZelleroa Team`;
 
   const html = `
     <!DOCTYPE html>
@@ -28,7 +28,7 @@ export function getContactAcknowledgementEmailTemplate(params: {
       </head>
       <body>
         <div class="container">
-          <div class="logo">Rithu Snacks</div>
+          <div class="logo">Zelleroa</div>
           <h2>Thank You for Reaching Out!</h2>
           <p>Hi <strong>${name}</strong>,</p>
           <div class="message-box">
@@ -39,7 +39,7 @@ export function getContactAcknowledgementEmailTemplate(params: {
           <p style="color: #6b7280; font-size: 14px;">
             If your inquiry is urgent, please feel free to reach us via our official support channels.
           </p>
-          <div class="footer">&copy; ${new Date().getFullYear()} Rithu Snacks. All rights reserved.</div>
+          <div class="footer">&copy; ${new Date().getFullYear()} Zelleroa. All rights reserved.</div>
         </div>
       </body>
     </html>
@@ -60,9 +60,9 @@ export function getContactReplyEmailTemplate(params: {
   const { name, originalSubject, replyMessage } = params;
   const emailSubject = originalSubject
     ? `Re: ${originalSubject}`
-    : `Response from Rithu Snacks`;
+    : `Response from Zelleroa`;
 
-  const text = `Hi ${name},\n\n${replyMessage}\n\nRegards,\nRithu Snacks Team`;
+  const text = `Hi ${name},\n\n${replyMessage}\n\nRegards,\nZelleroa Team`;
 
   const html = `
     <!DOCTYPE html>
@@ -79,11 +79,11 @@ export function getContactReplyEmailTemplate(params: {
       </head>
       <body>
         <div class="container">
-          <div class="logo">Rithu Snacks</div>
+          <div class="logo">Zelleroa</div>
           <p>Hi <strong>${name}</strong>,</p>
           <div class="reply-box">${replyMessage.replace(/\n/g, "<br>")}</div>
-          <p style="margin-top: 24px;">Regards,<br><strong>Rithu Snacks Team</strong></p>
-          <div class="footer">&copy; ${new Date().getFullYear()} Rithu Snacks. All rights reserved.</div>
+          <p style="margin-top: 24px;">Regards,<br><strong>Zelleroa Team</strong></p>
+          <div class="footer">&copy; ${new Date().getFullYear()} Zelleroa. All rights reserved.</div>
         </div>
       </body>
     </html>

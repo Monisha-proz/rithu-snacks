@@ -4,28 +4,28 @@ import { apiSuccess, apiError } from "@/lib/api/api-response";
 
 const INITIAL_TEMPLATES = [
   {
-    name: "Diwali 20% Special Offer",
+    name: "Festive Season 20% Special Offer",
     category: "FESTIVAL",
     message:
-      "Namaste {{customer_name}}! 🪔✨\n\nCelebrate Diwali with freshly crafted snacks from *Rithu Snacks*! ❤️\n\nEnjoy an exclusive *20% OFF* on all sweets and mixture packs using coupon code *DIWALI20* at checkout.\n\nOrder fresh today: rithusnacks.com 🥨",
+      "Namaste {{customer_name}}! ✨\n\nCelebrate this season with exquisite designer wear and luxury timepieces from *Zelleroa*! ❤️\n\nEnjoy an exclusive *20% OFF* on all evening dresses and watches using coupon code *ZELLEROA20* at checkout.\n\nShop the collection today: zelleroa.com 👗⌚",
   },
   {
-    name: "Pongal Festive Combo",
+    name: "Festive Luxe Gift Box",
     category: "FESTIVAL",
     message:
-      "Iniya Pongal Nalvazhthukkal {{customer_name}}! 🌾🪁\n\nTreat your family and friends to Rithu Snacks authentic handmade savouries & sweets.\n\nSpecial Pongal gift boxes available now with free delivery on orders above ₹499! 🎁",
+      "Hello {{customer_name}}! 🎁\n\nTreat someone special to Zelleroa bespoke ethnic wear and handcrafted leather bags.\n\nComplimentary luxury gift wrapping on orders above ₹1999! ✨",
   },
   {
     name: "Weekend Flash Sale",
     category: "OFFER",
     message:
-      "Hello {{customer_name}}! ⚡\n\nWeekend snack cravings? We've got you covered!\n\nBuy any 2 signature snack packs and get *1 FREE* this Saturday & Sunday only. Don't miss out! 😋",
+      "Hello {{customer_name}}! ⚡\n\nLooking for the perfect weekend look? We've got you covered!\n\nFlat 15% off on our relaxed linen shirts & denim collection this Saturday & Sunday only. Don't miss out! ✨",
   },
   {
-    name: "New Product Launch",
+    name: "New Collection Drop",
     category: "PROMOTION",
     message:
-      "Exciting news {{customer_name}}! 🌟\n\nWe just launched our all-new crunchy *Pepper Murukku* & *Millet Ribbon Pakoda*!\n\nBe among the first to taste them with an introductory 15% discount. Taste the tradition! ❤️",
+      "Exciting news {{customer_name}}! 🌟\n\nWe just launched our all-new *AeroChrono Sapphire Watch* & *Emerald Silk Evening Gown*!\n\nBe among the first to explore the new drop with an introductory 15% discount. Discover luxury! ❤️",
   },
 ];
 

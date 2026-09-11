@@ -25,7 +25,7 @@ export function interpolateVariables(
   let result = template;
   const defaults: Record<string, string> = {
     customer_name: variables.customer_name || "Valued Customer",
-    store_name: "Rithu Snacks",
+    store_name: "Zelleroa",
   };
 
   for (const [k, v] of Object.entries(variables)) {

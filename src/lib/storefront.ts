@@ -6,42 +6,19 @@ import type { CartItemResponse } from "@/features/cart/types";
 import type { CustomerWishlistItemDto } from "@/features/wishlist/types";
 
 /**
- * Best-effort decorative fallback image when a variant has no uploaded image
- * yet. Purely cosmetic - never affects pricing, cart, or wishlist behavior.
+ * Best-effort decorative fallback image when an apparel/clothing variant has no uploaded image yet.
  */
-export function resolveSnackFallbackImage(name: string): string {
-  const lower = (name || "").toLowerCase();
-  if (lower.includes("kai") && lower.includes("murukku")) return SNACKSLOGOS.kai_murukku;
-  if (lower.includes("thenkuzhal")) return SNACKSLOGOS.thenkuzhal_murukku;
-  if (lower.includes("chip") || lower.includes("crisp")) return SNACKSLOGOS.special_spicy_chips;
-  if (
-    lower.includes("mixture") ||
-    lower.includes("namkeen") ||
-    lower.includes("pakoda") ||
-    lower.includes("omapodi") ||
-    lower.includes("sev") ||
-    lower.includes("ola")
-  ) {
-    return SNACKSLOGOS.mixture;
-  }
-  if (lower.includes("laddu")) return SNACKSLOGOS.laddu;
-  if (lower.includes("jalebi")) return SNACKSLOGOS.jalebi;
-  if (
-    lower.includes("palkova") ||
-    lower.includes("halwa") ||
-    lower.includes("mysore") ||
-    lower.includes("sweet")
-  ) {
-    return SNACKSLOGOS.palkova;
-  }
-  return SNACKSLOGOS.special_butter_murukku;
+export function resolveProductFallbackImage(_name: string): string {
+  return "/images/category_img.png";
 }
 
+// Backward compatibility alias for any existing callers
+export const resolveSnackFallbackImage = resolveProductFallbackImage;
+
 /**
- * Maps a real customer-catalog variant (one storefront "item", e.g. "Mango
- * Mysore Pak") into the shape the storefront ProductCard renders. Carries
- * every pack size for the item - not a fixed 50g/100g pair - each with its
- * own VariantUnitPrice UUID (what the cart/wishlist APIs key off).
+ * Maps a real customer-catalog variant (one storefront clothing item, e.g. "Floral Maxi Dress")
+ * into the shape the storefront ProductCard renders. Carries available clothing sizes
+ * (unitPrices), each with its own VariantUnitPrice UUID (what cart/wishlist APIs key off).
  */
 export function mapVariantToStorefrontProduct(
   variant: CustomerVariantListItemDto

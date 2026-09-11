@@ -108,7 +108,7 @@ export function CustomerVariantCard({ variant }: CustomerVariantCardProps) {
     <SnackCard
       id={variant.id}
       name={variant.variantName}
-      subtitle={variant.productName || "Rithu's Snacks"}
+      subtitle={variant.productName || "Zelleroa"}
       image={displayImage}
       href={`/products/${variant.productId}?variant=${variant.id}`}
       variants={packVariants}

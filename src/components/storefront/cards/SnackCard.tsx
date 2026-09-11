@@ -76,7 +76,7 @@ export function SnackCard({
 }: SnackCardProps) {
   // If product prop is supplied, derive fields from it
   const resolvedId = id || product?.productId || product?.id || "";
-  const resolvedName = name || product?.name || "Traditional Snack";
+  const resolvedName = name || product?.name || "Fashion Item";
   const resolvedImage = image || product?.image || "";
   const resolvedHref = href || (resolvedId ? `/products/${resolvedId}` : "#");
 

@@ -253,7 +253,7 @@ export function ProductCard({
 
           {(isWishlist || isCart) && selectedUnitPrice && (
             <p className="mt-2 text-xs sm:text-sm text-gray-600">
-              weight: <span className="font-medium ml-1">{selectedUnitPrice.label}</span>
+              Size: <span className="font-medium ml-1">{selectedUnitPrice.label}</span>
             </p>
           )}
 

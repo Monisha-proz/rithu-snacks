@@ -31,7 +31,7 @@ export default function AuthFormLayout({
         <div className="mb-3 flex justify-center">
           <Image
             src="/logo.svg"
-            alt="Rithu Snacks"
+            alt="Zelleroa"
             width={56}
             height={56}
             className="h-10 w-10 md:h-12 md:w-12 lg:h-14 lg:w-14"

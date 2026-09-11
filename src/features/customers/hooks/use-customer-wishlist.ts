@@ -15,6 +15,10 @@ export function useCustomerWishlist(options?: { enabled?: boolean }) {
     queryFn: () => customerWishlistApi.getWishlist(),
     staleTime: 1000 * 30, // 30 seconds
     enabled: isAuthenticated && (options?.enabled ?? true),
+    retry: (failureCount, error: any) => {
+      if (error?.status === 401 || error?.statusCode === 401) return false;
+      return failureCount < 2;
+    },
   });
 }
 
@@ -27,6 +31,10 @@ export function useCustomerWishlistCount(options?: { enabled?: boolean }) {
     queryFn: () => customerWishlistApi.getWishlistCount(),
     staleTime: 0,
     enabled: isAuthenticated && (options?.enabled ?? true),
+    retry: (failureCount, error: any) => {
+      if (error?.status === 401 || error?.statusCode === 401) return false;
+      return failureCount < 2;
+    },
   });
 }
 

@@ -165,8 +165,8 @@ export function FaqSection() {
             Frequently Asked Questions
           </h1>
           <p className="mt-4 text-sm leading-relaxed text-[var(--neutral-600)] sm:text-base">
-            Everything you need to know about our snacks — orders and shipping,
-            ingredients and shelf life, festive corporate gifting, and more.
+            Everything you need to know about Zelleroa — orders and shipping,
+            sizing and fabrics, returns and exchanges, custom styling, and more.
           </p>
 
           <div className="mt-7 flex items-center gap-2 rounded-full border border-[var(--cream-border)] bg-white p-1.5 pl-4 shadow-sm">
@@ -175,7 +175,7 @@ export function FaqSection() {
               type="search"
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
-              placeholder="Search by keyword (e.g. shelf life, shipping, bulk discounts)"
+              placeholder="Search by keyword (e.g. sizing, returns, shipping, fabrics)"
               aria-label="Search FAQs"
               className="min-w-0 flex-1 bg-transparent py-2 text-sm text-[var(--neutral-800)] outline-none placeholder:text-[var(--neutral-400)]"
             />
@@ -313,7 +313,7 @@ export function FaqSection() {
                   <div className="relative h-32 w-full">
                     <Image
                       src="/images/Aboutus_ourstory_img1.jpg"
-                      alt="Freshly prepared snacks at our Namakkal kitchen"
+                      alt="Artisanal craftsmanship at Zelleroa studio"
                       fill
                       sizes="260px"
                       className="object-cover"
@@ -321,17 +321,16 @@ export function FaqSection() {
                     <div className="absolute inset-0 bg-gradient-to-t from-[var(--secondary-900)]/85 to-transparent" />
                     <div className="absolute inset-x-0 bottom-0 p-4">
                       <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--primary-300)]">
-                        Namakkal Heritage
+                        Handcrafted Quality
                       </p>
                       <p className="text-base font-semibold text-white">
-                        Fresh Daily Batches
+                        Curated Collections
                       </p>
                     </div>
                   </div>
                   <p className="p-4 text-xs leading-relaxed text-[var(--neutral-600)]">
-                    Every tin is filled with freshly drawn boondi, stone-ground
-                    flours and pristine farm-churned ghee, prepared strictly
-                    against your incoming order.
+                    Every garment is tailored with precision, fine breathable fabrics,
+                    and meticulous quality checks, prepared to elevate your personal style.
                   </p>
                 </div>
               </aside>

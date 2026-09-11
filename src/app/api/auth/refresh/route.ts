@@ -25,19 +25,29 @@ export const POST = createApiHandler(
         throw ApiError.unauthorized("Refresh token is required");
       }
 
-      const result = await authService.refreshAccessToken(refreshToken);
+      try {
+        const result = await authService.refreshAccessToken(refreshToken);
 
-      if (result.accessToken) {
-        cookieStore.set("access_token", result.accessToken, {
-          httpOnly: true,
-          secure: IS_PROD,
-          sameSite: "lax",
-          path: "/",
-          maxAge: 15 * 60, // 15 minutes
-        });
+        if (result.accessToken) {
+          cookieStore.set("access_token", result.accessToken, {
+            httpOnly: true,
+            secure: IS_PROD,
+            sameSite: "lax",
+            path: "/",
+            maxAge: 15 * 60, // 15 minutes
+          });
+        }
+
+        return apiSuccess(null, "Access token refreshed successfully");
+      } catch (err) {
+        cookieStore.delete("access_token");
+        cookieStore.delete("refresh_token");
+        cookieStore.delete("authjs.session-token");
+        cookieStore.delete("__Secure-authjs.session-token");
+        cookieStore.delete("next-auth.session-token");
+        cookieStore.delete("__Secure-next-auth.session-token");
+        throw err;
       }
-
-      return apiSuccess(null, "Access token refreshed successfully");
     },
   },
   {

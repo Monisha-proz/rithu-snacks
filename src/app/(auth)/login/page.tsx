@@ -58,10 +58,10 @@ function LoginForm() {
       showLogo
       showFooter
       title="Welcome Back"
-      subtitle="Sign in to access your favorite heritage snacks."
+      subtitle="Sign in to access your curated couture & lifestyle collections."
       bottomContent={
         <div className="text-sm text-neutral-600">
-          New to RithuSnacks?{" "}
+          New to Zelleroa?{" "}
           <Link
             href={
               callbackUrl !== "/"

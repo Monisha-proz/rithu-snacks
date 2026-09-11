@@ -180,7 +180,7 @@ export default function WhatsAppTemplatesPage() {
             No templates in this category
           </h3>
           <p className="text-xs text-neutral-500 max-w-md mx-auto">
-            Create custom templates tailored for festival combos, weekend sales, or new snack launches.
+            Create custom templates tailored for festival combos, weekend sales, or new collection launches.
           </p>
           <Button
             onClick={() => setIsModalOpen(true)}

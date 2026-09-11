@@ -141,11 +141,17 @@ async function fetchApi<T>(
     }
 
     // Refresh didn't help (or wasn't applicable, e.g. admin session) — send the
-    // user back to the correct login page instead of leaving them stuck on an error toast.
+    // user back to the correct login page instead of leaving them stuck on an error toast,
+    // UNLESS it's a non-blocking background query (e.g. badge count or guest profile check).
     if (!refreshed && typeof window !== "undefined") {
+      const isOptionalCustomerEndpoint =
+        endpoint.includes("/wishlist/count") ||
+        endpoint.includes("/cart/count") ||
+        endpoint.includes("/customer/profile");
+
       const isAdminEndpoint = endpoint.startsWith("/api/admin/");
       const loginPath = isAdminEndpoint ? "/admin/login" : "/login";
-      if (!window.location.pathname.startsWith(loginPath)) {
+      if (!isOptionalCustomerEndpoint && !window.location.pathname.startsWith(loginPath)) {
         const callbackUrl = encodeURIComponent(
           window.location.pathname + window.location.search
         );

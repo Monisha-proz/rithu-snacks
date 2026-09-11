@@ -3,9 +3,9 @@ export function getRegistrationOtpEmailTemplate(otp: string): {
   html: string;
   text: string;
 } {
-  const subject = `${otp} is your verification code for Rithu Snacks`;
+  const subject = `${otp} is your verification code for Zelleroa`;
 
-  const text = `Welcome to Rithu Snacks! Your email verification code is: ${otp}. This code is valid for 5 minutes. If you did not request this verification code, please ignore this email.`;
+  const text = `Welcome to Zelleroa! Your email verification code is: ${otp}. This code is valid for 5 minutes. If you did not request this verification code, please ignore this email.`;
 
   const html = `
     <!DOCTYPE html>
@@ -23,12 +23,12 @@ export function getRegistrationOtpEmailTemplate(otp: string): {
       </head>
       <body>
         <div class="container">
-          <div class="logo">Rithu Snacks</div>
+          <div class="logo">Zelleroa</div>
           <h2>Verify Your Email Address</h2>
-          <p>Welcome to Rithu Snacks! Use the verification code below to verify your email address and complete your registration:</p>
+          <p>Welcome to Zelleroa! Use the verification code below to verify your email address and complete your registration:</p>
           <div class="code-box">${otp}</div>
           <p class="info">This code expires in <strong>5 minutes</strong>.<br>If you did not request this verification code, please ignore this email.</p>
-          <div class="footer">&copy; ${new Date().getFullYear()} Rithu Snacks. All rights reserved.</div>
+          <div class="footer">&copy; ${new Date().getFullYear()} Zelleroa. All rights reserved.</div>
         </div>
       </body>
     </html>
@@ -42,7 +42,7 @@ export function getForgotPasswordOtpEmailTemplate(otp: string): {
   html: string;
   text: string;
 } {
-  const subject = `${otp} is your password reset code for Rithu Snacks`;
+  const subject = `${otp} is your password reset code for Zelleroa`;
 
   const text = `Your password reset verification code is: ${otp}. This code is valid for 5 minutes. If you did not request a password reset, please ignore this email.`;
 
@@ -62,12 +62,12 @@ export function getForgotPasswordOtpEmailTemplate(otp: string): {
       </head>
       <body>
         <div class="container">
-          <div class="logo">Rithu Snacks</div>
+          <div class="logo">Zelleroa</div>
           <h2>Password Reset Request</h2>
           <p>We received a request to reset your password. Use the verification code below to complete the reset process:</p>
           <div class="code-box">${otp}</div>
           <p class="info">This code expires in <strong>5 minutes</strong>.<br>If you did not request a password reset, please ignore this email.</p>
-          <div class="footer">&copy; ${new Date().getFullYear()} Rithu Snacks. All rights reserved.</div>
+          <div class="footer">&copy; ${new Date().getFullYear()} Zelleroa. All rights reserved.</div>
         </div>
       </body>
     </html>

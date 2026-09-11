@@ -48,12 +48,12 @@ export function SettingsTab() {
     {
       key: "festiveOffers" as const,
       label: "Festive offers & pre-book alerts",
-      hint: "Diwali, Pongal, and seasonal homemade snack drops",
+      hint: "Festive offers, seasonal collections, and new fashion drops",
     },
     {
       key: "newsletter" as const,
       label: "Email newsletter",
-      hint: "Traditional recipes and newly added snacks twice a month",
+      hint: "Trending styles and newly added collections twice a month",
     },
     {
       key: "restock" as const,

@@ -87,7 +87,7 @@ export default function ShopAllPage() {
   const pageTitle = useMemo(() => {
     if (selectedCategoryIds.length === 1 && currentCategory?.name) return currentCategory.name;
     if (selectedCategoryIds.length > 1) return `${selectedCategoryIds.length} Categories Selected`;
-    return "Shop All Snacks";
+    return "Shop All Collections";
   }, [currentCategory, selectedCategoryIds]);
 
   // Find active sort config
@@ -288,7 +288,7 @@ export default function ShopAllPage() {
               {pageTitle}
             </h1>
             <p className="mt-2 text-xs sm:text-sm text-[#7A6258] max-w-2xl mx-auto leading-relaxed">
-              Authentic South Indian snacks, savories, and traditional sweets crafted with pure ingredients and timeless recipes.
+              Explore bespoke dresses, ethnic silhouettes, modern kurtis, and timeless apparel curated with craftsmanship.
             </p>
           </div>
         </div>
@@ -313,7 +313,7 @@ export default function ShopAllPage() {
             </button>
 
             <span className="text-xs text-[#7A6258] font-medium">
-              Showing <strong className="text-[#2D1810]">{meta?.total ?? displayedVariants.length}</strong> snacks
+              Showing <strong className="text-[#2D1810]">{meta?.total ?? displayedVariants.length}</strong> items
             </span>
           </div>
 
@@ -378,7 +378,7 @@ export default function ShopAllPage() {
                   <strong className="text-[#2D1810]">
                     {meta?.total ?? displayedVariants.length}
                   </strong>{" "}
-                  authentic {meta?.total === 1 ? "snack" : "snacks"}
+                  curated {meta?.total === 1 ? "item" : "items"}
                   {currentCategory && (
                     <>
                       {" "}in <strong className="text-[#7A2224] font-bold">{currentCategory.name}</strong>
@@ -408,7 +408,7 @@ export default function ShopAllPage() {
               {error && (
                 <div className="rounded-2xl border border-[#E8D9CD] bg-[#FFFDF9] p-8 text-center max-w-md mx-auto my-8 shadow-xs">
                   <h3 className="text-base font-bold text-[#2D1810] mb-2">
-                    Unable to load snacks
+                    Unable to load items
                   </h3>
                   <p className="text-xs text-[#7A6258] mb-4">
                     We encountered a connection issue fetching the product catalog.
@@ -463,13 +463,13 @@ export default function ShopAllPage() {
                     {isFetching && page > 1 && (
                       <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-[#E8D9CD] shadow-xs text-xs font-bold text-[#7A2224] animate-in fade-in">
                         <Loader2 className="w-4 h-4 animate-spin text-[#7A2224]" />
-                        Loading more snacks...
+                        Loading more items...
                       </div>
                     )}
 
                     {!hasMorePages && displayedVariants.length > 0 && !isFetching && (
                       <p className="text-xs font-semibold text-[#9C8274] select-none">
-                        ✦ You have viewed all {displayedVariants.length} snacks ✦
+                        ✦ You have viewed all {displayedVariants.length} items ✦
                       </p>
                     )}
                   </div>

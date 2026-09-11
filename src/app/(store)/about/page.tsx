@@ -6,9 +6,9 @@ import {
 } from "@/components/storefront/about";
 
 export const metadata: Metadata = {
-  title: "About Us - Rithu's Snacks | Tradition in Every Bite",
+  title: "About Us - Zelleroa | Elegance in Every Stitch",
   description:
-    "Learn about Rithanya Food Products and Exports, established in 2021 in Namakkal, Tamil Nadu, delivering authentic South Indian snacks crafted with tradition and care.",
+    "Learn about Zelleroa, delivering bespoke fashion, contemporary craftsmanship, and timeless designer clothing crafted with care.",
 };
 
 export default function AboutPage() {

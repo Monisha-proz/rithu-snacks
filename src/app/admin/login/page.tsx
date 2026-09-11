@@ -81,7 +81,7 @@ function AdminLoginForm() {
       showLogo
       showFooter
       title="Welcome back"
-      subtitle="Enter your credentials to access the Rithu's Snacks admin portal."
+      subtitle="Enter your credentials to access the Zelleroa admin portal."
     >
       <FormProvider {...methods}>
         <form
@@ -100,7 +100,7 @@ function AdminLoginForm() {
             name="email"
             label="Email Address"
             type="email"
-            placeholder="admin@rithusnacks.com"
+            placeholder="admin@zelleroa.com"
             autoComplete="email"
             leftIcon={<Mail size={18} />}
             required

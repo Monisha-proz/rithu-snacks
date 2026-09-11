@@ -3,9 +3,9 @@ import { PolicyLayout } from "@/components/storefront/policy/PolicyLayout";
 import { RotateCcw } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Return & Refund Policy | Rithu Snacks",
+  title: "Return & Refund Policy | Zelleroa",
   description:
-    "Learn about Rithu Snacks return, replacement, cancellation, and refund policies for food and snack orders.",
+    "Learn about Zelleroa return, replacement, cancellation, and refund policies for clothing and apparel orders.",
 };
 
 export default function ReturnRefundPolicyPage() {
@@ -18,7 +18,7 @@ export default function ReturnRefundPolicyPage() {
       {/* Intro */}
       <section className="space-y-4">
         <p className="text-base sm:text-lg text-neutral-800 leading-relaxed font-medium">
-          At <strong className="text-neutral-900 font-semibold">Rithu Snacks</strong>, we want you to receive your order in good condition and as expected. Because our products are food and snack items, returns and refunds may be subject to specific conditions relating to product safety, hygiene, freshness, and applicable law.
+          At <strong className="text-neutral-900 font-semibold">Zelleroa</strong>, we want you to be completely delighted with your purchase. We offer hassle-free returns and size exchanges within 7 days of delivery for items in their original, unused condition with tags attached.
         </p>
         <p className="text-neutral-700 leading-relaxed">
           Please read this policy carefully before placing an order.
@@ -31,7 +31,7 @@ export default function ReturnRefundPolicyPage() {
           1. General Return Policy
         </h2>
         <p className="text-neutral-700 leading-relaxed">
-          Due to the nature of food and snack products, we generally do not accept returns of products that have been opened, consumed, used, or handled in a manner that affects product safety or hygiene.
+          To be eligible for a return, exchange, or refund, apparel items must be unworn, unwashed, unaltered, and with all original brand tags and packaging intact.
         </p>
         <p className="text-neutral-700 leading-relaxed">
           A return, replacement, or refund may be considered in eligible situations such as:
@@ -155,7 +155,7 @@ export default function ReturnRefundPolicyPage() {
           To request a return, replacement, or refund:
         </p>
         <ol className="list-decimal pl-6 space-y-2 text-neutral-700">
-          <li>Contact Rithu Snacks customer support.</li>
+          <li>Contact Zelleroa customer support.</li>
           <li>Provide your order number.</li>
           <li>Explain the issue clearly.</li>
           <li>Provide photographs or other supporting information when requested.</li>
@@ -184,7 +184,7 @@ export default function ReturnRefundPolicyPage() {
           <li>Processing timelines.</li>
         </ul>
         <p className="text-neutral-700 leading-relaxed">
-          Rithu Snacks cannot guarantee the exact time taken by a third-party payment provider or bank after the refund has been initiated.
+          Zelleroa cannot guarantee the exact time taken by a third-party payment provider or bank after the refund has been initiated.
         </p>
       </section>
 
@@ -292,7 +292,7 @@ export default function ReturnRefundPolicyPage() {
           For return, replacement, or refund-related questions, please contact:
         </p>
         <div className="rounded-xl border border-[var(--theme-border,#EBE0D0)] bg-[var(--theme-surface-alt,#FCF7EE)] p-5 mt-4 space-y-2">
-          <p className="font-semibold text-neutral-900">Rithu Snacks</p>
+          <p className="font-semibold text-neutral-900">Zelleroa</p>
           <p className="text-sm text-neutral-700">
             <strong>Email:</strong> [Insert customer support email]
           </p>

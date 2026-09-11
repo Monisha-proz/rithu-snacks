@@ -24,6 +24,9 @@ function resolveCategoryImage(category: CustomerCategoryDto): string {
   if (category.image?.trim()) {
     return getImageUrl(category.image);
   }
+  if ((category as any).icon?.trim()) {
+    return getImageUrl((category as any).icon);
+  }
 
   const normalizedName = category.name.trim().toLowerCase();
   return fallbackCategoryLogos[normalizedName] || CATEGORYLOGOS.traditional;

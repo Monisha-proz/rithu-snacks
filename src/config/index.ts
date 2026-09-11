@@ -1,6 +1,6 @@
 export const siteConfig = {
-  name: "RithuSnacks",
-  description: "Premium snacks delivered to your doorstep.",
+  name: "Zelleroa",
+  description: "Elevate your style with Zelleroa - Premium dresses, ethnic wear, and modern fashion delivered to your doorstep.",
   url: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
 };
 

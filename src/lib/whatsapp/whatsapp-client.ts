@@ -67,7 +67,7 @@ function getSavedUserFromCreds(): WhatsAppUserInfo | null {
       if (content?.me?.id) {
         return {
           id: content.me.id,
-          name: content.me.name || "Rithu Snacks Admin",
+          name: content.me.name || "Zelleroa Admin",
           phone: cleanPhoneDisplay(content.me.id),
         };
       }
@@ -114,7 +114,7 @@ export async function initWhatsAppClient(force = false): Promise<WhatsAppManager
       logger: pino({ level: "silent" }),
       syncFullHistory: false,
       markOnlineOnConnect: false,
-      browser: ["Rithu Snacks Admin", "Chrome", "1.0.0"],
+      browser: ["Zelleroa Admin", "Chrome", "1.0.0"],
       generateHighQualityLinkPreview: false,
     });
 
@@ -151,7 +151,7 @@ export async function initWhatsAppClient(force = false): Promise<WhatsAppManager
         const phone = cleanPhoneDisplay(rawId);
         manager.user = {
           id: rawId,
-          name: sock.user?.name || "Rithu Snacks Admin",
+          name: sock.user?.name || "Zelleroa Admin",
           phone,
         };
         console.log(`[WhatsApp] Connected successfully as ${phone}`);

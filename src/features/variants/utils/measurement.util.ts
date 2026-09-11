@@ -37,16 +37,31 @@ export function formatVariantMeasurement(
   };
 }
 
+const CLOTHING_SIZES = new Set([
+  "xs", "s", "m", "l", "xl", "xxl", "2xl", "xxxl", "3xl", "4xl", "free size", "standard", "regular", "slim", "oversized"
+]);
+
 /**
- * Human-readable pack-size label for a measurement, e.g. "250 g", "1 kg".
- * Mirrors the `${value} ${unit}` convention already used across the admin
- * variant UI (VariantCard, VariantUnitPriceList, VariantPriceHistoryCard).
+ * Human-readable size / variant label for clothing or measurements.
+ * Gracefully displays fashion sizes ("XS", "S", "M", "L", "XL", "XXL")
+ * as clean size badges, while maintaining backward-compatible formatting.
  */
 export function formatMeasurementLabel(measurement: VariantMeasurement | null | undefined): string {
   if (!measurement) return "";
   const value = measurement.value ?? 0;
-  const unit = measurement.unit ?? "";
-  return unit ? `${value} ${unit}` : `${value}`;
+  const unit = (measurement.unit ?? "").trim();
+  const lowerUnit = unit.toLowerCase();
+
+  // If the unit is a clothing size (e.g. XS, S, M, L, XL, XXL)
+  if (CLOTHING_SIZES.has(lowerUnit)) {
+    return unit.toUpperCase();
+  }
+
+  if (unit) {
+    return value && value !== 1 ? `${value} ${unit}` : unit;
+  }
+
+  return value ? `${value}` : "Standard";
 }
 
 export function getMeasurementFieldConfig(

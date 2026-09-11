@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { FaqSection } from "@/components/storefront/faq";
 
 export const metadata: Metadata = {
-  title: "FAQs - Rithu's Snacks | Orders, Ingredients & Gifting",
+  title: "FAQs - Zelleroa | Orders, Sizing, Fabrics & Gifting",
   description:
-    "Answers to common questions about delivery, ingredients, shelf life, packaging, bulk corporate gifting, returns and cancellations at Rithu's Snacks.",
+    "Answers to common questions about delivery, size guide, fabric care, packaging, bulk corporate orders, returns and exchanges at Zelleroa.",
 };
 
 export default function FaqPage() {

@@ -150,7 +150,7 @@ export function AdminBulkOrderDetailModal({
               </span>
               <a
                 href={`mailto:${item.email}?subject=${encodeURIComponent(
-                  "Re: Your Bulk Order Enquiry - Rithu's Snacks"
+                  "Re: Your Bulk Order Enquiry - Zelleroa"
                 )}`}
                 className="text-secondary-600 hover:text-secondary-700 p-1 hover:bg-secondary-50 rounded text-xs inline-flex items-center gap-1 font-semibold shrink-0"
                 title="Open Mail Client"
