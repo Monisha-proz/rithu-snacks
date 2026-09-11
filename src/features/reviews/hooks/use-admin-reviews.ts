@@ -15,9 +15,7 @@ import type {
   ReviewModerateResult,
 } from "../types/review.types";
 
-/**
- * Hook to query paginated admin reviews with filters
- */
+
 export function useAdminReviews(params?: AdminReviewListParams) {
   const page = Number(params?.page) || 1;
   const limit = Number(params?.limit) || 10;
