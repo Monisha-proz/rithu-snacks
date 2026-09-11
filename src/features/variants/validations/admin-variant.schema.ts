@@ -45,7 +45,7 @@ export const createAdminVariantSchema = z
       .nullable(),
     vegType: vegTypeEnum.optional(),
     isFeatured: z.boolean().optional().default(false),
-    isActive: z.boolean().optional().default(true),
+    isActive: z.boolean().optional().default(false),
     outOfStock: z.boolean().optional().default(false),
   })
   .strict();
