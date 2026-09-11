@@ -58,7 +58,7 @@ const FormSwitch = React.forwardRef<HTMLButtonElement, FormSwitchProps>(
               </label>
             )}
             {description && <p className="text-sm text-gray-500">{description}</p>}
-            {error && <p className="text-sm text-red-500">{error}</p>}
+            {error && <p className="mt-1 text-xs text-red-500 font-medium">{error}</p>}
           </div>
         )}
       </div>

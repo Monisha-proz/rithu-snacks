@@ -257,7 +257,7 @@ export function AdminReviewListTable({
     },
     {
       id: "actions",
-      header: () => <div className="text-right">Actions</div>,
+      header: "Actions",
       cell: ({ row }) => {
         const review = row.original;
         const isActionLoading =
@@ -267,7 +267,7 @@ export function AdminReviewListTable({
             deleteMutation.variables === review.id);
 
         return (
-          <div className="flex items-center justify-end gap-1.5">
+          <div className="flex items-center justify-center gap-1.5">
             {/* Quick Toggle Approve / Unapprove Button */}
             {review.isApproved ? (
               <button

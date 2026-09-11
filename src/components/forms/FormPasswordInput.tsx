@@ -80,7 +80,7 @@ function FormPasswordInput({
           </div>
 
           {fieldState.error && (
-            <p className="text-sm text-red-500">
+            <p className="mt-1 text-xs text-red-500 font-medium">
               {fieldState.error.message}
             </p>
           )}

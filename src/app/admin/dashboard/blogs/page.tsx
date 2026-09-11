@@ -145,7 +145,7 @@ export default function AdminBlogsPage() {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center justify-center gap-1.5">
           <Button
             variant="ghost"
             size="icon"
@@ -234,7 +234,7 @@ export default function AdminBlogsPage() {
               placeholder="Blog title"
             />
             {errors.title && (
-              <p className="mt-1 text-sm text-error-600">{errors.title.message}</p>
+              <p className="mt-1 text-xs text-red-500 font-medium">{errors.title.message}</p>
             )}
           </div>
 
@@ -259,7 +259,7 @@ export default function AdminBlogsPage() {
               placeholder="Blog content"
             />
             {errors.content && (
-              <p className="mt-1 text-sm text-error-600">{errors.content.message}</p>
+              <p className="mt-1 text-xs text-red-500 font-medium">{errors.content.message}</p>
             )}
           </div>
 

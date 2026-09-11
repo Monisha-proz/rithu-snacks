@@ -275,7 +275,7 @@ function FormImageUpload({
       </div>
 
       {displayError && (
-        <p className="text-xs font-medium text-[var(--color-error-600)]">
+        <p className="mt-1 text-xs text-red-500 font-medium">
           {displayError}
         </p>
       )}

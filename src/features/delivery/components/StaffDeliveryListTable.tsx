@@ -265,7 +265,7 @@ export function StaffDeliveryListTable({
         const canMarkDelivered = row.original.status === "out_for_delivery";
 
         return (
-          <div className="flex items-center justify-end gap-1.5">
+          <div className="flex items-center justify-center gap-1.5">
             {/* Quick 1-click Accept */}
             {isPending && (
               <button

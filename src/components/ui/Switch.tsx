@@ -66,7 +66,7 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
                 {description}
               </p>
             )}
-            {error && <p className="text-sm text-red-500">{error}</p>}
+            {error && <p className="mt-1 text-xs text-red-500 font-medium">{error}</p>}
           </div>
         )}
       </div>

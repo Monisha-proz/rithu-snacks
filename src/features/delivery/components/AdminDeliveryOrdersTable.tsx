@@ -183,7 +183,7 @@ export function AdminDeliveryOrdersTable() {
         const hasActiveShipment = Boolean(row.original.shipment);
 
         return (
-          <div className="flex items-center justify-end gap-1.5">
+          <div className="flex items-center justify-center gap-1.5">
             {isPacked && !hasActiveShipment && (
               <button
                 type="button"

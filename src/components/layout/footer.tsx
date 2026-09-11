@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
   LOGOS,
   ICONS,
@@ -13,12 +14,15 @@ import {
 import { ContactCard, ContactItem } from "@/components/storefront/cards/ContactCard";
 import { FooterLinks } from "@/components/storefront/footer/FooterLinks";
 import { IconButton } from "@/components/storefront/buttons/IconButton";
+import { ContactFormModal } from "@/features/contact/components/ContactFormModal";
 import { useCustomerCompany } from "@/features/customers/hooks/use-customer-company";
 import { getImageUrl } from "@/lib/utils";
 
 export function Footer() {
+  const router = useRouter();
   const [email, setEmail] = React.useState("");
   const [isSubscribed, setIsSubscribed] = React.useState(false);
+  const [isContactModalOpen, setIsContactModalOpen] = React.useState(false);
 
   const { data: company } = useCustomerCompany();
 
@@ -154,8 +158,60 @@ export function Footer() {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(formattedLocation)}`;
   }, [company, formattedLocation]);
 
+  // Handle clicks on "Ready to Assist" links
+  const handleReadyToAssistClick = (item: string) => {
+    if (item === "Contact Us") {
+      setIsContactModalOpen(true);
+      return;
+    }
+    if (item === "Track My Order") {
+      router.push("/orders");
+      return;
+    }
+    if (item === "Terms & Condition" || item === "Terms & Conditions") {
+      router.push("/terms-and-conditions");
+      return;
+    }
+    if (item === "Privacy Policy") {
+      router.push("/privacy-policy");
+      return;
+    }
+    if (item === "Return & Refund Policy") {
+      router.push("/return-refund-policy");
+      return;
+    }
+    if (item === "FAQ's") {
+      router.push("/faq");
+      return;
+    }
+  };
+
+  // Handle clicks on "Main Menu" links
+  const handleMainMenuClick = (item: string) => {
+    if (item === "Shop All") {
+      router.push("/products");
+      return;
+    }
+    if (item === "Our Snacks") {
+      router.push("/categories");
+      return;
+    }
+    if (item === "Festive Gifting") {
+      router.push("/festive-gifting");
+      return;
+    }
+    if (item === "Bulk Order") {
+      router.push("/bulk-order");
+      return;
+    }
+    if (item === "About Us") {
+      router.push("/about");
+      return;
+    }
+  };
+
   return (
-    <footer className="relative pt-12">
+    <footer className="relative pt-4">
       {/* Floating Contact Cards */}
       <div className="relative z-10 lg:translate-y-12 mb-6 lg:mb-0">
         <div className="grid md:grid-cols-3 gap-5 max-w-[1100px] mx-auto px-4">
@@ -173,6 +229,7 @@ export function Footer() {
             <FooterLinks
               title="Ready to Assist"
               items={readyToAssist}
+              onItemClick={handleReadyToAssistClick}
               className="mb-2"
             />
 
@@ -180,6 +237,7 @@ export function Footer() {
             <FooterLinks
               title="Main Menu"
               items={mainMenu}
+              onItemClick={handleMainMenuClick}
               className="mb-2"
             />
 
@@ -283,16 +341,31 @@ export function Footer() {
         <div className="mt-8 h-[3px] bg-[var(--brown-600)]" />
 
         {/* Copyright Bar */}
-        <div className="flex flex-col gap-2 py-5 text-sm text-gray-200 header-font text-center lg:flex-row lg:justify-between lg:items-center lg:text-left lg:px-8 w-full max-w-[1400px] 2xl:max-w-[1600px] 3xl:max-w-[1800px] mx-auto">
+        <div className="flex flex-col gap-2 pt-5 pb-[calc(env(safe-area-inset-bottom)+5.5rem)] lg:pb-6 text-sm text-gray-200 header-font text-center lg:flex-row lg:justify-between lg:items-center lg:text-left px-4 sm:px-6 lg:px-8 max-w-[1400px] mx-auto">
           <p className="header-font">
             Copyright © {new Date().getFullYear()} {companyName}. All Rights Reserved.
           </p>
 
           <p className="header-font">
-            Design and Developed By ProZ Solutions LLP.
+            Design and Developed By{" "}
+            <a
+              href="https://proz.in/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:underline hover:text-white transition-colors cursor-pointer"
+            >
+              ProZ Solutions LLP
+            </a>
+            .
           </p>
         </div>
       </div>
+
+      {/* Contact Form Modal */}
+      <ContactFormModal
+        open={isContactModalOpen}
+        onClose={() => setIsContactModalOpen(false)}
+      />
     </footer>
   );
 }

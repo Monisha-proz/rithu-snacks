@@ -154,8 +154,8 @@ const toastVariantStyles: Record<
   { progressTrack: string; progressBar: string }
 > = {
   success: {
-    progressTrack: "bg-cream-border",
-    progressBar: "bg-neutral-900",
+    progressTrack: "bg-success-100",
+    progressBar: "bg-success-600",
   },
   error: {
     progressTrack: "bg-error-100",
@@ -173,7 +173,7 @@ const toastVariantStyles: Record<
 
 const toastIcons: Record<ToastVariant, React.ReactNode> = {
   success: (
-    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-white">
+    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-success-600 text-white">
       <Check className="h-3 w-3 stroke-[3]" />
     </div>
   ),

@@ -246,7 +246,7 @@ export default function AdminBannersPage() {
       cell: ({ row }) => {
         const banner = row.original;
         return (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center justify-center gap-1.5">
             <Button
               variant="ghost"
               size="icon"

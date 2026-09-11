@@ -361,7 +361,7 @@ export function ProductPriceEditModal({
                           />
                         </div>
                         {currentError && (
-                          <p className="mt-0.5 text-[10px] text-red-600 font-medium">{currentError}</p>
+                          <p className="mt-1 text-xs text-red-500 font-medium">{currentError}</p>
                         )}
                       </td>
                     </tr>

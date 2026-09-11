@@ -269,7 +269,7 @@ export function AdminOrderListTable({
         );
 
         return (
-          <div className="flex items-center justify-end gap-1.5">
+          <div className="flex items-center justify-center gap-1.5">
             {/* Quick advance action button */}
             {orderStatus === "pending" && (
               <button

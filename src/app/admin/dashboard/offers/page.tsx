@@ -336,7 +336,7 @@ export default function AdminOffersPage() {
       cell: ({ row }) => {
         const offer = row.original;
         return (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center justify-center gap-1.5">
             <Button
               variant="ghost"
               size="icon"

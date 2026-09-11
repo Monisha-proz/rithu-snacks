@@ -15,6 +15,8 @@ export function useCreateProduct() {
     mutationFn: (data: Record<string, unknown>) => createAdminProduct(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: productKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["admin", "products"] });
+      queryClient.invalidateQueries({ queryKey: ["customer", "catalog"] });
     },
   });
 }
@@ -35,6 +37,11 @@ export function useUpdateProduct() {
       queryClient.invalidateQueries({
         queryKey: productKeys.detail(variables.uuid),
       });
+      queryClient.invalidateQueries({ queryKey: ["admin", "products"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "products", "detail", variables.uuid],
+      });
+      queryClient.invalidateQueries({ queryKey: ["customer", "catalog"] });
     },
   });
 }
@@ -46,6 +53,8 @@ export function useDeleteProduct() {
     mutationFn: (uuid: string) => deleteAdminProduct(uuid),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: productKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["admin", "products"] });
+      queryClient.invalidateQueries({ queryKey: ["customer", "catalog"] });
     },
   });
 }
@@ -70,9 +79,11 @@ export function useCreateProductImages() {
     },
     onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({ queryKey: productKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["admin", "products"] });
       queryClient.invalidateQueries({
         queryKey: [...productKeys.all, "images", variables.productUuid],
       });
+      queryClient.invalidateQueries({ queryKey: ["customer", "catalog"] });
     },
   });
 }
@@ -95,9 +106,11 @@ export function useUpdateProductImage() {
     },
     onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({ queryKey: productKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["admin", "products"] });
       queryClient.invalidateQueries({
         queryKey: [...productKeys.all, "images", variables.productUuid],
       });
+      queryClient.invalidateQueries({ queryKey: ["customer", "catalog"] });
     },
   });
 }
@@ -118,12 +131,17 @@ export function useSetPrimaryProductImage() {
     },
     onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({ queryKey: productKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["admin", "products"] });
       queryClient.invalidateQueries({
         queryKey: [...productKeys.all, "images", variables.productUuid],
       });
       queryClient.invalidateQueries({
         queryKey: productKeys.detail(variables.productUuid),
       });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "products", "detail", variables.productUuid],
+      });
+      queryClient.invalidateQueries({ queryKey: ["customer", "catalog"] });
     },
   });
 }
@@ -144,9 +162,11 @@ export function useDeleteProductImage() {
     },
     onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({ queryKey: productKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["admin", "products"] });
       queryClient.invalidateQueries({
         queryKey: [...productKeys.all, "images", variables.productUuid],
       });
+      queryClient.invalidateQueries({ queryKey: ["customer", "catalog"] });
     },
   });
 }
