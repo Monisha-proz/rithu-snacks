@@ -21,17 +21,19 @@ export const inventoryRepository = {
     const { page = 1, limit = 10, search, lowStock, outOfStock } = params;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.InventoryWhereInput = { is_active: true };
-
-    if (search) {
-      where.variant_unit_price = {
+    const where: Prisma.InventoryWhereInput = {
+      is_active: true,
+      variant_unit_price: {
+        deleted_at: null,
         variant: {
+          deleted_at: null,
           product: {
-            name: { contains: search },
+            deleted_at: null,
+            ...(search ? { name: { contains: search } } : {}),
           },
         },
-      };
-    }
+      },
+    };
 
     if (lowStock) {
       where.quantity_available = { gt: 0 };

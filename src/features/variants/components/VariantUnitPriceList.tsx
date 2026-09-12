@@ -171,13 +171,12 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
         {!showForm && (
           <Button
             type="button"
-            variant="ghost"
             size="sm"
             onClick={startAdd}
             disabled={isBusy}
-            className="h-8 text-xs font-semibold text-secondary-700 hover:text-secondary-900 hover:bg-secondary-50 cursor-pointer disabled:opacity-50"
+            className="h-8.5 px-3.5 rounded-lg text-xs font-bold text-white bg-[var(--color-secondary-600)] hover:bg-[var(--color-secondary-700)] active:bg-[var(--color-secondary-800)] border border-[var(--color-secondary-700)]/60 shadow-xs hover:shadow-sm active:scale-95 transition-all duration-150 cursor-pointer disabled:opacity-50"
           >
-            <Plus className="w-3.5 h-3.5 mr-1" />
+            <Plus className="w-3.5 h-3.5 mr-1.5 stroke-[2.5]" />
             <span>Add unit + price</span>
           </Button>
         )}
@@ -190,12 +189,24 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
       ) : (
         <div className="divide-y divide-cream-border-subtle">
           {unitPrices.length === 0 && !showForm && (
-            <div className="py-7 px-6 text-center space-y-2">
+            <div className="py-8 px-6 text-center space-y-3">
               <p className="text-xs font-medium text-neutral-600">
                 No unit / price combinations yet. Add one to make this item purchasable.
               </p>
               <div className="inline-flex items-center gap-1.5 text-[11px] font-medium text-amber-800 bg-amber-50 border border-amber-200/80 rounded-lg py-1.5 px-3 max-w-md mx-auto">
                 <span>⚠️ If price details are not entered, this item remains in the <strong>Inactive list</strong> and hidden from customers.</span>
+              </div>
+              <div className="pt-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={startAdd}
+                  disabled={isBusy}
+                  className="h-9 px-4 rounded-xl text-xs font-bold text-white bg-[var(--color-secondary-600)] hover:bg-[var(--color-secondary-700)] border border-[var(--color-secondary-700)]/60 shadow-xs active:scale-95 transition-all duration-150 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4 mr-1.5 stroke-[2.5]" />
+                  <span>Add unit + price</span>
+                </Button>
               </div>
             </div>
           )}

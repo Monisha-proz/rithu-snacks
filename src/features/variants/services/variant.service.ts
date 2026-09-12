@@ -398,6 +398,21 @@ export const variantService = {
       message: "Variant deleted successfully",
     };
   },
+
+  async bulkDeleteAdminVariants(uuids: string[], adminEmail?: string) {
+    if (!uuids || uuids.length === 0) {
+      throw ApiError.badRequest("At least one item ID is required");
+    }
+
+    const adminId = await getAdminInternalId(adminEmail);
+    const result = await variantRepository.bulkSoftDeleteByUuids(uuids, adminId);
+
+    return {
+      success: true,
+      count: result.count,
+      message: `Successfully deleted ${result.count} items`,
+    };
+  },
 };
 
 function buildVariantUpdateData(

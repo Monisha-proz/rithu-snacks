@@ -10,7 +10,8 @@ interface AdminTableSkeletonProps {
 function TableGridSkeleton({ rows, columns }: { rows: number; columns: number }) {
   return (
     <div className="flex-1 min-h-0 overflow-hidden flex flex-col rounded-xl border border-[var(--color-neutral-100)]">
-      <div className="flex gap-4 border-b border-[var(--color-neutral-100)] bg-[var(--color-neutral-50)] px-4 py-3">
+      <div className="flex items-center gap-4 border-b border-[var(--color-neutral-100)] bg-[var(--color-neutral-50)] px-4 py-3">
+        <Skeleton className="h-4 w-4 shrink-0 rounded" />
         {Array.from({ length: columns }).map((_, i) => (
           <Skeleton key={i} className="h-4 flex-1" />
         ))}
@@ -21,6 +22,7 @@ function TableGridSkeleton({ rows, columns }: { rows: number; columns: number })
           key={rowIndex}
           className="flex items-center gap-4 border-b border-[var(--color-neutral-100)] px-4 py-4 last:border-b-0"
         >
+          <Skeleton className="h-4 w-4 shrink-0 rounded" />
           {Array.from({ length: columns }).map((_, colIndex) => (
             <Skeleton key={colIndex} className="h-4 flex-1" />
           ))}

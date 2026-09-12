@@ -61,7 +61,7 @@ function FormInput({
       name={name}
       control={control}
       render={({ field, fieldState }) => (
-        <div className="pt-0 mb-3">
+        <div className="pt-0">
           {label && (
             <div className="flex items-center gap-1.5 mb-1.5">
               <Label htmlFor={name} className="flex items-center gap-1">

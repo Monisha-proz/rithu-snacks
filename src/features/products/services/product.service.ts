@@ -391,6 +391,22 @@ export const productService = {
     };
   },
 
+  async bulkDeleteAdminProducts(uuids: string[], adminEmail?: string) {
+    if (!uuids || uuids.length === 0) {
+      throw ApiError.badRequest("At least one product ID is required");
+    }
+
+    const adminId = await getAdminInternalId(adminEmail);
+    const result = await productRepository.bulkSoftDeleteByUuids(uuids, adminId);
+
+    return {
+      success: true,
+      count: result.count,
+      message: `Successfully deleted ${result.count} products`,
+    };
+  },
+
+
   async getProduct(idOrUuid: string | number) {
     const str = String(idOrUuid);
     const existing = await productRepository.findByUuid(str);

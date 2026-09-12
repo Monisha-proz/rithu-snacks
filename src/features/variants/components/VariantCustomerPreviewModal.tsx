@@ -469,35 +469,35 @@ export function VariantCustomerPreviewModal({
         {/* Technical Variant Metadata Summary Banner */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl bg-cream-50 border border-cream-border text-xs">
           <div>
-            <span className="text-neutral-700 font-semibold block mb-0.5">
+            <span className="text-neutral-900 font-semibold block mb-0.5">
               SKU Code
             </span>
-            <span className="font-mono font-bold text-neutral-900">
+            <span className="font-mono font-bold text-neutral-700">
               {variant.sku}
             </span>
           </div>
           <div>
-            <span className="text-neutral-700 font-semibold block mb-0.5">
+            <span className="text-neutral-900 font-semibold block mb-0.5">
               Active Status
             </span>
             <span
               className={`font-bold ${
-                variant.isActive ? "text-emerald-700" : "text-neutral-600"
+                variant.isActive ? "text-emerald-700" : "text-error-700"
               }`}
             >
               {variant.isActive ? "Active (In Catalog)" : "Inactive (Hidden)"}
             </span>
           </div>
           <div>
-            <span className="text-neutral-700 font-semibold block mb-0.5">
+            <span className="text-neutral-900 font-semibold block mb-0.5">
               Base Price / MRP
             </span>
-            <span className="font-semibold text-neutral-900">
+            <span className="font-semibold text-neutral-700">
               ₹{variant.basePrice}.00
             </span>
           </div>
           <div>
-            <span className="text-neutral-700 font-semibold block mb-0.5">
+            <span className="text-neutral-900 font-semibold block mb-0.5">
               Total Images
             </span>
             <span className="font-bold text-secondary-700">

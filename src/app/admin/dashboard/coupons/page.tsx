@@ -3,18 +3,29 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useCoupons, useCreateCoupon, useUpdateCoupon, useDeleteCoupon } from "@/features/coupons/hooks";
+import {
+  useCoupons,
+  useCreateCoupon,
+  useUpdateCoupon,
+  useDeleteCoupon,
+} from "@/features/coupons/hooks";
 import { DataTable } from "@/components/admin/data-table/DataTable";
-import { AdminPageHeader, AdminContent } from "@/components/admin/AdminPageHeader";
-import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
+import {
+  AdminPageHeader,
+  AdminContent,
+} from "@/components/admin/AdminPageHeader";
 import { AdminTableSkeleton } from "@/components/admin/AdminTableSkeleton";
 import { ErrorState } from "@/components/ui/error-state";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormModal } from "@/components/common/FormModal";
+import { SearchInput } from "@/components/ui/search-input";
 import { Plus, Pencil, Trash2 } from "lucide-react";
-import { createCouponSchema, type CreateCouponSchemaInput } from "@/features/coupons/validations/coupon.schema";
+import {
+  createCouponSchema,
+  type CreateCouponSchemaInput,
+} from "@/features/coupons/validations/coupon.schema";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { CouponListItem } from "@/features/coupons/types";
 
@@ -25,11 +36,15 @@ const typeBadgeVariant: Record<string, "info" | "success"> = {
 
 export default function AdminCouponsPage() {
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState<CouponListItem | null>(null);
 
   const { data, isLoading, error, refetch } = useCoupons({
+    page,
+    limit: pageSize,
     search: search || undefined,
   });
 
@@ -111,7 +126,7 @@ export default function AdminCouponsPage() {
       accessorKey: "code",
       header: "Code",
       cell: ({ row }) => (
-        <p className="font-mono font-medium">{row.original.code}</p>
+        <p className="font-mono font-semibold text-neutral-900">{row.original.code}</p>
       ),
     },
     {
@@ -126,16 +141,19 @@ export default function AdminCouponsPage() {
     {
       accessorKey: "value",
       header: "Value",
-      cell: ({ row }) =>
-        row.original.type === "PERCENTAGE"
-          ? `${row.original.value}%`
-          : `₹${row.original.value}`,
+      cell: ({ row }) => (
+        <span className="font-semibold text-neutral-900">
+          {row.original.type === "PERCENTAGE"
+            ? `${row.original.value}%`
+            : `₹${row.original.value}`}
+        </span>
+      ),
     },
     {
       id: "usage",
       header: "Usage",
       cell: ({ row }) => (
-        <span>
+        <span className="text-neutral-700 text-xs sm:text-sm">
           {row.original.usedCount}
           {row.original.usageLimit ? ` / ${row.original.usageLimit}` : ""}
         </span>
@@ -153,10 +171,13 @@ export default function AdminCouponsPage() {
     {
       accessorKey: "expiresAt",
       header: "Expiry",
-      cell: ({ row }) =>
-        row.original.expiresAt
-          ? new Date(row.original.expiresAt).toLocaleDateString("en-IN")
-          : "No expiry",
+      cell: ({ row }) => (
+        <span className="text-neutral-600 text-xs">
+          {row.original.expiresAt
+            ? new Date(row.original.expiresAt).toLocaleDateString("en-IN")
+            : "No expiry"}
+        </span>
+      ),
     },
     {
       id: "actions",
@@ -167,6 +188,8 @@ export default function AdminCouponsPage() {
             variant="ghost"
             size="icon"
             onClick={() => handleOpenModal(row.original)}
+            className="h-8 w-8 text-neutral-500 hover:text-secondary-700 hover:bg-secondary-50 cursor-pointer"
+            title="Edit coupon"
           >
             <Pencil className="h-4 w-4" />
           </Button>
@@ -174,40 +197,76 @@ export default function AdminCouponsPage() {
             variant="ghost"
             size="icon"
             onClick={() => setDeleteId(row.original.id)}
+            className="h-8 w-8 text-neutral-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"
+            title="Delete coupon"
           >
-            <Trash2 className="h-4 w-4 text-error-600" />
+            <Trash2 className="h-4 w-4" />
           </Button>
         </div>
       ),
     },
   ];
 
-  if (isLoading) return <AdminTableSkeleton />;
+  if (isLoading && !data) return <AdminTableSkeleton />;
   if (error) return <ErrorState message="Failed to load coupons" onRetry={() => refetch()} />;
 
   return (
     <div className="flex flex-1 min-h-0 flex-col">
-      <AdminBreadcrumb items={[{ label: "Coupons" }]} />
       <AdminPageHeader
         title="Coupons"
         description="Manage discount coupons"
-        actions={
-          <Button onClick={() => handleOpenModal()}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Coupon
-          </Button>
-        }
       />
+
       <AdminContent className="flex-1 min-h-0 overflow-hidden">
-        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-          <DataTable
-            columns={columns}
-            data={coupons}
-            searchKey="code"
-            searchPlaceholder="Search coupons..."
-            pageSize={20}
-            className="bg-white border border-neutral-200"
-          />
+        <div className="flex h-full flex-col overflow-hidden bg-[var(--color-background)] py-1 rounded-2xl">
+          {/* Search + Add Button Header */}
+          <div className="flex-shrink-0 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <SearchInput
+              placeholder="Search coupons..."
+              defaultValue={search}
+              onSearch={(val) => {
+                setSearch(val);
+                setPage(1);
+              }}
+              className="w-full max-w-md"
+            />
+
+            <Button
+              type="button"
+              onClick={() => handleOpenModal()}
+              className="h-11 rounded-xl bg-[var(--color-secondary-600)] px-5 text-sm font-semibold text-white hover:bg-[var(--color-secondary-700)] cursor-pointer"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Coupon
+            </Button>
+          </div>
+
+          {/* Table Container */}
+          <div className="mt-6 flex-1 min-h-0 overflow-hidden flex flex-col">
+            <DataTable
+              columns={columns}
+              data={coupons}
+              pageSize={pageSize}
+              pageSizeOptions={[10, 20, 30, 50]}
+              page={data?.meta?.page ?? page}
+              totalPages={
+                data?.meta?.totalPages ??
+                Math.max(1, Math.ceil((data?.meta?.total ?? coupons.length) / pageSize))
+              }
+              totalItems={data?.meta?.total ?? coupons.length}
+              onPageChange={setPage}
+              onPageSizeChange={(newSize) => {
+                setPageSize(newSize);
+                setPage(1);
+              }}
+              emptyMessage={
+                search
+                  ? "No coupons match your search."
+                  : "No coupons created yet."
+              }
+              className="bg-white"
+            />
+          </div>
         </div>
       </AdminContent>
 
@@ -233,6 +292,7 @@ export default function AdminCouponsPage() {
             <Button
               onClick={handleSubmit(onSubmit)}
               disabled={createMutation.isPending || updateMutation.isPending}
+              className="bg-[var(--color-secondary-600)] hover:bg-[var(--color-secondary-700)] text-white"
             >
               {editingCoupon ? "Update" : "Create"}
             </Button>

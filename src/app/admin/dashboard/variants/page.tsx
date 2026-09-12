@@ -9,11 +9,13 @@ import {
   useCreateVariant,
   useUpdateVariant,
   useDeleteVariant,
+  useBulkDeleteVariants,
 } from "@/features/variants/hooks";
 import { toast } from "@/components/ui/Toast";
 import { useProducts } from "@/features/products/hooks";
 import { useUnits } from "@/features/units/hooks";
 import { DataTable } from "@/components/admin/data-table/DataTable";
+import { BulkActionsBar } from "@/components/admin/data-table/BulkActionsBar";
 import {
   AdminPageHeader,
   AdminContent,
@@ -92,9 +94,21 @@ export default function AdminVariantsPage() {
   const [previewVariant, setPreviewVariant] =
     useState<AdminVariantResponse | null>(null);
 
+  // Bulk Selection State
+  const [selectedRowIds, setSelectedRowIds] = useState<Record<string, boolean>>({});
+  const [selectedRows, setSelectedRows] = useState<AdminVariantResponse[]>([]);
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
+
   useEffect(() => {
     setPage(1);
+    setSelectedRowIds({});
+    setSelectedRows([]);
   }, [search, selectedProductFilter]);
+
+  useEffect(() => {
+    setSelectedRowIds({});
+    setSelectedRows([]);
+  }, [page, pageSize]);
 
   // Main Variants Query
   const { data, isLoading, error, refetch } = useVariants({
@@ -111,6 +125,7 @@ export default function AdminVariantsPage() {
   const createMutation = useCreateVariant();
   const updateMutation = useUpdateVariant();
   const deleteMutation = useDeleteVariant();
+  const bulkDeleteMutation = useBulkDeleteVariants();
 
   // Unit prices for the newly created item in the modal stepper
   const { data: createdVariantPrices = [] } = useVariantUnitPrices(
@@ -142,6 +157,19 @@ export default function AdminVariantsPage() {
       ...productOptions,
     ];
   }, [productOptions]);
+
+  const activeProductName = useMemo(() => {
+    if (!selectedProductFilter) return null;
+    const match = products.find((p: any) => String(p.id) === selectedProductFilter);
+    return match?.name || null;
+  }, [selectedProductFilter, products]);
+
+  const filterNotice = useMemo(() => {
+    const parts: string[] = [];
+    if (search.trim()) parts.push(`"${search.trim()}"`);
+    if (activeProductName) parts.push(`Product: ${activeProductName}`);
+    return parts.length > 0 ? `Filtered by ${parts.join(" & ")}` : undefined;
+  }, [search, activeProductName]);
 
   const handleClearFilters = () => {
     setSearch("");
@@ -189,8 +217,12 @@ export default function AdminVariantsPage() {
         data: { outOfStock: nextOutOfStock },
       });
       refetch();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to toggle Item stock", err);
+      toast.error(
+        "Stock not changed",
+        err?.message || "Failed to update stock status."
+      );
     }
   };
 
@@ -490,8 +522,8 @@ export default function AdminVariantsPage() {
                   type="button"
                   onClick={() => setViewMode("table")}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${viewMode === "table"
-                      ? "bg-[var(--color-secondary-600)] text-white shadow-xs"
-                      : "text-neutral-600 hover:text-neutral-900"
+                    ? "bg-[var(--color-secondary-600)] text-white shadow-xs"
+                    : "text-neutral-600 hover:text-neutral-900"
                     }`}
                   title="Table List View"
                 >
@@ -503,8 +535,8 @@ export default function AdminVariantsPage() {
                   type="button"
                   onClick={() => setViewMode("cards")}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${viewMode === "cards"
-                      ? "bg-[var(--color-secondary-600)] text-white shadow-xs"
-                      : "text-neutral-600 hover:text-neutral-900"
+                    ? "bg-[var(--color-secondary-600)] text-white shadow-xs"
+                    : "text-neutral-600 hover:text-neutral-900"
                     }`}
                   title="Storefront Customer Card View"
                 >
@@ -529,6 +561,18 @@ export default function AdminVariantsPage() {
 
           {/* VIEW RENDERER: Table View vs Customer Card View */}
           <div className="mt-6 flex-1 min-h-0 overflow-hidden flex flex-col">
+            <BulkActionsBar
+              selectedCount={selectedRows.length}
+              entityName="item"
+              filterNotice={filterNotice}
+              onClearSelection={() => {
+                setSelectedRowIds({});
+                setSelectedRows([]);
+              }}
+              onDelete={() => setIsBulkDeleteOpen(true)}
+              isDeleting={bulkDeleteMutation.isPending}
+            />
+
             {viewMode === "table" ? (
               <DataTable
                 columns={columns}
@@ -543,6 +587,12 @@ export default function AdminVariantsPage() {
                   setPageSize(newPageSize);
                   setPage(1);
                 }}
+                selectedRowIds={selectedRowIds}
+                onRowSelectionChange={(newSelection, items) => {
+                  setSelectedRowIds(newSelection);
+                  setSelectedRows(items);
+                }}
+                getRowId={(row) => String(row.id)}
                 className="bg-white"
               />
             ) : (
@@ -689,8 +739,8 @@ export default function AdminVariantsPage() {
         <div className="mb-6 flex items-center justify-center gap-2 sm:gap-3 border-b border-[var(--color-neutral-200)] pb-4">
           <div
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${createStep === 1
-                ? "bg-[var(--color-secondary-600)] text-white shadow"
-                : "bg-[var(--color-success-100)] text-[var(--color-success-700)]"
+              ? "bg-[var(--color-secondary-600)] text-white shadow"
+              : "bg-[var(--color-success-100)] text-[var(--color-success-700)]"
               }`}
           >
             {createStep > 1 ? (
@@ -705,10 +755,10 @@ export default function AdminVariantsPage() {
 
           <div
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${createStep === 2
-                ? "bg-[var(--color-secondary-600)] text-white shadow"
-                : createStep > 2
-                  ? "bg-[var(--color-success-100)] text-[var(--color-success-700)]"
-                  : "bg-[var(--color-neutral-100)] text-[var(--color-neutral-500)]"
+              ? "bg-[var(--color-secondary-600)] text-white shadow"
+              : createStep > 2
+                ? "bg-[var(--color-success-100)] text-[var(--color-success-700)]"
+                : "bg-[var(--color-neutral-100)] text-[var(--color-neutral-500)]"
               }`}
           >
             {createStep > 2 ? (
@@ -723,10 +773,10 @@ export default function AdminVariantsPage() {
 
           <div
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${createStep === 3
-                ? "bg-[var(--color-secondary-600)] text-white shadow"
-                : createStep > 3
-                  ? "bg-[var(--color-success-100)] text-[var(--color-success-700)]"
-                  : "bg-[var(--color-neutral-100)] text-[var(--color-neutral-500)]"
+              ? "bg-[var(--color-secondary-600)] text-white shadow"
+              : createStep > 3
+                ? "bg-[var(--color-success-100)] text-[var(--color-success-700)]"
+                : "bg-[var(--color-neutral-100)] text-[var(--color-neutral-500)]"
               }`}
           >
             {createStep > 3 ? (
@@ -741,8 +791,8 @@ export default function AdminVariantsPage() {
 
           <div
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${createStep === 4
-                ? "bg-[var(--color-secondary-600)] text-white shadow"
-                : "bg-[var(--color-neutral-100)] text-[var(--color-neutral-500)]"
+              ? "bg-[var(--color-secondary-600)] text-white shadow"
+              : "bg-[var(--color-neutral-100)] text-[var(--color-neutral-500)]"
               }`}
           >
             <span>4</span>
@@ -1036,8 +1086,12 @@ export default function AdminVariantsPage() {
           if (deleteTarget) {
             deleteMutation.mutate(deleteTarget, {
               onSuccess: () => {
+                toast.success("Item Deleted", "Product item removed successfully.");
                 setDeleteTarget(null);
                 refetch();
+              },
+              onError: (err: any) => {
+                toast.error("Delete Failed", err.message || "Could not delete item.");
               },
             });
           }
@@ -1047,6 +1101,34 @@ export default function AdminVariantsPage() {
         confirmText="Delete"
         variant="destructive"
         isLoading={deleteMutation.isPending}
+      />
+
+      {/* BULK DELETE DIALOG */}
+      <ConfirmDialog
+        open={isBulkDeleteOpen}
+        onClose={() => setIsBulkDeleteOpen(false)}
+        onConfirm={async () => {
+          const idsToDelete = selectedRows.map((v) => v.id);
+          if (idsToDelete.length === 0) return;
+          try {
+            await bulkDeleteMutation.mutateAsync(idsToDelete);
+            toast.success(
+              "Items Deleted",
+              `Successfully deleted ${idsToDelete.length} ${idsToDelete.length === 1 ? "item" : "items"}.`
+            );
+            setSelectedRowIds({});
+            setSelectedRows([]);
+            setIsBulkDeleteOpen(false);
+            refetch();
+          } catch (err: any) {
+            toast.error("Delete Failed", err.message || "Could not delete selected items.");
+          }
+        }}
+        title={`Delete ${selectedRows.length} Selected ${selectedRows.length === 1 ? "Item" : "Items"}`}
+        description={`Are you sure you want to delete ${selectedRows.length} selected ${selectedRows.length === 1 ? "item" : "items"}${activeProductName ? ` belonging to "${activeProductName}"` : ""}? This will permanently remove these items, pricing, and inventories. This action cannot be undone.`}
+        confirmText={`Delete ${selectedRows.length} ${selectedRows.length === 1 ? "Item" : "Items"}`}
+        variant="destructive"
+        isLoading={bulkDeleteMutation.isPending}
       />
     </div>
   );

@@ -254,8 +254,12 @@ export default function AdminVariantDetailsPage() {
         data: { outOfStock: !variant.outOfStock },
       });
       refetchVariant();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to toggle variant stock", err);
+      toast.error(
+        "Stock not changed",
+        err?.message || "Failed to update stock status."
+      );
     }
   };
 
