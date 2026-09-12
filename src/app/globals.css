@@ -664,3 +664,31 @@ textarea:focus-visible {
   pointer-events: none;
   color: var(--color-neutral-400, #a3a3a3);
 }
+
+/* ================================================================== */
+/* Admin Panel Table Header Global Styling                            */
+/* ================================================================== */
+main table thead th,
+.admin-table thead th,
+table.admin-table thead th,
+div[class*="DataTable"] table thead th {
+  background-color: var(--color-secondary-600) !important;
+  color: #ffffff !important;
+  border-bottom: 1px solid var(--color-secondary-700) !important;
+}
+
+main table thead th *,
+.admin-table thead th *,
+table.admin-table thead th *,
+div[class*="DataTable"] table thead th * {
+  color: #ffffff !important;
+}
+
+main table thead th svg,
+.admin-table thead th svg,
+table.admin-table thead th svg,
+div[class*="DataTable"] table thead th svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+

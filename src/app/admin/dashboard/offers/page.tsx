@@ -14,7 +14,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/forms/label";
 import { DataTable } from "@/components/admin/data-table/DataTable";
 import { AdminTableSkeleton } from "@/components/admin/AdminTableSkeleton";
-import { AdminContent, AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import {
+  AdminContent,
+  AdminPageHeader,
+} from "@/components/admin/AdminPageHeader";
 import { FormModal } from "@/components/common/FormModal";
 import { ClearFiltersButton } from "@/components/common/clear-filters-button";
 import {
@@ -88,9 +91,6 @@ const EMPTY_FILTERS: OfferFilters = {
 };
 
 export default function AdminOffersPage() {
-  // Filters live in one object so that changing a filter and resetting to page
-  // one is a single state update, rather than a render followed by a
-  // correcting effect.
   const [filters, setFilters] = useState<OfferFilters>(EMPTY_FILTERS);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -322,15 +322,6 @@ export default function AdminOffersPage() {
       ),
     },
     {
-      accessorKey: "createdAt",
-      header: "Created",
-      cell: ({ row }) => (
-        <span className="whitespace-nowrap text-xs text-neutral-500">
-          {formatDate(row.original.createdAt)}
-        </span>
-      ),
-    },
-    {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => {
@@ -399,109 +390,124 @@ export default function AdminOffersPage() {
       <AdminPageHeader
         title="Offers"
         description="Create product-wise and item-wise offers, and control which one wins when several apply."
-        actions={
-          <Button
-            onClick={() => {
-              setFormError(null);
-              setIsCreateOpen(true);
-            }}
-            className="h-11 rounded-xl bg-[var(--color-secondary-600)] px-5 text-sm font-semibold text-white hover:bg-[var(--color-secondary-700)]"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Create Offer
-          </Button>
-        }
       />
 
       <AdminContent className="flex-1 min-h-0 overflow-hidden">
-        <div className="flex h-full flex-col overflow-hidden rounded-2xl bg-[var(--color-background)] py-1">
-          {/* Filters */}
+        <div className="flex h-full flex-col overflow-hidden bg-[var(--color-background)] py-1 rounded-2xl">
+          {/* Top Search + Filter Controls + Add Button */}
           <div className="flex-shrink-0 space-y-3">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-              <SearchInput
-                placeholder="Search offers by name or code..."
-                value={filters.search}
-                onSearch={(value) => setFilter("search", value)}
-                className="w-full max-w-md"
-              />
-              {hasActiveFilters && <ClearFiltersButton onClick={clearFilters} />}
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex flex-1 flex-col sm:flex-row sm:items-center gap-3">
+                <SearchInput
+                  placeholder="Search offers by name or code..."
+                  defaultValue={filters.search}
+                  onSearch={(value) => setFilter("search", value)}
+                  className="w-full max-w-md"
+                />
+                {hasActiveFilters && <ClearFiltersButton onClick={clearFilters} />}
+              </div>
+
+              <Button
+                type="button"
+                onClick={() => {
+                  setFormError(null);
+                  setIsCreateOpen(true);
+                }}
+                className="h-11 rounded-xl bg-[var(--color-secondary-600)] px-5 text-sm font-semibold text-white hover:bg-[var(--color-secondary-700)] cursor-pointer self-start sm:self-auto"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Create Offer
+              </Button>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
-              <Select
-                value={filters.level}
-                options={[{ value: "", label: "All levels" }, ...OFFER_LEVEL_OPTIONS]}
-                placeholder="All levels"
-                className="h-11 rounded-xl"
-                onValueChange={(value) => setFilter("level", value as "" | OfferLevel)}
-              />
-              <Select
-                value={filters.type}
-                options={[{ value: "", label: "All types" }, ...OFFER_TYPE_OPTIONS]}
-                placeholder="All types"
-                className="h-11 rounded-xl"
-                onValueChange={(value) => setFilter("type", value as "" | OfferType)}
-              />
-              <Select
-                value={filters.status}
-                options={[
-                  { value: "", label: "All statuses" },
-                  { value: "active", label: "Active" },
-                  { value: "scheduled", label: "Scheduled" },
-                  { value: "expired", label: "Expired" },
-                  { value: "inactive", label: "Inactive" },
-                ]}
-                placeholder="All statuses"
-                className="h-11 rounded-xl"
-                onValueChange={(value) =>
-                  setFilter("status", value as "" | OfferStatusFilter)
-                }
-              />
-              <Select
-                value={filters.categoryId}
-                options={categoryOptions}
-                placeholder="All categories"
-                className="h-11 rounded-xl"
-                onValueChange={(value) => {
-                  // The selected product may not belong to the new category.
-                  setFilters((prev) => ({
-                    ...prev,
-                    categoryId: value,
-                    productId: "",
-                  }));
-                  setPage(1);
-                }}
-              />
-              <Select
-                value={filters.productId}
-                options={productOptions}
-                placeholder="All products"
-                className="h-11 rounded-xl"
-                onValueChange={(value) => setFilter("productId", value)}
-              />
-              <div className="flex items-end gap-2">
-                <div className="flex-1">
-                  <Label htmlFor="offer-from" className="text-[11px] text-neutral-500">
-                    From
-                  </Label>
-                  <Input
+            {/* Filter Row */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="w-full sm:w-36">
+                <Select
+                  value={filters.level}
+                  options={[{ value: "", label: "All levels" }, ...OFFER_LEVEL_OPTIONS]}
+                  placeholder="All levels"
+                  className="h-11 rounded-xl"
+                  onValueChange={(value) => setFilter("level", value as "" | OfferLevel)}
+                />
+              </div>
+
+              <div className="w-full sm:w-36">
+                <Select
+                  value={filters.type}
+                  options={[{ value: "", label: "All types" }, ...OFFER_TYPE_OPTIONS]}
+                  placeholder="All types"
+                  className="h-11 rounded-xl"
+                  onValueChange={(value) => setFilter("type", value as "" | OfferType)}
+                />
+              </div>
+
+              <div className="w-full sm:w-36">
+                <Select
+                  value={filters.status}
+                  options={[
+                    { value: "", label: "All statuses" },
+                    { value: "active", label: "Active" },
+                    { value: "scheduled", label: "Scheduled" },
+                    { value: "expired", label: "Expired" },
+                    { value: "inactive", label: "Inactive" },
+                  ]}
+                  placeholder="All statuses"
+                  className="h-11 rounded-xl"
+                  onValueChange={(value) =>
+                    setFilter("status", value as "" | OfferStatusFilter)
+                  }
+                />
+              </div>
+
+              <div className="w-full sm:w-44">
+                <Select
+                  value={filters.categoryId}
+                  options={categoryOptions}
+                  placeholder="All categories"
+                  className="h-11 rounded-xl"
+                  onValueChange={(value) => {
+                    setFilters((prev) => ({
+                      ...prev,
+                      categoryId: value,
+                      productId: "",
+                    }));
+                    setPage(1);
+                  }}
+                />
+              </div>
+
+              <div className="w-full sm:w-44">
+                <Select
+                  value={filters.productId}
+                  options={productOptions}
+                  placeholder="All products"
+                  className="h-11 rounded-xl"
+                  onValueChange={(value) => setFilter("productId", value)}
+                />
+              </div>
+
+              {/* Date Filters */}
+              <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                <div className="flex items-center gap-1.5 bg-white border border-theme-border rounded-xl px-3 h-11 shadow-2xs hover:border-theme-border-accent transition-colors">
+                  <span className="text-xs text-neutral-500 font-medium whitespace-nowrap">From:</span>
+                  <input
                     id="offer-from"
                     type="date"
                     value={filters.startDate}
                     onChange={(e) => setFilter("startDate", e.target.value)}
-                    className="h-11 rounded-xl"
+                    className="text-xs bg-transparent outline-none text-neutral-800 cursor-pointer min-w-[125px]"
                   />
                 </div>
-                <div className="flex-1">
-                  <Label htmlFor="offer-to" className="text-[11px] text-neutral-500">
-                    To
-                  </Label>
-                  <Input
+
+                <div className="flex items-center gap-1.5 bg-white border border-theme-border rounded-xl px-3 h-11 shadow-2xs hover:border-theme-border-accent transition-colors">
+                  <span className="text-xs text-neutral-500 font-medium whitespace-nowrap">To:</span>
+                  <input
                     id="offer-to"
                     type="date"
                     value={filters.endDate}
                     onChange={(e) => setFilter("endDate", e.target.value)}
-                    className="h-11 rounded-xl"
+                    className="text-xs bg-transparent outline-none text-neutral-800 cursor-pointer min-w-[125px]"
                   />
                 </div>
               </div>
@@ -608,6 +614,7 @@ export default function AdminOffersPage() {
         title="Delete this offer?"
         description={`"${deleteTarget?.name}" will be removed and will stop applying to carts. Orders already placed keep the discount they were given.`}
         confirmText="Delete Offer"
+        variant="destructive"
       />
     </div>
   );

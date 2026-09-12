@@ -6,6 +6,7 @@ import {
   createAdminVariant,
   updateAdminVariant,
   deleteAdminVariant,
+  bulkDeleteAdminVariants,
   bulkEditVariants,
 } from "../api/get-variants";
 import type { BulkEditVariantsInput } from "../types";
@@ -71,11 +72,32 @@ export function useDeleteVariant() {
       productUuid: string;
       variantUuid: string;
     }) => deleteAdminVariant(productUuid, variantUuid),
+    meta: { skipToast: true },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: variantKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["admin", "variants"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "products"] });
+      queryClient.invalidateQueries({ queryKey: ["customer", "catalog"] });
     },
   });
 }
+
+export function useBulkDeleteVariants() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (ids: string[]) => bulkDeleteAdminVariants(ids),
+    meta: { skipToast: true },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: variantKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["admin", "variants"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "products"] });
+      queryClient.invalidateQueries({ queryKey: ["customer", "catalog"] });
+    },
+  });
+}
+
+
 
 export function useCreateVariantUnitPrice() {
   const queryClient = useQueryClient();

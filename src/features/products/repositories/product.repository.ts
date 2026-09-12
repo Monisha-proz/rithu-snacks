@@ -282,13 +282,105 @@ export const productRepository = {
     const existing = await this.findByUuid(uuid);
     if (!existing) return null;
 
-    return db.product.update({
-      where: { id: existing.id },
-      data: {
-        isActive: false,
-        deleted_at: new Date(),
-        ...(adminId ? { updated_by: adminId } : {}),
-      },
+    const now = new Date();
+
+    return db.$transaction(async (tx) => {
+      // 1. Soft-delete the product
+      const updatedProduct = await tx.product.update({
+        where: { id: existing.id },
+        data: {
+          isActive: false,
+          status: false,
+          deleted_at: now,
+          ...(adminId ? { updated_by: adminId } : {}),
+        },
+        include: productAdminInclude,
+      });
+
+      // 2. Find all variants belonging to this product
+      const relatedVariants = await tx.productVariant.findMany({
+        where: { productId: existing.id, deleted_at: null },
+        select: { id: true },
+      });
+
+      if (relatedVariants.length > 0) {
+        const variantIds = relatedVariants.map((v) => v.id);
+
+        // 3. Soft-delete all related variants
+        await tx.productVariant.updateMany({
+          where: { id: { in: variantIds } },
+          data: {
+            isActive: false,
+            deleted_at: now,
+            ...(adminId ? { updated_by: adminId } : {}),
+          },
+        });
+
+        // 4. Soft-delete all variant unit prices
+        await tx.variantUnitPrice.updateMany({
+          where: { variant_id: { in: variantIds } },
+          data: {
+            isActive: false,
+            deleted_at: now,
+            ...(adminId ? { updated_by: adminId } : {}),
+          },
+        });
+      }
+
+      return updatedProduct;
+    });
+  },
+
+  async bulkSoftDeleteByUuids(uuids: string[], adminId?: bigint | null) {
+    if (!uuids || uuids.length === 0) return { count: 0 };
+    const existingProducts = await db.product.findMany({
+      where: { uuid: { in: uuids }, deleted_at: null },
+      select: { id: true },
+    });
+    if (existingProducts.length === 0) return { count: 0 };
+
+    const productIds = existingProducts.map((p) => p.id);
+    const now = new Date();
+
+    return db.$transaction(async (tx) => {
+      const res = await tx.product.updateMany({
+        where: { id: { in: productIds } },
+        data: {
+          isActive: false,
+          status: false,
+          deleted_at: now,
+          ...(adminId ? { updated_by: adminId } : {}),
+        },
+      });
+
+      const relatedVariants = await tx.productVariant.findMany({
+        where: { productId: { in: productIds }, deleted_at: null },
+        select: { id: true },
+      });
+
+      if (relatedVariants.length > 0) {
+        const variantIds = relatedVariants.map((v) => v.id);
+
+        await tx.productVariant.updateMany({
+          where: { id: { in: variantIds } },
+          data: {
+            isActive: false,
+            deleted_at: now,
+            ...(adminId ? { updated_by: adminId } : {}),
+          },
+        });
+
+        await tx.variantUnitPrice.updateMany({
+          where: { variant_id: { in: variantIds } },
+          data: {
+            isActive: false,
+            deleted_at: now,
+            ...(adminId ? { updated_by: adminId } : {}),
+          },
+        });
+      }
+
+      return res;
     });
   },
 };

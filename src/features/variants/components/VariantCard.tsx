@@ -139,20 +139,40 @@ export function VariantCard({
               </span>
             )
           )}
-          <span
-            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold shadow-xs backdrop-blur-md ${
-              variant.isActive
-                ? "bg-emerald-500/90 text-white"
-                : "bg-neutral-800/80 text-neutral-200"
-            }`}
-          >
-            <span
-              className={`h-1.5 w-1.5 rounded-full ${
-                variant.isActive ? "bg-white animate-pulse" : "bg-neutral-400"
+          {onToggleStatus ? (
+            <button
+              type="button"
+              onClick={() => onToggleStatus(variant, !variant.isActive)}
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold shadow-xs backdrop-blur-md transition-colors cursor-pointer ${
+                variant.isActive
+                  ? "bg-emerald-500/90 hover:bg-emerald-600 text-white"
+                  : "bg-error-600/90 hover:bg-error-700 text-white"
               }`}
-            />
-            {variant.isActive ? "Active" : "Inactive"}
-          </span>
+              title={variant.isActive ? "Click to mark Inactive" : "Click to mark Active"}
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  variant.isActive ? "bg-white animate-pulse" : "bg-white/80"
+                }`}
+              />
+              {variant.isActive ? "Active" : "Inactive"}
+            </button>
+          ) : (
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold shadow-xs backdrop-blur-md ${
+                variant.isActive
+                  ? "bg-emerald-500/90 text-white"
+                  : "bg-error-600/90 text-white"
+              }`}
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  variant.isActive ? "bg-white animate-pulse" : "bg-white/80"
+                }`}
+              />
+              {variant.isActive ? "Active" : "Inactive"}
+            </span>
+          )}
         </div>
 
         {/* Hover Quick Action Toolbar Overlay for Admin */}
@@ -212,8 +232,8 @@ export function VariantCard({
                 size="icon"
                 className={`h-8 w-8 rounded-lg shadow-xs ${
                   variant.isActive
-                    ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
-                    : "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
+                    ? "bg-error-50 text-error-700 hover:bg-error-100"
+                    : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                 }`}
                 onClick={() => onToggleStatus(variant, !variant.isActive)}
                 title={variant.isActive ? "Make Inactive" : "Make Active"}

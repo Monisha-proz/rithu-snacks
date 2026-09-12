@@ -170,12 +170,13 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
 
         {!showForm && (
           <Button
-            variant="ghost"
+            type="button"
             size="sm"
             onClick={startAdd}
-            className="h-8 text-xs font-semibold text-secondary-700 hover:text-secondary-900 hover:bg-secondary-50 cursor-pointer"
+            disabled={isBusy}
+            className="h-8.5 px-3.5 rounded-lg text-xs font-bold text-white bg-[var(--color-secondary-600)] hover:bg-[var(--color-secondary-700)] active:bg-[var(--color-secondary-800)] border border-[var(--color-secondary-700)]/60 shadow-xs hover:shadow-sm active:scale-95 transition-all duration-150 cursor-pointer disabled:opacity-50"
           >
-            <Plus className="w-3.5 h-3.5 mr-1" />
+            <Plus className="w-3.5 h-3.5 mr-1.5 stroke-[2.5]" />
             <span>Add unit + price</span>
           </Button>
         )}
@@ -188,8 +189,25 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
       ) : (
         <div className="divide-y divide-cream-border-subtle">
           {unitPrices.length === 0 && !showForm && (
-            <div className="py-8 px-6 text-center text-xs text-neutral-500">
-              No unit / price combinations yet. Add one to make this item purchasable.
+            <div className="py-8 px-6 text-center space-y-3">
+              <p className="text-xs font-medium text-neutral-600">
+                No unit / price combinations yet. Add one to make this item purchasable.
+              </p>
+              <div className="inline-flex items-center gap-1.5 text-[11px] font-medium text-amber-800 bg-amber-50 border border-amber-200/80 rounded-lg py-1.5 px-3 max-w-md mx-auto">
+                <span>⚠️ If price details are not entered, this item remains in the <strong>Inactive list</strong> and hidden from customers.</span>
+              </div>
+              <div className="pt-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={startAdd}
+                  disabled={isBusy}
+                  className="h-9 px-4 rounded-xl text-xs font-bold text-white bg-[var(--color-secondary-600)] hover:bg-[var(--color-secondary-700)] border border-[var(--color-secondary-700)]/60 shadow-xs active:scale-95 transition-all duration-150 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4 mr-1.5 stroke-[2.5]" />
+                  <span>Add unit + price</span>
+                </Button>
+              </div>
             </div>
           )}
 
@@ -221,7 +239,7 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 shrink-0">
+              <div className="flex items-center gap-3 shrink-0">
                 <span className="text-sm font-bold text-secondary-900 font-mono">
                   ₹{item.basePrice.toLocaleString("en-IN")}
                 </span>
@@ -230,7 +248,8 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
                     variant="ghost"
                     size="icon"
                     onClick={() => startEdit(item)}
-                    className="h-8 w-8 text-neutral-500 hover:text-secondary-700 hover:bg-secondary-50"
+                    disabled={isBusy}
+                    className="h-8 w-8 text-neutral-500 hover:text-secondary-700 hover:bg-secondary-50 disabled:opacity-40"
                     title="Edit"
                   >
                     <Pencil className="w-3.5 h-3.5" />
@@ -239,7 +258,8 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
                     variant="ghost"
                     size="icon"
                     onClick={() => setDeleteTarget(item)}
-                    className="h-8 w-8 text-neutral-500 hover:text-red-600 hover:bg-red-50"
+                    disabled={isBusy}
+                    className="h-8 w-8 text-neutral-500 hover:text-red-600 hover:bg-red-50 disabled:opacity-40"
                     title="Delete"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -264,7 +284,8 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
                   <select
                     value={form.unitId}
                     onChange={(e) => setForm((f) => ({ ...f, unitId: e.target.value }))}
-                    className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-secondary-600/20 focus:border-secondary-600"
+                    disabled={isBusy}
+                    className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-secondary-600/20 focus:border-secondary-600 disabled:opacity-60 disabled:bg-neutral-100"
                   >
                     <option value="">Select unit</option>
                     {units.map((u: AdminUnitResponse) => (
@@ -288,12 +309,12 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
                     min="0"
                     value={form.unitValue}
                     onChange={(e) => setForm((f) => ({ ...f, unitValue: e.target.value }))}
+                    disabled={isBusy}
                     placeholder="e.g. 500"
-                    className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-secondary-600/20 focus:border-secondary-600"
+                    className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-secondary-600/20 focus:border-secondary-600 disabled:opacity-60 disabled:bg-neutral-100"
                   />
                   <p className="text-[11px] text-neutral-400 mt-1">
-                    How much is in one pack, in the unit chosen on the left — e.g. 500 for a
-                    500 Gram pack.
+                    How much is in one pack — e.g. 500 for a 500 Gram pack.
                   </p>
                 </div>
               </div>
@@ -307,12 +328,12 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
                     type="text"
                     value={form.sku}
                     onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))}
+                    disabled={isBusy}
                     placeholder="e.g. MIXTURE-500G"
-                    className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-sm font-mono bg-white focus:outline-none focus:ring-2 focus:ring-secondary-600/20 focus:border-secondary-600"
+                    className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-sm font-mono bg-white focus:outline-none focus:ring-2 focus:ring-secondary-600/20 focus:border-secondary-600 disabled:opacity-60 disabled:bg-neutral-100"
                   />
                   <p className="text-[11px] text-neutral-400 mt-1">
-                    A unique code just for this pack size. No two packs, even of the same item,
-                    can share a code.
+                    A unique code just for this pack size.
                   </p>
                 </div>
 
@@ -326,12 +347,12 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
                     min="0"
                     value={form.basePrice}
                     onChange={(e) => setForm((f) => ({ ...f, basePrice: e.target.value }))}
+                    disabled={isBusy}
                     placeholder="e.g. 260"
-                    className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-secondary-600/20 focus:border-secondary-600"
+                    className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-secondary-600/20 focus:border-secondary-600 disabled:opacity-60 disabled:bg-neutral-100"
                   />
                   <p className="text-[11px] text-neutral-400 mt-1">
-                    What the customer pays for one pack of this size. Offers/discounts, if any,
-                    are applied automatically on top.
+                    What customer pays for this pack.
                   </p>
                 </div>
               </div>
@@ -342,6 +363,7 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
                     type="checkbox"
                     checked={form.isDefault}
                     onChange={(e) => setForm((f) => ({ ...f, isDefault: e.target.checked }))}
+                    disabled={isBusy}
                     className="rounded border-neutral-300"
                   />
                   Show this size first (default)
@@ -352,6 +374,7 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
                     type="checkbox"
                     checked={form.isActive}
                     onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
+                    disabled={isBusy}
                     className="rounded border-neutral-300"
                   />
                   Active (customers can buy this size)

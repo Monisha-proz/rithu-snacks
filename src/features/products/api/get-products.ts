@@ -77,6 +77,14 @@ export async function deleteAdminProduct(uuid: string) {
   return apiClient.delete(`/api/admin/products/${uuid}`);
 }
 
+export async function bulkDeleteAdminProducts(ids: string[]) {
+  return apiClient.post<{ count: number; message: string }>(
+    "/api/admin/products/bulk-delete",
+    { ids }
+  );
+}
+
+
 // Product Images API
 export async function getAdminProductImages(
   productUuid: string

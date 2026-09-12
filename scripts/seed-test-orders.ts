@@ -54,7 +54,7 @@ async function main() {
   // 2. Find product variants
   const variants = await prisma.productVariant.findMany({
     where: { isActive: true },
-    include: { product: true },
+    include: { product: true, variant_unit_prices: true },
     take: 10,
   });
 
@@ -189,7 +189,7 @@ async function main() {
           variantId: sampleVariant.id,
           product_name_snapshot: sampleVariant.product.name,
           variant_snapshot: sampleVariant.variant_name,
-          sku_snapshot: sampleVariant.sku,
+          sku_snapshot: sampleVariant.variant_unit_prices?.[0]?.sku || `${sampleVariant.slug}-SKU`,
           quantity: qty1,
           unit_price: price1,
           tax_amount: 0,
@@ -208,7 +208,7 @@ async function main() {
           variantId: secondVariant.id,
           product_name_snapshot: secondVariant.product.name,
           variant_snapshot: secondVariant.variant_name,
-          sku_snapshot: secondVariant.sku,
+          sku_snapshot: secondVariant.variant_unit_prices?.[0]?.sku || `${secondVariant.slug}-SKU`,
           quantity: qty2,
           unit_price: price2,
           tax_amount: 0,

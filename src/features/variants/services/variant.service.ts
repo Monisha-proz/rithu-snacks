@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { db } from "@/lib/db/prisma";
 import { ApiError } from "@/lib/api/api-error";
 import { variantRepository } from "../repositories/variant.repository";
 import { productRepository } from "@/features/products/repositories/product.repository";
@@ -203,7 +204,7 @@ export const variantService = {
       shelf_life: data.shelfLife ?? null,
       veg_type: (data.vegType as Prisma.ProductVariantUncheckedCreateInput["veg_type"]) ?? "na",
       is_featured: data.isFeatured ?? false,
-      isActive: data.isActive !== undefined ? data.isActive : true,
+      isActive: data.isActive !== undefined ? data.isActive : false,
       out_of_stock: data.outOfStock !== undefined ? data.outOfStock : false,
       created_by: adminId,
       updated_by: adminId,
@@ -291,6 +292,23 @@ export const variantService = {
     }
 
     const adminId = await getAdminInternalId(adminEmail);
+
+    if (data.isActive === true) {
+      const activePriceCount = await db.variantUnitPrice.count({
+        where: {
+          variant_id: existing.id,
+          deleted_at: null,
+          isActive: true,
+          base_price: { gt: 0 },
+        },
+      });
+      if (activePriceCount === 0) {
+        throw ApiError.badRequest(
+          "Cannot activate item without price details. Please add at least one unit price first."
+        );
+      }
+    }
+
     const updateData = buildVariantUpdateData(data, adminId);
 
     if (data.slug !== undefined) {
@@ -321,6 +339,23 @@ export const variantService = {
     }
 
     const adminId = await getAdminInternalId(adminEmail);
+
+    if (data.isActive === true) {
+      const activePriceCount = await db.variantUnitPrice.count({
+        where: {
+          variant_id: existing.id,
+          deleted_at: null,
+          isActive: true,
+          base_price: { gt: 0 },
+        },
+      });
+      if (activePriceCount === 0) {
+        throw ApiError.badRequest(
+          "Cannot activate item without price details. Please add at least one unit price first."
+        );
+      }
+    }
+
     const updateData = buildVariantUpdateData(data, adminId);
 
     if (data.slug !== undefined) {
@@ -361,6 +396,21 @@ export const variantService = {
     return {
       success: true,
       message: "Variant deleted successfully",
+    };
+  },
+
+  async bulkDeleteAdminVariants(uuids: string[], adminEmail?: string) {
+    if (!uuids || uuids.length === 0) {
+      throw ApiError.badRequest("At least one item ID is required");
+    }
+
+    const adminId = await getAdminInternalId(adminEmail);
+    const result = await variantRepository.bulkSoftDeleteByUuids(uuids, adminId);
+
+    return {
+      success: true,
+      count: result.count,
+      message: `Successfully deleted ${result.count} items`,
     };
   },
 };

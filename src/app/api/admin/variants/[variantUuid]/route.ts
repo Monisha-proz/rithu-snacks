@@ -33,7 +33,23 @@ export const GET = createApiHandler(
         adminEmail
       );
 
-      return apiSuccess(variant, "Variant updated successfully", 200);
+      let successMessage = "Variant updated successfully";
+      const keys = Object.keys(body).filter(
+        (key) => (body as Record<string, unknown>)[key] !== undefined
+      );
+      if (keys.length === 1) {
+        if (body.isActive !== undefined) {
+          successMessage = body.isActive
+            ? "Variant marked as active successfully."
+            : "Variant marked as inactive successfully.";
+        } else if (body.outOfStock !== undefined) {
+          successMessage = body.outOfStock
+            ? "Product marked as out of stock successfully."
+            : "Product marked as in stock successfully.";
+        }
+      }
+
+      return apiSuccess(variant, successMessage, 200);
     },
   },
   {

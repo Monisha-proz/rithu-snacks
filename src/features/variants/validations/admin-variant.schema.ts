@@ -45,7 +45,7 @@ export const createAdminVariantSchema = z
       .nullable(),
     vegType: vegTypeEnum.optional(),
     isFeatured: z.boolean().optional().default(false),
-    isActive: z.boolean().optional().default(true),
+    isActive: z.boolean().optional().default(false),
     outOfStock: z.boolean().optional().default(false),
   })
   .strict();
@@ -270,3 +270,14 @@ export const variantPriceHistoryQuerySchema = z
 export type VariantPriceHistoryQueryInput = z.infer<
   typeof variantPriceHistoryQuerySchema
 >;
+
+export const bulkDeleteAdminVariantsSchema = z
+  .object({
+    ids: z.array(z.string().min(1)).min(1, "At least one item ID is required"),
+  })
+  .strict();
+
+export type BulkDeleteAdminVariantsInput = z.infer<
+  typeof bulkDeleteAdminVariantsSchema
+>;
+
