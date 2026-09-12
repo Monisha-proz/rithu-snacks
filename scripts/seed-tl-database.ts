@@ -575,8 +575,8 @@ async function main() {
         const variantUuid = crypto.randomUUID();
         const variantSku = `VAR-${vData.sku}-${vIdx + 1}`;
         const variantSlug = `${prodData.slug}-${vData.sku.toLowerCase()}`;
-        const isDefault = vIdx === 0 ? 1 : 0;
-        const isFeatured = vIdx < 3 ? 1 : 0;
+        const isDefault = vIdx === 0;
+        const isFeatured = vIdx < 3;
 
         const getSeedIngredients = (name: string, catName: string) => {
           const lower = (name + " " + catName).toLowerCase();
@@ -618,56 +618,41 @@ async function main() {
         const vIngredients = getSeedIngredients(vData.name, catData.name);
         const vShelfLife = getSeedShelfLife(vData.name, catData.name);
 
-        await prisma.$executeRawUnsafe(
-          `INSERT INTO \`product_variants\` (
-            \`uuid\`, \`product_id\`, \`variant_name\`, \`sku\`, \`slug\`, \`unit_value\`, \`unit_id\`,
-            \`base_price\`, \`sale_price\`, \`is_default\`, \`is_active\`, \`out_of_stock\`,
-            \`created_at\`, \`updated_at\`, \`short_description\`, \`description\`, \`veg_type\`, \`is_featured\`,
-            \`ingredients\`, \`shelf_life\`
-          ) VALUES (
-            ?, ?, ?, ?, ?, ?, ?,
-            ?, ?, ?, 1, 0,
-            NOW(), NOW(), ?, ?, 'veg', ?,
-            ?, ?
-          )`,
-          variantUuid,
-          product.id,
-          vData.name,
-          variantSku,
-          variantSlug,
-          200,
-          gramUnit.id,
-          vData.price200,
-          vData.price200,
-          isDefault,
-          `Fresh & crunchy ${vData.name}.`,
-          `${vData.name} freshly prepared in small batches using traditional South Indian recipes.`,
-          isFeatured,
-          vIngredients,
-          vShelfLife
-        );
-
-        const variant = await prisma.productVariant.findFirstOrThrow({
-          where: { uuid: variantUuid },
+        const variant = await prisma.productVariant.create({
+          data: {
+            uuid: variantUuid,
+            productId: product.id,
+            variant_name: vData.name,
+            slug: variantSlug,
+            is_default: isDefault,
+            isActive: true,
+            out_of_stock: false,
+            short_description: `Fresh & crunchy ${vData.name}.`,
+            description: `${vData.name} freshly prepared in small batches using traditional South Indian recipes.`,
+            is_featured: isFeatured,
+            ingredients: vIngredients,
+            shelf_life: vShelfLife,
+            veg_type: "veg",
+          },
         });
         totalVariants++;
 
         // Add variant image
-        const imgUuid = crypto.randomUUID();
-        await prisma.$executeRawUnsafe(
-          `INSERT INTO \`product_variant_images\` (
-            \`uuid\`, \`variant_id\`, \`image_url\`, \`is_primary\`, \`sort_order\`, \`is_active\`, \`created_at\`, \`updated_at\`
-          ) VALUES (?, ?, ?, 1, 1, 1, NOW(), NOW())`,
-          imgUuid,
-          variant.id,
-          vData.img
-        );
+        await prisma.product_variant_images.create({
+          data: {
+            uuid: crypto.randomUUID(),
+            variant_id: variant.id,
+            image_url: vData.img,
+            is_primary: true,
+            sort_order: 1,
+            is_active: true,
+          },
+        });
 
         // Add 200g Pack Unit Price
-        const up200Uuid = crypto.randomUUID();
         const up200 = await prisma.variantUnitPrice.create({
           data: {
-            uuid: up200Uuid,
+            uuid: crypto.randomUUID(),
             variant_id: variant.id,
             unit_id: gramUnit.id,
             unit_value: 200,
@@ -680,20 +665,20 @@ async function main() {
         totalUnitPrices++;
 
         // Inventory for 200g
-        await prisma.$executeRawUnsafe(
-          `INSERT INTO \`inventories\` (
-            \`variant_id\`, \`variant_unit_price_id\`, \`quantity_available\`, \`quantity_reserved\`, \`reorder_level\`, \`is_active\`, \`created_at\`, \`updated_at\`
-          ) VALUES (?, ?, 150, 0, 20, 1, NOW(), NOW())
-          ON DUPLICATE KEY UPDATE \`quantity_available\` = 150, \`is_active\` = 1`,
-          variant.id,
-          up200.id
-        );
+        await prisma.inventory.create({
+          data: {
+            variantUnitPriceId: up200.id,
+            quantity_available: 150,
+            quantity_reserved: 0,
+            reorderLevel: 20,
+            is_active: true,
+          },
+        });
 
         // Add 500g Pack Unit Price
-        const up500Uuid = crypto.randomUUID();
         const up500 = await prisma.variantUnitPrice.create({
           data: {
-            uuid: up500Uuid,
+            uuid: crypto.randomUUID(),
             variant_id: variant.id,
             unit_id: gramUnit.id,
             unit_value: 500,
@@ -706,14 +691,15 @@ async function main() {
         totalUnitPrices++;
 
         // Inventory for 500g
-        await prisma.$executeRawUnsafe(
-          `INSERT INTO \`inventories\` (
-            \`variant_id\`, \`variant_unit_price_id\`, \`quantity_available\`, \`quantity_reserved\`, \`reorder_level\`, \`is_active\`, \`created_at\`, \`updated_at\`
-          ) VALUES (?, ?, 100, 0, 15, 1, NOW(), NOW())
-          ON DUPLICATE KEY UPDATE \`quantity_available\` = 100, \`is_active\` = 1`,
-          variant.id,
-          up500.id
-        );
+        await prisma.inventory.create({
+          data: {
+            variantUnitPriceId: up500.id,
+            quantity_available: 100,
+            quantity_reserved: 0,
+            reorderLevel: 15,
+            is_active: true,
+          },
+        });
       }
     }
   }
