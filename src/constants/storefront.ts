@@ -162,8 +162,8 @@ export const contacts = [
     id: 2,
     icon: ICONS.whatsapp,
     title: "WhatsApp",
-    value: "+91 86673 80899",
-    link: "https://wa.me/918667380899",
+    value: "+91 94861 50579",
+    link: "https://wa.me/919486150579",
   },
   {
     id: 3,
@@ -179,21 +179,25 @@ export const footerSocialIcons = [
     id: 1,
     icon: ICONS.facebook,
     name: "facebook",
+    link: "https://www.facebook.com/share/1Db38sbv4u/",
   },
   {
     id: 2,
     icon: ICONS.instagram,
     name: "instagram",
+    link: "https://www.instagram.com/rithusnacks?utm_source=qr&stkn=MW9hbWM3OWFoZTBrdw==",
   },
   {
     id: 3,
     icon: ICONS.youtube,
     name: "youtube",
+    link: "https://youtube.com/@anitasundar8730?si=l9ckP9Rnsx7a0epR",
   },
   {
     id: 4,
     icon: ICONS.whatsapp1,
     name: "whatsapp",
+    link: "https://wa.me/919486150579",
   },
 ];
 

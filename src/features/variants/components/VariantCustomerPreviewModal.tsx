@@ -482,7 +482,7 @@ export function VariantCustomerPreviewModal({
             </span>
             <span
               className={`font-bold ${
-                variant.isActive ? "text-emerald-700" : "text-neutral-700"
+                variant.isActive ? "text-emerald-700" : "text-error-700"
               }`}
             >
               {variant.isActive ? "Active (In Catalog)" : "Inactive (Hidden)"}

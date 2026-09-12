@@ -8,11 +8,13 @@ import {
   useVariant,
   useVariants,
   useVariantImages,
+  useVariantUnitPrices,
   useUpdateVariant,
   useDeleteVariant,
   useSetPrimaryVariantImage,
   useDeleteVariantImage,
 } from "@/features/variants/hooks";
+import { toast } from "@/components/ui/Toast";
 import { useUnits } from "@/features/units/hooks";
 import { AdminDetailSkeleton } from "@/components/admin/AdminDetailSkeleton";
 import { ErrorState } from "@/components/ui/error-state";
@@ -47,6 +49,7 @@ import {
   XCircle,
   Star,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 
 function renderDietaryBadge(vegType?: string | null) {
@@ -118,6 +121,12 @@ export default function AdminVariantDetailsPage() {
     isLoading: isLoadingImages,
     refetch: refetchImages,
   } = useVariantImages(canonicalProductUuid || null, variantId || null);
+
+  // 3b. Variant Unit Prices Query
+  const { data: unitPrices = [] } = useVariantUnitPrices(
+    canonicalProductUuid || null,
+    variantId || null
+  );
 
   // Modal States
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -212,6 +221,13 @@ export default function AdminVariantDetailsPage() {
   // Toggle Active/Inactive Status Handler
   const handleToggleStatus = async () => {
     if (!variant || !canonicalProductUuid) return;
+    if (!variant.isActive && unitPrices.length === 0) {
+      toast.error(
+        "Cannot activate item",
+        "Please add at least one unit price before activating this item for customers."
+      );
+      return;
+    }
     try {
       await updateVariantMutation.mutateAsync({
         productUuid: canonicalProductUuid,
@@ -219,8 +235,12 @@ export default function AdminVariantDetailsPage() {
         data: { isActive: !variant.isActive },
       });
       refetchVariant();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to toggle variant status", err);
+      toast.error(
+        "Status not changed",
+        err?.message || "Please add at least one unit price first."
+      );
     }
   };
 
@@ -234,8 +254,12 @@ export default function AdminVariantDetailsPage() {
         data: { outOfStock: !variant.outOfStock },
       });
       refetchVariant();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to toggle variant stock", err);
+      toast.error(
+        "Stock not changed",
+        err?.message || "Failed to update stock status."
+      );
     }
   };
 
@@ -282,7 +306,7 @@ export default function AdminVariantDetailsPage() {
           {!variant.outOfStock ? (
             <>
               <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-              <span>In Stock{typeof variant.stock === "number" ? ` (${variant.stock} available)` : ""}</span>
+              <span>In Stock</span>
             </>
           ) : (
             <>
@@ -449,7 +473,7 @@ export default function AdminVariantDetailsPage() {
                 {!variant.outOfStock ? (
                   <>
                     <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                    <span>In Stock{typeof variant.stock === "number" ? ` (${variant.stock})` : ""}</span>
+                    <span>In Stock</span>
                   </>
                 ) : (
                   <>
@@ -464,6 +488,13 @@ export default function AdminVariantDetailsPage() {
 
         {/* Status Controls + Action Buttons */}
         <div className="flex flex-col gap-3 items-stretch sm:items-end w-full md:w-auto shrink-0 md:pl-6 md:border-l md:border-cream-border">
+          {!variant.isActive && unitPrices.length === 0 && (
+            <div className="w-full rounded-xl border border-amber-200 bg-amber-50/90 p-3 text-amber-900 text-xs flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+              <span>This item is currently Inactive (hidden from customers). Add unit pricing below to activate it.</span>
+            </div>
+          )}
+
           {/* Status Toggle Panel */}
           <div className="flex items-center gap-4 h-9 px-3.5 rounded-lg border border-cream-border bg-cream-50 self-start sm:self-end">
             <label

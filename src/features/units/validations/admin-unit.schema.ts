@@ -8,12 +8,12 @@ export const createAdminUnitSchema = z
     name: z
       .string({ message: "Unit name is required" })
       .trim()
-      .min(1, "Unit name cannot be empty")
+      .min(1, "Unit name is required")
       .max(50, "Unit name cannot exceed 50 characters"),
     code: z
       .string({ message: "Unit code is required" })
       .trim()
-      .min(1, "Unit code cannot be empty")
+      .min(1, "Unit code is required")
       .max(10, "Unit code cannot exceed 10 characters"),
     type: unitTypeEnum,
     baseUnitId: z

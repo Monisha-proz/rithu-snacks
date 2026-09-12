@@ -129,7 +129,119 @@ export default function CheckoutPage() {
     addressType: "shipping" as const,
     isDefault: true,
   });
+  const [addressFieldErrors, setAddressFieldErrors] = useState<Record<string, string>>({});
+  const [touchedAddressFields, setTouchedAddressFields] = useState<Record<string, boolean>>({});
   const [addressFormError, setAddressFormError] = useState<string | null>(null);
+
+  const validateAddressField = (field: string, value: string): string => {
+    switch (field) {
+      case "fullName": {
+        const trimmed = value.trim();
+        if (!trimmed) return "Recipient Name is required";
+        if (trimmed.length < 2) return "Recipient Name must be at least 2 characters";
+        if (!/^[a-zA-Z\s.'-]+$/.test(trimmed)) return "Recipient Name can only contain letters and spaces";
+        if (trimmed.length > 150) return "Recipient Name cannot exceed 150 characters";
+        return "";
+      }
+      case "phone": {
+        const digits = value.replace(/\D/g, "");
+        if (!digits) return "Phone Number is required";
+        if (!/^[6-9]/.test(digits)) return "Phone number must start with 6, 7, 8, or 9";
+        if (digits.length < 10) return "Phone number must be exactly 10 digits";
+        return "";
+      }
+      case "addressLine1": {
+        const trimmed = value.trim();
+        if (!trimmed) return "Flat / House No., Building, Street is required";
+        if (trimmed.length < 3) return "Address must be at least 3 characters";
+        if (trimmed.length > 255) return "Address cannot exceed 255 characters";
+        return "";
+      }
+      case "city": {
+        const trimmed = value.trim();
+        if (!trimmed) return "City is required";
+        if (trimmed.length < 2) return "City must be at least 2 characters";
+        if (!/^[a-zA-Z\s.'-]+$/.test(trimmed)) return "City can only contain letters and spaces";
+        if (trimmed.length > 100) return "City cannot exceed 100 characters";
+        return "";
+      }
+      case "pincode": {
+        const digits = value.replace(/\D/g, "");
+        if (!digits) return "PIN Code is required";
+        if (digits.startsWith("0")) return "Invalid PIN code (cannot start with 0)";
+        if (digits.length < 6) return "PIN code must be exactly 6 digits";
+        return "";
+      }
+      default:
+        return "";
+    }
+  };
+
+  const handleAddressFieldChange = (field: string, rawValue: string | boolean) => {
+    let value = rawValue;
+
+    // Enforce numbers-only constraint and max length while typing
+    if (field === "phone" && typeof rawValue === "string") {
+      value = rawValue.replace(/\D/g, "").slice(0, 10);
+    } else if (field === "pincode" && typeof rawValue === "string") {
+      value = rawValue.replace(/\D/g, "").slice(0, 6);
+    }
+
+    setNewAddressForm((prev) => ({ ...prev, [field]: value }));
+    setTouchedAddressFields((prev) => ({ ...prev, [field]: true }));
+
+    if (typeof value === "string") {
+      const errorMsg = validateAddressField(field, value);
+      setAddressFieldErrors((prev) => {
+        const next = { ...prev };
+        if (errorMsg) {
+          next[field] = errorMsg;
+        } else {
+          delete next[field];
+        }
+        return next;
+      });
+    }
+
+    if (addressFormError) {
+      setAddressFormError(null);
+    }
+  };
+
+  const handleAddressFieldBlur = (field: string) => {
+    setTouchedAddressFields((prev) => ({ ...prev, [field]: true }));
+    const val = String((newAddressForm as any)[field] || "");
+    const errorMsg = validateAddressField(field, val);
+    setAddressFieldErrors((prev) => {
+      const next = { ...prev };
+      if (errorMsg) {
+        next[field] = errorMsg;
+      } else {
+        delete next[field];
+      }
+      return next;
+    });
+  };
+
+  const handleCloseAddressForm = () => {
+    setIsAddingAddress(false);
+    setAddressFieldErrors({});
+    setTouchedAddressFields({});
+    setAddressFormError(null);
+    setNewAddressForm({
+      fullName: "",
+      phone: "",
+      addressLine1: "",
+      addressLine2: "",
+      landmark: "",
+      city: "",
+      state: "Tamil Nadu",
+      pincode: "",
+      country: "India",
+      addressType: "shipping",
+      isDefault: true,
+    });
+  };
 
 
   // Effective selected address (fall back to default or first available)
@@ -217,32 +329,38 @@ export default function CheckoutPage() {
     e.preventDefault();
     setAddressFormError(null);
 
-    // Basic client validation
-    if (!newAddressForm.fullName.trim()) {
-      setAddressFormError("Full name is required");
-      return;
-    }
-    if (!/^[6-9]\d{9}$/.test(newAddressForm.phone.replace(/\D/g, "").slice(-10))) {
-      setAddressFormError("Please enter a valid 10-digit Indian phone number");
-      return;
-    }
-    if (!newAddressForm.addressLine1.trim()) {
-      setAddressFormError("Address line 1 is required");
-      return;
-    }
-    if (!newAddressForm.city.trim()) {
-      setAddressFormError("City is required");
-      return;
-    }
-    if (!/^\d{6}$/.test(newAddressForm.pincode.trim())) {
-      setAddressFormError("Please enter a valid 6-digit PIN code");
+    // Mark all required fields as touched on submit
+    setTouchedAddressFields({
+      fullName: true,
+      phone: true,
+      addressLine1: true,
+      city: true,
+      pincode: true,
+    });
+
+    const errors: Record<string, string> = {};
+    const nameErr = validateAddressField("fullName", newAddressForm.fullName);
+    if (nameErr) errors.fullName = nameErr;
+
+    const phoneErr = validateAddressField("phone", newAddressForm.phone);
+    if (phoneErr) errors.phone = phoneErr;
+
+    const addrErr = validateAddressField("addressLine1", newAddressForm.addressLine1);
+    if (addrErr) errors.addressLine1 = addrErr;
+
+    const cityErr = validateAddressField("city", newAddressForm.city);
+    if (cityErr) errors.city = cityErr;
+
+    const pinErr = validateAddressField("pincode", newAddressForm.pincode);
+    if (pinErr) errors.pincode = pinErr;
+
+    if (Object.keys(errors).length > 0) {
+      setAddressFieldErrors(errors);
       return;
     }
 
     try {
-      const cleanPhone = newAddressForm.phone.startsWith("+91")
-        ? newAddressForm.phone
-        : `+91${newAddressForm.phone.replace(/\D/g, "").slice(-10)}`;
+      const cleanPhone = `+91${newAddressForm.phone.replace(/\D/g, "").slice(-10)}`;
 
       const created = await createAddressMutation.mutateAsync({
         fullName: newAddressForm.fullName.trim(),
@@ -251,7 +369,7 @@ export default function CheckoutPage() {
         addressLine2: newAddressForm.addressLine2.trim() || undefined,
         landmark: newAddressForm.landmark.trim() || undefined,
         city: newAddressForm.city.trim(),
-        state: newAddressForm.state.trim(),
+        state: newAddressForm.state.trim() || "Tamil Nadu",
         pincode: newAddressForm.pincode.trim(),
         country: "India",
         addressType: "shipping",
@@ -259,20 +377,7 @@ export default function CheckoutPage() {
       });
 
       setSelectedAddressId(created.id);
-      setIsAddingAddress(false);
-      setNewAddressForm({
-        fullName: "",
-        phone: "",
-        addressLine1: "",
-        addressLine2: "",
-        landmark: "",
-        city: "",
-        state: "Tamil Nadu",
-        pincode: "",
-        country: "India",
-        addressType: "shipping",
-        isDefault: true,
-      });
+      handleCloseAddressForm();
     } catch (err: any) {
       setAddressFormError(err.message || "Failed to save address");
     }
@@ -528,6 +633,7 @@ export default function CheckoutPage() {
             {isAddingAddress && (
               <form
                 onSubmit={handleCreateAddress}
+                noValidate
                 className="rounded-xl border border-theme-border bg-theme-surface-warm p-4 sm:p-5 space-y-4"
               >
                 <div className="flex items-center justify-between border-b border-theme-border pb-2.5">
@@ -536,7 +642,7 @@ export default function CheckoutPage() {
                   </h3>
                   <button
                     type="button"
-                    onClick={() => setIsAddingAddress(false)}
+                    onClick={handleCloseAddressForm}
                     className="text-theme-text-subtle hover:text-theme-text-primary"
                   >
                     <X className="h-4 w-4" />
@@ -552,98 +658,131 @@ export default function CheckoutPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
                     <label className="block text-xs font-semibold text-theme-text-secondary mb-1">
-                      Recipient Name *
+                      Recipient Name <span className="text-red-500 font-bold ml-0.5">*</span>
                     </label>
                     <input
                       type="text"
-                      required
                       placeholder="e.g. Ramesh Kumar"
                       value={newAddressForm.fullName}
                       onChange={(e) =>
-                        setNewAddressForm((prev) => ({
-                          ...prev,
-                          fullName: e.target.value,
-                        }))
+                        handleAddressFieldChange("fullName", e.target.value)
                       }
-                      className="w-full min-h-[44px] rounded-xl border border-theme-border-input bg-white px-3 text-xs text-theme-text-primary placeholder:text-theme-text-muted focus:border-theme-primary focus:outline-none"
+                      onBlur={() => handleAddressFieldBlur("fullName")}
+                      className={`w-full min-h-[44px] rounded-xl border bg-white px-3 text-xs text-theme-text-primary placeholder:text-theme-text-muted focus:outline-none transition-colors ${
+                        touchedAddressFields.fullName && addressFieldErrors.fullName
+                          ? "border-red-500 bg-red-50/20 focus:border-red-500"
+                          : "border-theme-border-input focus:border-theme-primary"
+                      }`}
                     />
+                    {touchedAddressFields.fullName && addressFieldErrors.fullName && (
+                      <p className="mt-1 text-xs text-red-500 font-medium">
+                        {addressFieldErrors.fullName}
+                      </p>
+                    )}
                   </div>
 
                   <div>
                     <label className="block text-xs font-semibold text-theme-text-secondary mb-1">
-                      Phone Number (10 digits) *
+                      Phone Number (10 digits) <span className="text-red-500 font-bold ml-0.5">*</span>
                     </label>
                     <input
                       type="tel"
-                      required
+                      inputMode="numeric"
+                      maxLength={10}
                       placeholder="e.g. 9876543210"
                       value={newAddressForm.phone}
                       onChange={(e) =>
-                        setNewAddressForm((prev) => ({
-                          ...prev,
-                          phone: e.target.value,
-                        }))
+                        handleAddressFieldChange("phone", e.target.value)
                       }
-                      className="w-full min-h-[44px] rounded-xl border border-theme-border-input bg-white px-3 text-xs text-theme-text-primary placeholder:text-theme-text-muted focus:border-theme-primary focus:outline-none"
+                      onBlur={() => handleAddressFieldBlur("phone")}
+                      className={`w-full min-h-[44px] rounded-xl border bg-white px-3 text-xs text-theme-text-primary placeholder:text-theme-text-muted focus:outline-none transition-colors ${
+                        touchedAddressFields.phone && addressFieldErrors.phone
+                          ? "border-red-500 bg-red-50/20 focus:border-red-500"
+                          : "border-theme-border-input focus:border-theme-primary"
+                      }`}
                     />
+                    {touchedAddressFields.phone && addressFieldErrors.phone && (
+                      <p className="mt-1 text-xs text-red-500 font-medium">
+                        {addressFieldErrors.phone}
+                      </p>
+                    )}
                   </div>
 
                   <div className="sm:col-span-2">
                     <label className="block text-xs font-semibold text-theme-text-secondary mb-1">
-                      Flat / House No., Building, Street *
+                      Flat / House No., Building, Street <span className="text-red-500 font-bold ml-0.5">*</span>
                     </label>
                     <input
                       type="text"
-                      required
                       placeholder="e.g. 42, Sri Krishna Nagar, Main Road"
                       value={newAddressForm.addressLine1}
                       onChange={(e) =>
-                        setNewAddressForm((prev) => ({
-                          ...prev,
-                          addressLine1: e.target.value,
-                        }))
+                        handleAddressFieldChange("addressLine1", e.target.value)
                       }
-                      className="w-full min-h-[44px] rounded-xl border border-theme-border-input bg-white px-3 text-xs text-theme-text-primary placeholder:text-theme-text-muted focus:border-theme-primary focus:outline-none"
+                      onBlur={() => handleAddressFieldBlur("addressLine1")}
+                      className={`w-full min-h-[44px] rounded-xl border bg-white px-3 text-xs text-theme-text-primary placeholder:text-theme-text-muted focus:outline-none transition-colors ${
+                        touchedAddressFields.addressLine1 && addressFieldErrors.addressLine1
+                          ? "border-red-500 bg-red-50/20 focus:border-red-500"
+                          : "border-theme-border-input focus:border-theme-primary"
+                      }`}
                     />
+                    {touchedAddressFields.addressLine1 && addressFieldErrors.addressLine1 && (
+                      <p className="mt-1 text-xs text-red-500 font-medium">
+                        {addressFieldErrors.addressLine1}
+                      </p>
+                    )}
                   </div>
 
                   <div>
                     <label className="block text-xs font-semibold text-theme-text-secondary mb-1">
-                      City *
+                      City <span className="text-red-500 font-bold ml-0.5">*</span>
                     </label>
                     <input
                       type="text"
-                      required
                       placeholder="e.g. Salem"
                       value={newAddressForm.city}
                       onChange={(e) =>
-                        setNewAddressForm((prev) => ({
-                          ...prev,
-                          city: e.target.value,
-                        }))
+                        handleAddressFieldChange("city", e.target.value)
                       }
-                      className="w-full min-h-[44px] rounded-xl border border-theme-border-input bg-white px-3 text-xs text-theme-text-primary placeholder:text-theme-text-muted focus:border-theme-primary focus:outline-none"
+                      onBlur={() => handleAddressFieldBlur("city")}
+                      className={`w-full min-h-[44px] rounded-xl border bg-white px-3 text-xs text-theme-text-primary placeholder:text-theme-text-muted focus:outline-none transition-colors ${
+                        touchedAddressFields.city && addressFieldErrors.city
+                          ? "border-red-500 bg-red-50/20 focus:border-red-500"
+                          : "border-theme-border-input focus:border-theme-primary"
+                      }`}
                     />
+                    {touchedAddressFields.city && addressFieldErrors.city && (
+                      <p className="mt-1 text-xs text-red-500 font-medium">
+                        {addressFieldErrors.city}
+                      </p>
+                    )}
                   </div>
 
                   <div>
                     <label className="block text-xs font-semibold text-theme-text-secondary mb-1">
-                      PIN Code (6 digits) *
+                      PIN Code (6 digits) <span className="text-red-500 font-bold ml-0.5">*</span>
                     </label>
                     <input
                       type="text"
-                      required
+                      inputMode="numeric"
                       maxLength={6}
                       placeholder="e.g. 636001"
                       value={newAddressForm.pincode}
                       onChange={(e) =>
-                        setNewAddressForm((prev) => ({
-                          ...prev,
-                          pincode: e.target.value,
-                        }))
+                        handleAddressFieldChange("pincode", e.target.value)
                       }
-                      className="w-full min-h-[44px] rounded-xl border border-theme-border-input bg-white px-3 text-xs text-theme-text-primary placeholder:text-theme-text-muted focus:border-theme-primary focus:outline-none"
+                      onBlur={() => handleAddressFieldBlur("pincode")}
+                      className={`w-full min-h-[44px] rounded-xl border bg-white px-3 text-xs text-theme-text-primary placeholder:text-theme-text-muted focus:outline-none transition-colors ${
+                        touchedAddressFields.pincode && addressFieldErrors.pincode
+                          ? "border-red-500 bg-red-50/20 focus:border-red-500"
+                          : "border-theme-border-input focus:border-theme-primary"
+                      }`}
                     />
+                    {touchedAddressFields.pincode && addressFieldErrors.pincode && (
+                      <p className="mt-1 text-xs text-red-500 font-medium">
+                        {addressFieldErrors.pincode}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -652,7 +791,7 @@ export default function CheckoutPage() {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => setIsAddingAddress(false)}
+                    onClick={handleCloseAddressForm}
                     className="min-h-[40px] text-xs font-semibold rounded-xl text-theme-text-subtle"
                   >
                     Cancel

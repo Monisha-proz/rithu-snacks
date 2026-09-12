@@ -18,6 +18,8 @@ export interface IconButtonProps {
   width?: number;
   height?: number;
   children?: React.ReactNode;
+  target?: string;
+  rel?: string;
 }
 
 export function IconButton({
@@ -32,6 +34,8 @@ export function IconButton({
   width = 18,
   height = 18,
   children,
+  target,
+  rel,
 }: IconButtonProps) {
   const content = (
     <>
@@ -61,7 +65,14 @@ export function IconButton({
 
   if (href) {
     return (
-      <Link href={href} className={sharedClasses} aria-label={alt} onClick={onClick}>
+      <Link
+        href={href}
+        className={sharedClasses}
+        aria-label={alt}
+        onClick={onClick}
+        target={target}
+        rel={rel}
+      >
         {content}
       </Link>
     );

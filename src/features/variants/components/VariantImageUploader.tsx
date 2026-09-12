@@ -37,6 +37,7 @@ interface VariantImageUploaderProps {
   variantUuid: string;
   variantName?: string;
   isStepperMode?: boolean;
+  onBack?: () => void;
   onFinish?: () => void;
   onSkip?: () => void;
 }
@@ -46,6 +47,7 @@ export function VariantImageUploader({
   variantUuid,
   variantName,
   isStepperMode = false,
+  onBack,
   onFinish,
   onSkip,
 }: VariantImageUploaderProps) {
@@ -475,10 +477,10 @@ export function VariantImageUploader({
             <Button
               type="button"
               variant="outline"
-              onClick={onSkip}
-              className="rounded-xl border-[var(--color-neutral-300)] text-[var(--color-neutral-700)]"
+              onClick={onBack || onSkip}
+              className="rounded-xl border-[var(--color-neutral-300)] text-[var(--color-neutral-700)] hover:bg-[var(--color-neutral-100)] cursor-pointer"
             >
-              Skip for now
+              Back
             </Button>
 
             <Button

@@ -298,14 +298,25 @@ async function run() {
       await conn.query(createSql);
       // Ensure any newly added columns exist in already-created tables
       const existingDbCols = await conn.query(`DESCRIBE \`${t.tableName}\``);
-      const existingColNames = new Set(existingDbCols.map(c => c.Field));
+      const existingColMap = new Map(existingDbCols.map(c => [c.Field, c]));
       for (const col of t.columns) {
-        if (!existingColNames.has(col.colName)) {
+        if (!existingColMap.has(col.colName)) {
           try {
             await conn.query(`ALTER TABLE \`${t.tableName}\` ADD COLUMN ${col.colDef};`);
             console.log(`✓ Added missing column \`${t.tableName}\`.\`${col.colName}\``);
           } catch (colErr) {
             console.warn(`Could not add column \`${t.tableName}\`.\`${col.colName}\`:`, colErr.message);
+          }
+        } else if (col.colDef.includes('ENUM(')) {
+          const dbCol = existingColMap.get(col.colName);
+          const enumMatch = col.colDef.match(/ENUM\([^)]+\)/i);
+          if (enumMatch && dbCol.Type.toLowerCase() !== enumMatch[0].toLowerCase()) {
+            try {
+              await conn.query(`ALTER TABLE \`${t.tableName}\` MODIFY COLUMN ${col.colDef};`);
+              console.log(`✓ Updated ENUM column \`${t.tableName}\`.\`${col.colName}\``);
+            } catch (enumErr) {
+              console.warn(`Could not update ENUM \`${t.tableName}\`.\`${col.colName}\`:`, enumErr.message);
+            }
           }
         }
       }

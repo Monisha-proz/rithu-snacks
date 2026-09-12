@@ -3,7 +3,7 @@ import { z } from "zod";
 export const createAdminGstRateSchema = z
   .object({
     name: z
-      .string()
+      .string({ message: "GST rate name is required" })
       .trim()
       .min(1, "GST rate name is required")
       .max(100, "GST rate name cannot exceed 100 characters"),

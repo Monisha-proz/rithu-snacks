@@ -78,13 +78,13 @@ export function Footer() {
     const callLink = cleanCallNumber ? `tel:+${cleanCallNumber}` : "tel:+919486150579";
 
     // 2. WhatsApp (uses phonenumber field value as specified)
-    const defaultWaVal = defaultContacts[1]?.value || "+91 8667380899";
+    const defaultWaVal = defaultContacts[1]?.value || "+91 9486150579";
     const waValue = formatPhoneDisplay(phone, defaultWaVal);
     const waDigits = (phone || defaultWaVal).replace(/\D/g, "");
     const cleanWaNumber = waDigits.length === 10 ? `91${waDigits}` : waDigits;
     const waLink = cleanWaNumber
       ? `https://wa.me/${cleanWaNumber}`
-      : "https://wa.me/918667380899";
+      : "https://wa.me/919486150579";
 
     // 3. Mail
     const companyEmail = company?.email?.trim();
@@ -289,15 +289,25 @@ export function Footer() {
 
               {/* Social Icons */}
               <div className="flex mt-7 gap-5">
-                {footerSocialIcons.map((item) => (
-                  <IconButton
-                    key={item.id}
-                    icon={item.icon}
-                    alt={item.name}
-                    imageClassName="w-[30px] h-[30px]"
-                    className="hover:-translate-y-1"
-                  />
-                ))}
+                {footerSocialIcons.map((item) => {
+                  const href =
+                    item.name.toLowerCase() === "whatsapp"
+                      ? dynamicContacts.find((c) => c.title.toLowerCase() === "whatsapp")?.link || item.link
+                      : item.link;
+
+                  return (
+                    <IconButton
+                      key={item.id}
+                      icon={item.icon}
+                      alt={item.name}
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      imageClassName="w-[30px] h-[30px]"
+                      className="hover:-translate-y-1"
+                    />
+                  );
+                })}
               </div>
             </div>
 

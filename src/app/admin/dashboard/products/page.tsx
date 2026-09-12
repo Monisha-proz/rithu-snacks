@@ -414,8 +414,8 @@ export default function AdminProductsPage() {
           }
         }}
         title="Delete Product"
-        description="Are you sure you want to delete this product? This action cannot be undone."
-        confirmText="Delete"
+        description="Are you sure you want to delete this product? Deleting this product will automatically deactivate and remove all associated variants, unit prices, and inventory items from both the admin dashboard and the customer storefront. This action cannot be undone."
+        confirmText="Delete Product"
         variant="destructive"
         isLoading={deleteMutation.isPending}
       />

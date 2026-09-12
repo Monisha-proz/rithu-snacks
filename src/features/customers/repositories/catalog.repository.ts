@@ -358,26 +358,17 @@ export const catalogRepository = {
       variantWhere.veg_type = mappedVegType;
     }
 
-    if (params.minPrice !== undefined || params.maxPrice !== undefined) {
-      const minP = params.minPrice ?? 0;
-      const maxP = params.maxPrice ?? Number.MAX_SAFE_INTEGER;
-      variantWhere.variant_unit_prices = {
-        some: {
-          deleted_at: null,
-          isActive: true,
-          base_price: { gte: minP, lte: maxP },
-        },
-      };
-    }
+    const minProductP = params.minPrice ? Math.max(params.minPrice, 0.01) : 0.01;
+    const maxProductP = params.maxPrice ?? Number.MAX_SAFE_INTEGER;
+    variantWhere.variant_unit_prices = {
+      some: {
+        deleted_at: null,
+        isActive: true,
+        base_price: { gte: minProductP, lte: maxProductP },
+      },
+    };
 
-    if (
-      params.inStock !== undefined ||
-      params.vegType ||
-      params.minPrice !== undefined ||
-      params.maxPrice !== undefined
-    ) {
-      where.variants = { some: variantWhere };
-    }
+    where.variants = { some: variantWhere };
 
     let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: "desc" };
     if (params.sortBy === "name") {
@@ -399,7 +390,17 @@ export const catalogRepository = {
             take: 1,
           },
           variants: {
-            where: { isActive: true, deleted_at: null },
+            where: {
+              isActive: true,
+              deleted_at: null,
+              variant_unit_prices: {
+                some: {
+                  deleted_at: null,
+                  isActive: true,
+                  base_price: { gt: 0 },
+                },
+              },
+            },
             include: {
               product_variant_images: {
                 where: { is_active: true },
@@ -524,7 +525,17 @@ export const catalogRepository = {
           orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }],
         },
         variants: {
-          where: { isActive: true, deleted_at: null },
+          where: {
+            isActive: true,
+            deleted_at: null,
+            variant_unit_prices: {
+              some: {
+                deleted_at: null,
+                isActive: true,
+                base_price: { gt: 0 },
+              },
+            },
+          },
           include: {
             product_variant_images: {
               where: { is_active: true },
@@ -721,18 +732,16 @@ export const catalogRepository = {
       ];
     }
 
-    if (params.minPrice !== undefined || params.maxPrice !== undefined) {
-      const minP = params.minPrice ?? 0;
-      const maxP = params.maxPrice ?? Number.MAX_SAFE_INTEGER;
+    const minVariantP = params.minPrice ? Math.max(params.minPrice, 0.01) : 0.01;
+    const maxVariantP = params.maxPrice ?? Number.MAX_SAFE_INTEGER;
 
-      where.variant_unit_prices = {
-        some: {
-          deleted_at: null,
-          isActive: true,
-          base_price: { gte: minP, lte: maxP },
-        },
-      };
-    }
+    where.variant_unit_prices = {
+      some: {
+        deleted_at: null,
+        isActive: true,
+        base_price: { gte: minVariantP, lte: maxVariantP },
+      },
+    };
 
     // Price/sku sorting now lives on VariantUnitPrice (one-to-many), so we
     // fetch by createdAt/variantName at the DB level and, when price sorting
@@ -798,6 +807,13 @@ export const catalogRepository = {
           uuid: productUuid,
           isActive: true,
           deleted_at: null,
+        },
+        variant_unit_prices: {
+          some: {
+            deleted_at: null,
+            isActive: true,
+            base_price: { gt: 0 },
+          },
         },
       },
       include: {
@@ -891,24 +907,20 @@ export const catalogRepository = {
       ];
     }
 
-    // Price range filter
-    const minP = params.minPrice ?? undefined;
-    const maxP = params.maxPrice ?? undefined;
-    if ((minP !== undefined && minP !== null) || (maxP !== undefined && maxP !== null)) {
-      const minVal = minP ?? 0;
-      const maxVal = maxP ?? Number.MAX_SAFE_INTEGER;
+    // Price range filter - always require active unit price with base_price > 0
+    const minP = params.minPrice ? Math.max(params.minPrice, 0.01) : 0.01;
+    const maxP = params.maxPrice ?? Number.MAX_SAFE_INTEGER;
 
-      const priceCondition: Prisma.ProductVariantWhereInput = {
-        variant_unit_prices: {
-          some: { deleted_at: null, isActive: true, base_price: { gte: minVal, lte: maxVal } },
-        },
-      };
+    const priceCondition: Prisma.ProductVariantWhereInput = {
+      variant_unit_prices: {
+        some: { deleted_at: null, isActive: true, base_price: { gte: minP, lte: maxP } },
+      },
+    };
 
-      if (where.OR) {
-        where.AND = [priceCondition];
-      } else {
-        Object.assign(where, priceCondition);
-      }
+    if (where.OR) {
+      where.AND = [priceCondition];
+    } else {
+      Object.assign(where, priceCondition);
     }
 
     // Base facet where: before inStock and vegType filters are applied
@@ -1111,6 +1123,13 @@ export const catalogRepository = {
         deleted_at: null,
         id: { not: sourceProduct.id },
         OR: relatedOr,
+      },
+      variant_unit_prices: {
+        some: {
+          deleted_at: null,
+          isActive: true,
+          base_price: { gt: 0 },
+        },
       },
     };
 

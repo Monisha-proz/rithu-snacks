@@ -5,10 +5,12 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   useVariants,
+  useVariantUnitPrices,
   useCreateVariant,
   useUpdateVariant,
   useDeleteVariant,
 } from "@/features/variants/hooks";
+import { toast } from "@/components/ui/Toast";
 import { useProducts } from "@/features/products/hooks";
 import { useUnits } from "@/features/units/hooks";
 import { DataTable } from "@/components/admin/data-table/DataTable";
@@ -42,6 +44,7 @@ import {
   Filter,
   Loader2,
   ArrowLeftRight,
+  AlertCircle,
 } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { AdminVariantResponse } from "@/features/variants/types";
@@ -109,6 +112,13 @@ export default function AdminVariantsPage() {
   const updateMutation = useUpdateVariant();
   const deleteMutation = useDeleteVariant();
 
+  // Unit prices for the newly created item in the modal stepper
+  const { data: createdVariantPrices = [] } = useVariantUnitPrices(
+    createdVariant?.productId || null,
+    createdVariant?.id || null
+  );
+  const hasCreatedPrices = createdVariantPrices.length > 0;
+
   const variants = data?.data ?? [];
   const products = productsData?.data ?? [];
   const units = unitsData?.data ?? [];
@@ -145,6 +155,13 @@ export default function AdminVariantsPage() {
     variant: AdminVariantResponse,
     nextActive: boolean
   ) => {
+    if (nextActive && (!variant.unitPrices || variant.unitPrices.length === 0)) {
+      toast.error(
+        "Cannot activate item",
+        "Please add at least one unit price before activating this item for customers."
+      );
+      return;
+    }
     try {
       await updateMutation.mutateAsync({
         productUuid: variant.productId,
@@ -152,8 +169,12 @@ export default function AdminVariantsPage() {
         data: { isActive: nextActive },
       });
       refetch();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to toggle Items status", err);
+      toast.error(
+        "Status not changed",
+        err?.message || "Please add at least one unit price first."
+      );
     }
   };
 
@@ -168,8 +189,12 @@ export default function AdminVariantsPage() {
         data: { outOfStock: nextOutOfStock },
       });
       refetch();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to toggle Item stock", err);
+      toast.error(
+        "Stock not changed",
+        err?.message || "Failed to update stock status."
+      );
     }
   };
 
@@ -290,8 +315,6 @@ export default function AdminVariantsPage() {
       header: "Stock",
       cell: ({ row }) => {
         const isOutOfStock = Boolean(row.original.outOfStock);
-        const stockCount =
-          typeof row.original.stock === "number" ? row.original.stock : undefined;
         const isRowPending =
           updateMutation.isPending &&
           updateMutation.variables?.variantUuid === row.original.id;
@@ -302,25 +325,24 @@ export default function AdminVariantsPage() {
             onClick={() => handleToggleStock(row.original, !isOutOfStock)}
             disabled={isRowPending}
             title={isOutOfStock ? "Click to mark In Stock" : "Click to mark Out of Stock"}
-            className={`group inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-bold border bg-white cursor-pointer shadow-xs transition-all hover:shadow-sm active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100 ${!isOutOfStock
-              ? "text-emerald-700 border-emerald-300 hover:bg-emerald-50"
-              : "text-rose-700 border-rose-300 hover:bg-rose-50"
-              }`}
+            className={`group inline-flex items-center justify-between min-w-[132px] h-8 px-3 rounded-md text-xs font-bold border bg-white cursor-pointer shadow-xs transition-all hover:shadow-sm active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100 ${
+              !isOutOfStock
+                ? "text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                : "text-rose-700 border-rose-300 hover:bg-rose-50"
+            }`}
           >
-            {isRowPending ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : !isOutOfStock ? (
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-            ) : (
-              <XCircle className="w-3.5 h-3.5 text-rose-600" />
-            )}
-            <span>
-              {!isOutOfStock
-                ? `In Stock${stockCount !== undefined ? ` (${stockCount})` : ""}`
-                : "Out of Stock"}
+            <span className="flex items-center gap-1.5 whitespace-nowrap">
+              {isRowPending ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+              ) : !isOutOfStock ? (
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              ) : (
+                <XCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+              )}
+              <span className="whitespace-nowrap select-none">{!isOutOfStock ? "In Stock" : "Out of Stock"}</span>
             </span>
             {!isRowPending && (
-              <ArrowLeftRight className="w-3 h-3 opacity-40 group-hover:opacity-80 transition-opacity" />
+              <ArrowLeftRight className="w-3 h-3 opacity-40 group-hover:opacity-80 transition-opacity shrink-0 ml-1.5" />
             )}
           </button>
         );
@@ -329,20 +351,37 @@ export default function AdminVariantsPage() {
     {
       accessorKey: "isActive",
       header: "Status",
-      cell: ({ row }) => (
-        <span
-          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${row.original.isActive
-            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-            : "bg-neutral-100 text-neutral-600 border border-neutral-200"
+      cell: ({ row }) => {
+        const isActive = Boolean(row.original.isActive);
+        const isRowPending =
+          updateMutation.isPending &&
+          updateMutation.variables?.variantUuid === row.original.id;
+
+        return (
+          <button
+            type="button"
+            onClick={() => handleToggleStatus(row.original, !isActive)}
+            disabled={isRowPending}
+            title={isActive ? "Click to set Inactive" : "Click to set Active"}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold cursor-pointer border transition-all hover:opacity-80 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed ${
+              isActive
+                ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                : "bg-neutral-100 text-neutral-600 border-neutral-200 hover:bg-neutral-200"
             }`}
-        >
-          <span
-            className={`w-1.5 h-1.5 rounded-full ${row.original.isActive ? "bg-emerald-600" : "bg-neutral-400"
-              }`}
-          />
-          {row.original.isActive ? "Active" : "Inactive"}
-        </span>
-      ),
+          >
+            {isRowPending ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  isActive ? "bg-emerald-600" : "bg-neutral-400"
+                }`}
+              />
+            )}
+            {isActive ? "Active" : "Inactive"}
+          </button>
+        );
+      },
     },
     {
       id: "actions",
@@ -750,18 +789,56 @@ export default function AdminVariantsPage() {
 
         {createStep === 2 && createdVariant && (
           <div className="space-y-4">
+
+  
+
+
+
             <VariantUnitPriceList
               productUuid={createdVariant.productId}
               variantUuid={createdVariant.id}
             />
-            <div className="flex justify-end">
+
+            <div className="flex items-center justify-between pt-2">
               <Button
                 type="button"
-                onClick={() => setCreateStep(3)}
-                className="h-10 rounded-xl bg-[var(--color-secondary-600)] px-5 text-sm font-semibold text-white hover:bg-[var(--color-secondary-700)]"
+                variant="outline"
+                onClick={() => setCreateStep(1)}
+                className="h-10 rounded-xl text-xs font-semibold cursor-pointer"
               >
-                Next: Upload Images
+                Back
               </Button>
+
+              <div className="flex items-center gap-2">
+                {!hasCreatedPrices ? (
+                  <Button
+                    type="button"
+                    onClick={() => setCreateStep(3)}
+                    className="h-10 rounded-xl bg-neutral-100 text-neutral-800 border border-neutral-300 hover:bg-neutral-200 px-5 text-sm font-semibold cursor-pointer"
+                  >
+                    Skip for now (Save as Inactive)
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await updateMutation.mutateAsync({
+                          productUuid: createdVariant.productId,
+                          variantUuid: createdVariant.id,
+                          data: { isActive: true },
+                        });
+                      } catch (e) {
+                        console.error("Failed to activate variant:", e);
+                      }
+                      setCreateStep(3);
+                    }}
+                    className="h-10 rounded-xl bg-[var(--color-secondary-600)] px-5 text-sm font-semibold text-white hover:bg-[var(--color-secondary-700)] cursor-pointer"
+                  >
+                    Next: Upload Images
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -772,22 +849,34 @@ export default function AdminVariantsPage() {
             variantUuid={createdVariant.id}
             variantName={createdVariant.name}
             isStepperMode={true}
+            onBack={() => setCreateStep(2)}
             onFinish={() => setCreateStep(4)}
-            onSkip={() => setCreateStep(4)}
           />
         )}
 
         {createStep === 4 && createdVariant && (
           <div className="space-y-6">
-            <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-emerald-800 text-xs flex items-center gap-3">
-              <Check className="h-5 w-5 text-emerald-600 shrink-0" />
-              <div>
-                <p className="font-bold">Item Created Successfully!</p>
-                <p className="text-emerald-700 mt-0.5">
-                  Here is how this Item appears to customers on the storefront:
-                </p>
+            {!hasCreatedPrices ? (
+              <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 text-amber-900 text-xs flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold text-amber-900 text-sm">Saved as Inactive (Hidden from Customers)</p>
+                  <p className="text-amber-800 mt-0.5">
+                    Price details were skipped. This item is safely placed in your <strong>Inactive list</strong>. It will not be shown to customers until you add unit pricing.
+                  </p>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-emerald-800 text-xs flex items-center gap-3">
+                <Check className="h-5 w-5 text-emerald-600 shrink-0" />
+                <div>
+                  <p className="font-bold">Item Created Successfully!</p>
+                  <p className="text-emerald-700 mt-0.5">
+                    Here is how this Item appears to customers on the storefront:
+                  </p>
+                </div>
+              </div>
+            )}
 
             <div className="flex justify-center p-4 bg-neutral-50 rounded-2xl border border-neutral-200">
               <div className="w-full max-w-[300px]">
@@ -843,9 +932,10 @@ export default function AdminVariantsPage() {
               <button
                 type="button"
                 onClick={() => setEditTab("details")}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors cursor-pointer ${editTab === "details"
-                  ? "border-[var(--color-secondary-600)] text-[var(--color-secondary-600)]"
-                  : "border-transparent text-[var(--color-neutral-500)] hover:text-[var(--color-neutral-800)]"
+                disabled={updateMutation.isPending}
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${editTab === "details"
+                    ? "border-[var(--color-secondary-600)] text-[var(--color-secondary-600)]"
+                    : "border-transparent text-[var(--color-neutral-500)] hover:text-[var(--color-neutral-800)]"
                   }`}
               >
                 <Package className="h-4 w-4" />
@@ -855,9 +945,10 @@ export default function AdminVariantsPage() {
               <button
                 type="button"
                 onClick={() => setEditTab("pricing")}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors cursor-pointer ${editTab === "pricing"
-                  ? "border-[var(--color-secondary-600)] text-[var(--color-secondary-600)]"
-                  : "border-transparent text-[var(--color-neutral-500)] hover:text-[var(--color-neutral-800)]"
+                disabled={updateMutation.isPending}
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${editTab === "pricing"
+                    ? "border-[var(--color-secondary-600)] text-[var(--color-secondary-600)]"
+                    : "border-transparent text-[var(--color-neutral-500)] hover:text-[var(--color-neutral-800)]"
                   }`}
               >
                 <Package className="h-4 w-4" />
@@ -867,9 +958,10 @@ export default function AdminVariantsPage() {
               <button
                 type="button"
                 onClick={() => setEditTab("images")}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors cursor-pointer ${editTab === "images"
-                  ? "border-[var(--color-secondary-600)] text-[var(--color-secondary-600)]"
-                  : "border-transparent text-[var(--color-neutral-500)] hover:text-[var(--color-neutral-800)]"
+                disabled={updateMutation.isPending}
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${editTab === "images"
+                    ? "border-[var(--color-secondary-600)] text-[var(--color-secondary-600)]"
+                    : "border-transparent text-[var(--color-neutral-500)] hover:text-[var(--color-neutral-800)]"
                   }`}
               >
                 <ImageIcon className="h-4 w-4" />

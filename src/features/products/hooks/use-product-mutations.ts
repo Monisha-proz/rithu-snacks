@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { productKeys } from "@/lib/api/query-keys";
+import { productKeys, variantKeys } from "@/lib/api/query-keys";
 import {
   createAdminProduct,
   updateAdminProduct,
@@ -34,13 +34,8 @@ export function useUpdateProduct() {
     }) => updateAdminProduct(uuid, data),
     onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({ queryKey: productKeys.all });
-      queryClient.invalidateQueries({
-        queryKey: productKeys.detail(variables.uuid),
-      });
+      queryClient.invalidateQueries({ queryKey: productKeys.detail(variables.uuid) });
       queryClient.invalidateQueries({ queryKey: ["admin", "products"] });
-      queryClient.invalidateQueries({
-        queryKey: ["admin", "products", "detail", variables.uuid],
-      });
       queryClient.invalidateQueries({ queryKey: ["customer", "catalog"] });
     },
   });
@@ -53,7 +48,10 @@ export function useDeleteProduct() {
     mutationFn: (uuid: string) => deleteAdminProduct(uuid),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: productKeys.all });
+      queryClient.invalidateQueries({ queryKey: variantKeys.all });
       queryClient.invalidateQueries({ queryKey: ["admin", "products"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "variants"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "inventory"] });
       queryClient.invalidateQueries({ queryKey: ["customer", "catalog"] });
     },
   });

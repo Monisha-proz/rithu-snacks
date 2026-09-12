@@ -16,6 +16,7 @@ import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
 import { AdminTableSkeleton } from "@/components/admin/AdminTableSkeleton";
 import { ErrorState } from "@/components/ui/error-state";
 import { Button } from "@/components/ui/button";
+import { SearchInput } from "@/components/ui/search-input";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormModal } from "@/components/common/FormModal";
@@ -34,8 +35,15 @@ export default function AdminUsersPage() {
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [selectedUser, setSelectedUser] = useState<UserListItem | null>(null);
   const [deleteId, setDeleteId] = useState<string | number | null>(null);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
-  const { data, isLoading, error, refetch } = useUsers();
+  const { data, isLoading, error, refetch } = useUsers({
+    page,
+    limit: pageSize,
+    search: search.trim() || undefined,
+  });
   const createMutation = useCreateUser();
   const updateMutation = useUpdateUser();
   const deleteMutation = useDeleteUser();
@@ -232,7 +240,7 @@ export default function AdminUsersPage() {
     },
   ];
 
-  if (isLoading) return <AdminTableSkeleton />;
+  if (isLoading && !data) return <AdminTableSkeleton />;
   if (error) return <ErrorState message="Failed to load users" onRetry={() => refetch()} />;
 
   const isMutating = createMutation.isPending || updateMutation.isPending;
@@ -244,23 +252,51 @@ export default function AdminUsersPage() {
       <AdminPageHeader
         title="Users"
         description="Manage user accounts and permissions"
-        actions={
-          <Button onClick={() => setModalMode("create")}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add User
-          </Button>
-        }
       />
       <AdminContent className="flex-1 min-h-0 overflow-hidden">
-        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-          <DataTable
-            columns={columns}
-            data={users}
-            searchKey="name"
-            searchPlaceholder="Search users..."
-            pageSize={20}
-            className="bg-white border border-neutral-200"
-          />
+        <div className="flex h-full flex-col overflow-hidden bg-[var(--color-background)] py-1 rounded-2xl">
+          {/* Search + Action Toolbar */}
+          <div className="flex-shrink-0 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <SearchInput
+              placeholder="Search users..."
+              defaultValue={search}
+              onSearch={(val) => {
+                setSearch(val);
+                setPage(1);
+              }}
+              className="w-full max-w-md"
+            />
+
+            <Button
+              onClick={() => setModalMode("create")}
+              className="h-11 rounded-xl bg-[var(--color-secondary-600)] px-5 text-sm font-semibold text-white hover:bg-[var(--color-secondary-700)]"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add User
+            </Button>
+          </div>
+
+          {/* Table Container */}
+          <div className="mt-6 flex-1 min-h-0 overflow-hidden flex flex-col">
+            <DataTable
+              columns={columns}
+              data={users}
+              pageSize={pageSize}
+              pageSizeOptions={[10, 20, 30, 50]}
+              page={data?.meta?.page ?? page}
+              totalPages={
+                data?.meta?.totalPages ??
+                Math.max(1, Math.ceil((data?.meta?.total ?? users.length) / pageSize))
+              }
+              totalItems={data?.meta?.total ?? users.length}
+              onPageChange={setPage}
+              onPageSizeChange={(newSize) => {
+                setPageSize(newSize);
+                setPage(1);
+              }}
+              className="bg-white"
+            />
+          </div>
         </div>
       </AdminContent>
 

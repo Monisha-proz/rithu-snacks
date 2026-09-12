@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { categoryKeys } from "@/lib/api/query-keys";
+import { categoryKeys, productKeys, variantKeys } from "@/lib/api/query-keys";
 import { createCategory, updateCategory, deleteCategory } from "../api/get-categories";
 
 export function useCreateCategory() {
@@ -10,7 +10,8 @@ export function useCreateCategory() {
   return useMutation({
     mutationFn: (data: Record<string, unknown>) => createCategory(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: categoryKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: categoryKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["customer", "catalog"] });
     },
   });
 }
@@ -19,11 +20,12 @@ export function useUpdateCategory() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Record<string, unknown> }) =>
-      updateCategory(id, data),
+    mutationFn: ({ id, data }: { id: number | string; data: Record<string, unknown> }) =>
+      updateCategory(id as number, data),
     onSuccess: (_result, variables) => {
-      queryClient.invalidateQueries({ queryKey: categoryKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: categoryKeys.all });
       queryClient.invalidateQueries({ queryKey: categoryKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: ["customer", "catalog"] });
     },
   });
 }
@@ -32,9 +34,14 @@ export function useDeleteCategory() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => deleteCategory(id),
+    mutationFn: (id: number | string) => deleteCategory(id as number),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: categoryKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: categoryKeys.all });
+      queryClient.invalidateQueries({ queryKey: productKeys.all });
+      queryClient.invalidateQueries({ queryKey: variantKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["admin", "products"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "variants"] });
+      queryClient.invalidateQueries({ queryKey: ["customer", "catalog"] });
     },
   });
 }

@@ -5,7 +5,7 @@ export const createAdminHsnCodeSchema = z
     code: z
       .string({ message: "HSN code is required" })
       .trim()
-      .min(1, "HSN code cannot be empty")
+      .min(1, "HSN code is required")
       .max(20, "HSN code cannot exceed 20 characters"),
     description: z
       .string()
@@ -14,7 +14,9 @@ export const createAdminHsnCodeSchema = z
       .optional()
       .nullable(),
     gstRateId: z
-      .string({ message: "GST Rate ID is required" })
+      .string({ message: "GST rate is required" })
+      .trim()
+      .min(1, "GST rate is required")
       .uuid("Invalid GST Rate UUID format"),
   })
   .strict();

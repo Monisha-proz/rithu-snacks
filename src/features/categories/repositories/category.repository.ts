@@ -201,13 +201,72 @@ export const categoryRepository = {
     const existing = await this.findByUuid(uuid);
     if (!existing) return null;
 
-    return db.productCategory.update({
-      where: { id: existing.id },
-      data: {
-        isActive: false,
-        deleted_at: new Date(),
-        ...(adminId ? { updated_by: adminId } : {}),
-      },
+    const now = new Date();
+
+    return db.$transaction(async (tx) => {
+      // 1. Soft-delete the category
+      const updatedCategory = await tx.productCategory.update({
+        where: { id: existing.id },
+        data: {
+          isActive: false,
+          status: false,
+          deleted_at: now,
+          ...(adminId ? { updated_by: adminId } : {}),
+        },
+      });
+
+      // 2. Find all active products under this category
+      const relatedProducts = await tx.product.findMany({
+        where: { categoryId: existing.id, deleted_at: null },
+        select: { id: true },
+      });
+
+      if (relatedProducts.length > 0) {
+        const productIds = relatedProducts.map((p) => p.id);
+
+        // 3. Soft-delete all related products
+        await tx.product.updateMany({
+          where: { id: { in: productIds } },
+          data: {
+            isActive: false,
+            status: false,
+            deleted_at: now,
+            ...(adminId ? { updated_by: adminId } : {}),
+          },
+        });
+
+        // 4. Find all variants for these products
+        const relatedVariants = await tx.productVariant.findMany({
+          where: { productId: { in: productIds }, deleted_at: null },
+          select: { id: true },
+        });
+
+        if (relatedVariants.length > 0) {
+          const variantIds = relatedVariants.map((v) => v.id);
+
+          // 5. Soft-delete all related variants
+          await tx.productVariant.updateMany({
+            where: { id: { in: variantIds } },
+            data: {
+              isActive: false,
+              deleted_at: now,
+              ...(adminId ? { updated_by: adminId } : {}),
+            },
+          });
+
+          // 6. Soft-delete all variant unit prices
+          await tx.variantUnitPrice.updateMany({
+            where: { variant_id: { in: variantIds } },
+            data: {
+              isActive: false,
+              deleted_at: now,
+              ...(adminId ? { updated_by: adminId } : {}),
+            },
+          });
+        }
+      }
+
+      return updatedCategory;
     });
   },
 

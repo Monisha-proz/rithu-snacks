@@ -89,48 +89,6 @@ function getStatusBadge(item: InventoryListItem) {
   );
 }
 
-const columns: ColumnDef<InventoryListItem>[] = [
-  {
-    accessorKey: "productName",
-    header: "Product Name",
-  },
-  {
-    accessorKey: "variantName",
-    header: "Variant",
-    cell: ({ row }) => row.original.variantName ?? "—",
-  },
-  {
-    accessorKey: "quantity",
-    header: "Quantity",
-  },
-  {
-    accessorKey: "reservedQuantity",
-    header: "Reserved",
-  },
-  {
-    accessorKey: "availableQuantity",
-    header: "Available",
-  },
-  {
-    accessorKey: "reorderLevel",
-    header: "Reorder Level",
-  },
-  {
-    id: "status",
-    header: "Status",
-    cell: ({ row }) => getStatusBadge(row.original),
-  },
-  {
-    id: "actions",
-    header: "Actions",
-    cell: () => (
-      <Button variant="outline" size="sm">
-        Adjust Stock
-      </Button>
-    ),
-  },
-];
-
 export default function InventoryStockPage() {
   const [params, setParams] = useState<GetInventoryParams>({
     page: 1,
@@ -152,6 +110,60 @@ export default function InventoryStockPage() {
       notes: "",
     },
   });
+
+  const columns: ColumnDef<InventoryListItem>[] = [
+    {
+      accessorKey: "productName",
+      header: "Product Name",
+    },
+    {
+      accessorKey: "variantName",
+      header: "Variant",
+      cell: ({ row }) => row.original.variantName ?? "—",
+    },
+    {
+      accessorKey: "quantity",
+      header: "Quantity",
+    },
+    {
+      accessorKey: "reservedQuantity",
+      header: "Reserved",
+    },
+    {
+      accessorKey: "availableQuantity",
+      header: "Available",
+    },
+    {
+      accessorKey: "reorderLevel",
+      header: "Reorder Level",
+    },
+    {
+      id: "status",
+      header: "Status",
+      cell: ({ row }) => getStatusBadge(row.original),
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            adjustForm.reset({
+              inventoryId: row.original.id,
+              type: "ADJUSTMENT",
+              quantity: 0,
+              notes: "",
+            });
+            setAdjustOpen(true);
+          }}
+        >
+          Adjust Stock
+        </Button>
+      ),
+    },
+  ];
 
   const createForm = useForm<CreateInventoryForm>({
     resolver: zodResolver(createInventoryFormSchema),
