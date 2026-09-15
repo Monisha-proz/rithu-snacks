@@ -202,7 +202,7 @@ export function OfferForm({
           <div
             role="tablist"
             aria-label="Offer level"
-            className="inline-flex w-full rounded-xl border border-neutral-200 bg-neutral-100 p-1 sm:w-auto"
+            className="inline-flex w-full rounded-xl border border-neutral-200 bg-neutral-100 p-1 sm:w-auto mb-2.5 ml-2"
           >
             {(
               [
