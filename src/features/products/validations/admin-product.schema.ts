@@ -24,6 +24,8 @@ export const createAdminProductSchema = z
       .trim()
       .min(1, "Product code cannot be empty")
       .max(220, "Product code cannot exceed 220 characters"),
+    productImage: z.string().optional().nullable(),
+    imageUrl: z.string().optional().nullable(),
   })
   .strict();
 

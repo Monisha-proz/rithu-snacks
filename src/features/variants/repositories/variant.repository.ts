@@ -15,6 +15,16 @@ export const variantInclude = Prisma.validator<Prisma.ProductVariantInclude>()({
       slug: true,
       isActive: true,
       deleted_at: true,
+      images: {
+        where: { is_active: true },
+        select: {
+          id: true,
+          image_url: true,
+          isPrimary: true,
+          sortOrder: true,
+        },
+        orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }],
+      },
     },
   },
   product_variant_images: {

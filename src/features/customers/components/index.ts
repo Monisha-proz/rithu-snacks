@@ -9,3 +9,4 @@ export { CustomerActivityCard } from "./profile/CustomerActivityCard";
 export { CustomerProductCard } from "./catalog/CustomerProductCard";
 export { CustomerVariantCard } from "./catalog/CustomerVariantCard";
 export { CustomerProductGrid } from "./catalog/CustomerProductGrid";
+export { GlobalSearchModal } from "./search/GlobalSearchModal";

@@ -1,8 +1,8 @@
 "use client";
 
-import { use, useState, useMemo, useEffect, useRef } from "react";
+import { use, useState, useMemo, useEffect, useRef, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Sparkles, ChevronRight, SlidersHorizontal, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui";
 import {
@@ -65,22 +65,36 @@ function ProductCatalogSkeleton() {
   );
 }
 
-export default function CategoryProductsPage({
+function CategoryProductsContent({
   params,
 }: CategoryProductsPageProps) {
   const { slug } = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const urlProductId = searchParams.get("productId") || searchParams.get("product");
 
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState("createdAt_desc");
   const [activeCategoryOverride, setActiveCategoryOverride] = useState<string | null>(null);
-  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>(() =>
+    urlProductId ? [urlProductId] : []
+  );
   const [stockStatus, setStockStatus] = useState<"all" | "in_stock" | "out_of_stock">("all");
   const [vegType, setVegType] = useState<"all" | "veg" | "non_veg" | "vegan">("all");
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(1000);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+
+  // Sync URL product filter
+  useEffect(() => {
+    if (urlProductId) {
+      setSelectedProductIds([urlProductId]);
+      setPage(1);
+    } else {
+      setSelectedProductIds([]);
+    }
+  }, [urlProductId]);
 
   // Accumulated variants for Infinite Scroll
   const [accumulatedVariants, setAccumulatedVariants] = useState<CustomerVariantListItemDto[]>([]);
@@ -95,9 +109,9 @@ export default function CategoryProductsPage({
   // Reset internal state when the route slug changes
   useEffect(() => {
     setActiveCategoryOverride(null);
-    setSelectedProductIds([]);
+    setSelectedProductIds(urlProductId ? [urlProductId] : []);
     setPage(1);
-  }, [slug]);
+  }, [slug, urlProductId]);
 
   // Resolve current active category (from URL slug or in-page selection)
   const activeSlug = activeCategoryOverride ?? slug;
@@ -272,6 +286,19 @@ export default function CategoryProductsPage({
     setSelectedProductIds(productIds);
     setPage(1);
     scrollToCatalogTop();
+
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (productIds.length === 1) {
+        params.set("productId", productIds[0]);
+      } else {
+        params.delete("productId");
+        params.delete("product");
+      }
+      const qs = params.toString();
+      const newUrl = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+      window.history.replaceState(null, "", newUrl);
+    }
   };
 
   const hasActiveFilters =
@@ -299,6 +326,15 @@ export default function CategoryProductsPage({
     }
     setPage(1);
     scrollToCatalogTop();
+
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      params.delete("productId");
+      params.delete("product");
+      const qs = params.toString();
+      const newUrl = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+      window.history.replaceState(null, "", newUrl);
+    }
   };
 
   const activeFilterCount = [
@@ -543,3 +579,12 @@ export default function CategoryProductsPage({
     </div>
   );
 }
+
+export default function CategoryProductsPage(props: CategoryProductsPageProps) {
+  return (
+    <Suspense fallback={<ProductCatalogSkeleton />}>
+      <CategoryProductsContent {...props} />
+    </Suspense>
+  );
+}
+

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { Suspense, useState, useMemo, useEffect, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Sparkles, ChevronRight, SlidersHorizontal, Loader2 } from "lucide-react";
+import { Search, Sparkles, ChevronRight, SlidersHorizontal, Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FilterSidebar } from "@/components/storefront/filters/FilterSidebar";
 import { CustomerProductGrid } from "@/features/customers/components/catalog/CustomerProductGrid";
@@ -27,7 +27,7 @@ const SORT_OPTIONS: {
   { value: "name_desc", label: "Name: Z to A", sortBy: "variantName", sortOrder: "desc" },
 ];
 
-function ProductCatalogSkeleton() {
+function SearchCatalogSkeleton() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 3xl:grid-cols-5 gap-5 sm:gap-6 animate-in fade-in duration-200">
       {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
@@ -35,10 +35,7 @@ function ProductCatalogSkeleton() {
           key={n}
           className="bg-white rounded-2xl border border-[#E8D9CD]/80 p-3.5 flex flex-col justify-between overflow-hidden shadow-2xs space-y-3"
         >
-          {/* Image skeleton with shimmer */}
           <div className="relative aspect-square w-full rounded-xl skeleton-shimmer overflow-hidden bg-stone-100" />
-
-          {/* Info row: Category, title & pack size pills */}
           <div className="space-y-2 pt-1">
             <div className="flex items-center justify-between gap-2">
               <div className="h-3 w-20 rounded skeleton-shimmer bg-stone-100" />
@@ -52,8 +49,6 @@ function ProductCatalogSkeleton() {
               <div className="h-4.5 w-14 rounded skeleton-shimmer bg-stone-100" />
             </div>
           </div>
-
-          {/* Golden CTA button skeleton */}
           <div className="h-10 w-full rounded-xl skeleton-shimmer bg-[#F8BE15]/20" />
         </div>
       ))}
@@ -61,13 +56,13 @@ function ProductCatalogSkeleton() {
   );
 }
 
-function ShopAllContent() {
+function SearchResultsContent() {
   const searchParams = useSearchParams();
-  const urlProductId = searchParams.get("productId") || searchParams.get("product");
-  const urlCategoryId = searchParams.get("categoryId") || searchParams.get("category");
+  const router = useRouter();
+  const initialQuery = searchParams.get("q") || "";
 
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialQuery);
   const [sortKey, setSortKey] = useState("createdAt_desc");
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
@@ -77,40 +72,21 @@ function ShopAllContent() {
   const [maxPrice, setMaxPrice] = useState(1000);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
-  // Sync URL product and category filters
+  // Sync state if URL query param changes
   useEffect(() => {
-    if (urlProductId) {
-      setSelectedProductIds([urlProductId]);
-      setPage(1);
-    }
-  }, [urlProductId]);
-
-  useEffect(() => {
-    if (urlCategoryId) {
-      setSelectedCategoryIds([urlCategoryId]);
-      setPage(1);
-    }
-  }, [urlCategoryId]);
+    const q = searchParams.get("q") || "";
+    setSearch(q);
+    setPage(1);
+  }, [searchParams]);
 
   // Accumulated variants for Infinite Scroll
   const [accumulatedVariants, setAccumulatedVariants] = useState<CustomerVariantListItemDto[]>([]);
 
-  // Fetch all categories (supports 250 categories)
+  // Fetch all categories for filter sidebar
   const { data: categoriesData, isLoading: isLoadingCategories } = useCustomerCategories({ pageSize: 250 });
   const categories = categoriesData?.data ?? [];
 
-  const currentCategory = useMemo(() => {
-    if (selectedCategoryIds.length !== 1) return null;
-    return categories.find((c) => c.id === selectedCategoryIds[0]);
-  }, [categories, selectedCategoryIds]);
-
-  const pageTitle = useMemo(() => {
-    if (selectedCategoryIds.length === 1 && currentCategory?.name) return currentCategory.name;
-    if (selectedCategoryIds.length > 1) return `${selectedCategoryIds.length} Categories Selected`;
-    return "Shop All Snacks";
-  }, [currentCategory, selectedCategoryIds]);
-
-  // Find active sort config
+  // Active sort config
   const activeSort = useMemo(() => {
     return SORT_OPTIONS.find((s) => s.value === sortKey) ?? SORT_OPTIONS[0];
   }, [sortKey]);
@@ -126,7 +102,7 @@ function ShopAllContent() {
       ? ("vegan" as const)
       : undefined;
 
-  // Query variants with filters (Postman: POST /api/customer/variants)
+  // Query variants matching search term and filters
   const {
     data: variantsResponse,
     isLoading,
@@ -149,7 +125,7 @@ function ShopAllContent() {
 
   const meta = variantsResponse?.meta;
 
-  // Infinite Scroll accumulation logic
+  // Infinite scroll accumulator
   useEffect(() => {
     if (!variantsResponse?.data) return;
 
@@ -164,7 +140,6 @@ function ShopAllContent() {
     }
   }, [variantsResponse?.data, page]);
 
-  // Derive displayed variants: on page 1 always prioritize variantsResponse.data directly
   const displayedVariants = useMemo(() => {
     if (page === 1 && variantsResponse?.data) {
       return variantsResponse.data;
@@ -172,9 +147,8 @@ function ShopAllContent() {
     return accumulatedVariants;
   }, [page, variantsResponse?.data, accumulatedVariants]);
 
-  // Catalog container ref for smooth viewport scroll on filter change
+  // Catalog container ref for smooth scroll
   const catalogContentRef = useRef<HTMLDivElement>(null);
-
   const scrollToCatalogTop = () => {
     if (typeof window === "undefined" || !catalogContentRef.current) return;
     const rect = catalogContentRef.current.getBoundingClientRect();
@@ -186,7 +160,6 @@ function ShopAllContent() {
 
   // Infinite Scroll IntersectionObserver sentinel
   const sentinelRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     if (!sentinelRef.current) return;
 
@@ -216,14 +189,12 @@ function ShopAllContent() {
     };
   }, [meta, page, isFetching, isLoading, displayedVariants.length]);
 
-  // Category Selection (Multi-select)
   const handleCategorySelect = (categoryIds: string[]) => {
     setSelectedCategoryIds(categoryIds);
     setPage(1);
     scrollToCatalogTop();
   };
 
-  // Product Selection under Category (Multi-select)
   const handleProductSelect = (productIds: string[]) => {
     setSelectedProductIds(productIds);
     setPage(1);
@@ -240,9 +211,7 @@ function ShopAllContent() {
     maxPrice < 1000 ||
     sortKey !== "createdAt_desc";
 
-  // Reset Filters
   const handleResetFilters = () => {
-    if (!hasActiveFilters) return;
     setSearch("");
     setSortKey("createdAt_desc");
     setSelectedCategoryIds([]);
@@ -278,37 +247,29 @@ function ShopAllContent() {
               Home
             </Link>
             <ChevronRight className="w-3.5 h-3.5" />
-            <span className="text-[#7A6258]">
+            <Link href="/products" className="hover:text-[#7A2224] transition-colors">
               Products
+            </Link>
+            <ChevronRight className="w-3.5 h-3.5" />
+            <span className="font-bold text-[#2D1810]">
+              Search Results
             </span>
-            {selectedCategoryIds.length === 1 && currentCategory && (
-              <>
-                <ChevronRight className="w-3.5 h-3.5" />
-                <span className="font-bold text-[#2D1810]">
-                  {currentCategory.name}
-                </span>
-              </>
-            )}
-            {selectedCategoryIds.length > 1 && (
-              <>
-                <ChevronRight className="w-3.5 h-3.5" />
-                <span className="font-bold text-[#2D1810]">
-                  {selectedCategoryIds.length} Categories
-                </span>
-              </>
-            )}
           </nav>
 
           <div className="text-center max-w-3xl mx-auto">
             <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#7A2224]/10 text-[#7A2224] text-xs font-bold uppercase tracking-wider mb-2">
-              <Sparkles className="h-3.5 w-3.5 text-[#F8BE15]" />
-              Authentic Collection
+              <Search className="h-3.5 w-3.5 text-[#F8BE15]" />
+              Catalog Search
             </div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#2D1810] font-serif tracking-tight">
-              {pageTitle}
+              {search.trim() ? (
+                <>Results for &ldquo;{search}&rdquo;</>
+              ) : (
+                "Search All Snacks"
+              )}
             </h1>
             <p className="mt-2 text-xs sm:text-sm text-[#7A6258] max-w-2xl mx-auto leading-relaxed">
-              Authentic South Indian snacks, savories, and traditional sweets crafted with pure ingredients and timeless recipes.
+              Discover authentic handmade South Indian murukku, savories, and traditional sweets crafted with pure ingredients.
             </p>
           </div>
         </div>
@@ -339,7 +300,6 @@ function ShopAllContent() {
 
           {/* 2-Column Layout: Left FilterSidebar, Right Products Grid */}
           <div className="flex flex-col lg:flex-row items-start gap-8">
-            {/* Left Sticky FilterSidebar */}
             <FilterSidebar
               categories={categories}
               isLoadingCategories={isLoadingCategories && categories.length === 0}
@@ -389,7 +349,6 @@ function ShopAllContent() {
               facets={meta?.facets}
             />
 
-            {/* Right Main Products Display (3 cards per row) */}
             <div ref={catalogContentRef} className="flex-1 min-w-0 w-full min-h-[750px] lg:min-h-[850px]">
               {/* Header info bar */}
               <div className="hidden lg:flex items-center justify-between mb-6 pb-3 border-b border-[#E8D9CD]">
@@ -399,17 +358,10 @@ function ShopAllContent() {
                     {meta?.total ?? displayedVariants.length}
                   </strong>{" "}
                   authentic {meta?.total === 1 ? "snack" : "snacks"}
-                  {currentCategory && (
+                  {search.trim() && (
                     <>
-                      {" "}in <strong className="text-[#7A2224] font-bold">{currentCategory.name}</strong>
+                      {" "}matching &ldquo;<strong className="text-[#7A2224]">{search}</strong>&rdquo;
                     </>
-                  )}
-                  {selectedProductIds.length > 0 && (
-                    <span className="ml-2 text-xs bg-[#F5ECE1] text-[#7A2224] px-2 py-0.5 rounded-full font-semibold">
-                      {selectedProductIds.length === 1
-                        ? "1 Product filtered"
-                        : `${selectedProductIds.length} Products filtered`}
-                    </span>
                   )}
                 </p>
 
@@ -428,10 +380,10 @@ function ShopAllContent() {
               {error && (
                 <div className="rounded-2xl border border-[#E8D9CD] bg-[#FFFDF9] p-8 text-center max-w-md mx-auto my-8 shadow-xs">
                   <h3 className="text-base font-bold text-[#2D1810] mb-2">
-                    Unable to load snacks
+                    Unable to load search results
                   </h3>
                   <p className="text-xs text-[#7A6258] mb-4">
-                    We encountered a connection issue fetching the product catalog.
+                    We encountered a connection issue fetching the search catalog.
                   </p>
                   <Button
                     onClick={() => refetch()}
@@ -442,10 +394,43 @@ function ShopAllContent() {
                 </div>
               )}
 
-              {/* Content Area: Skeleton only while initial load or empty and fetching */}
-              {(isLoading && displayedVariants.length === 0) ? (
-                <ProductCatalogSkeleton />
-              ) : (
+              {/* Empty Results State */}
+              {!isLoading && !error && displayedVariants.length === 0 && (
+                <div className="rounded-2xl border border-[#E8D9CD] bg-[#FFFDF9] p-12 text-center max-w-md mx-auto my-8 shadow-xs space-y-4">
+                  <div className="w-12 h-12 rounded-full bg-[#FAF4ED] text-[#7A2224] border border-[#E8D9CD] flex items-center justify-center mx-auto">
+                    <Search className="w-6 h-6 text-[#7A2224]/60" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-[#2D1810]">
+                      No snacks found
+                    </h3>
+                    <p className="mt-1 text-xs text-[#7A6258] leading-relaxed">
+                      We could not find any snacks matching your search criteria. Try adjusting your search keywords or clearing active filters.
+                    </p>
+                  </div>
+                  <div className="flex justify-center gap-2 pt-2">
+                    <Button
+                      onClick={handleResetFilters}
+                      className="h-9 px-4 rounded-xl bg-[#7A2224] hover:bg-[#5A1911] text-white text-xs font-bold cursor-pointer"
+                    >
+                      Clear Filters
+                    </Button>
+                    <Link href="/products">
+                      <Button
+                        variant="outline"
+                        className="h-9 px-4 rounded-xl border-[#E8D9CD] text-[#7A2224] text-xs font-bold cursor-pointer"
+                      >
+                        Browse All Snacks
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              )}
+
+              {/* Content Area: Skeleton or Grid */}
+              {isLoading && displayedVariants.length === 0 ? (
+                <SearchCatalogSkeleton />
+              ) : displayedVariants.length > 0 ? (
                 <div className={isFetching && page === 1 ? "opacity-60 transition-opacity duration-200" : "transition-opacity duration-200"}>
                   <CustomerProductGrid
                     variants={displayedVariants}
@@ -453,7 +438,6 @@ function ShopAllContent() {
                     onResetFilters={hasActiveFilters ? handleResetFilters : undefined}
                   />
 
-                  {/* Shimmer cards appended at the bottom while next infinite scroll page loads */}
                   {isFetching && page > 1 && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 3xl:grid-cols-5 gap-5 sm:gap-6 mt-6 animate-in fade-in duration-200">
                       {[1, 2, 3, 4].map((n) => (
@@ -475,7 +459,7 @@ function ShopAllContent() {
                     </div>
                   )}
 
-                  {/* Infinite Scroll Sentinel & Loading Indicator */}
+                  {/* Infinite Scroll Sentinel */}
                   <div
                     ref={sentinelRef}
                     className="h-16 flex items-center justify-center my-6"
@@ -494,7 +478,7 @@ function ShopAllContent() {
                     )}
                   </div>
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
@@ -503,10 +487,10 @@ function ShopAllContent() {
   );
 }
 
-export default function ShopAllPage() {
+export default function SearchPage() {
   return (
-    <Suspense fallback={<ProductCatalogSkeleton />}>
-      <ShopAllContent />
+    <Suspense fallback={<SearchCatalogSkeleton />}>
+      <SearchResultsContent />
     </Suspense>
   );
 }
