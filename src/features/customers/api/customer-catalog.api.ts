@@ -6,6 +6,8 @@ import type {
   CustomerProductDetailDto,
   CustomerVariantListItemDto,
   CustomerVariantDetailDto,
+  CustomerPopularSearchResponse,
+  CustomerTrackSearchInput,
 } from "../types/catalog.types";
 import type {
   CustomerBrandListInput,
@@ -36,6 +38,13 @@ export interface PaginationMeta {
 export interface PaginatedResponse<T> {
   data: T[];
   meta?: PaginationMeta;
+}
+
+export interface CustomerGlobalSearchResult {
+  products: CustomerProductListItemDto[];
+  categories: CustomerCategoryDto[];
+  items: CustomerVariantListItemDto[];
+  total: number;
 }
 
 export const customerCatalogApi = {
@@ -195,5 +204,59 @@ export const customerCatalogApi = {
       `/api/customer/banners${position ? `?position=${position}` : ""}`
     );
     return response.data ?? [];
+  },
+
+  /**
+   * Global customer search across categories, products, and variants
+   * Postman: GET /api/customer/search?q=...
+   */
+  async searchCatalog(
+    query: string,
+    signal?: AbortSignal
+  ): Promise<CustomerGlobalSearchResult> {
+    const trimmed = query.trim();
+    if (trimmed.length < 2) {
+      return { products: [], categories: [], items: [], total: 0 };
+    }
+    const response = await apiClient.get<CustomerGlobalSearchResult>(
+      `/api/customer/search?q=${encodeURIComponent(trimmed)}`,
+      { signal }
+    );
+    return (
+      response.data ?? {
+        products: [],
+        categories: [],
+        items: [],
+        total: 0,
+      }
+    );
+  },
+
+  /**
+   * Fetch popular searches and popular categories (or newly added fallbacks)
+   * Postman: GET /api/customer/search/popular
+   */
+  async getPopularSearches(limit?: number): Promise<CustomerPopularSearchResponse> {
+    const response = await apiClient.get<CustomerPopularSearchResponse>(
+      `/api/customer/search/popular${limit ? `?limit=${limit}` : ""}`
+    );
+    return (
+      response.data ?? {
+        popularSearches: [],
+        popularCategories: [],
+      }
+    );
+  },
+
+  /**
+   * Track search keyword or product/variant/category click from search
+   * Postman: POST /api/customer/search/track
+   */
+  async trackSearchVisit(payload: CustomerTrackSearchInput): Promise<void> {
+    try {
+      await apiClient.post("/api/customer/search/track", payload);
+    } catch {
+      // Non-blocking telemetry
+    }
   },
 };

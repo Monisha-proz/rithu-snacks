@@ -16,12 +16,27 @@ import { useCustomerCartCount } from "@/features/customers/hooks/use-customer-ca
 import { useCustomerCategories } from "@/features/customers/hooks/use-customer-catalog";
 import { useCustomerProfile } from "@/features/customers/hooks/use-customer-profile";
 import { CategoryNavDropdown, resolveCategoryIcon } from "./CategoryNavDropdown";
+import { GlobalSearchModal } from "@/features/customers/components/search/GlobalSearchModal";
 
 export function Header() {
   const [isOpen, setIsOpen] = React.useState(false);
   const [isMobileCategoriesOpen, setIsMobileCategoriesOpen] = React.useState(false);
+  const [isSearchOpen, setIsSearchOpen] = React.useState(false);
   const router = useRouter();
   const pathname = usePathname();
+
+  // Global Ctrl+K / Cmd+K shortcut listener to toggle search modal
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "K")) {
+        e.preventDefault();
+        setIsSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   const { data: session, status } = useSession();
   const isAuthenticated = status === "authenticated";
   // `status` is "loading" until /api/auth/session resolves on every page load.
@@ -226,6 +241,17 @@ export function Header() {
                       />
                     )}
                   </div>
+                );
+              }
+
+              if (item.alt === "search" || item.path === "/search") {
+                return (
+                  <IconButton
+                    key={item.id}
+                    icon={item.icon}
+                    alt="Search snacks"
+                    onClick={() => setIsSearchOpen(true)}
+                  />
                 );
               }
 
@@ -496,6 +522,19 @@ export function Header() {
             );
           }
 
+          if (item.text === "Search" || item.path === "/search") {
+            return (
+              <NavButton
+                key={item.id}
+                variant="bottom"
+                icon={item.icon}
+                text={item.text}
+                onClick={() => setIsSearchOpen(true)}
+                isActive={isSearchOpen}
+              />
+            );
+          }
+
           return (
             <NavButton
               key={item.id}
@@ -509,6 +548,12 @@ export function Header() {
           );
         })}
       </div>
+
+      {/* Global Search Dialog Overlay */}
+      <GlobalSearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+      />
     </header>
   );
 }
