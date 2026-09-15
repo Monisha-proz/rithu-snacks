@@ -8,17 +8,17 @@ export const createAdminGstRateSchema = z
       .min(1, "GST rate name is required")
       .max(100, "GST rate name cannot exceed 100 characters"),
     cgstPercent: z
-      .number({ message: "CGST percentage is required" })
-      .min(0, "CGST percentage cannot be negative")
-      .max(100, "CGST percentage cannot exceed 100"),
+      .number({ message: "CGST % is required" })
+      .gt(0, "CGST % must be greater than 0")
+      .max(100, "CGST % cannot exceed 100"),
     sgstPercent: z
-      .number({ message: "SGST percentage is required" })
-      .min(0, "SGST percentage cannot be negative")
-      .max(100, "SGST percentage cannot exceed 100"),
+      .number({ message: "SGST % is required" })
+      .gt(0, "SGST % must be greater than 0")
+      .max(100, "SGST % cannot exceed 100"),
     igstPercent: z
-      .number({ message: "IGST percentage is required" })
-      .min(0, "IGST percentage cannot be negative")
-      .max(100, "IGST percentage cannot exceed 100"),
+      .number({ message: "IGST % is required" })
+      .gt(0, "IGST % must be greater than 0")
+      .max(100, "IGST % cannot exceed 100"),
   })
   .strict();
 
