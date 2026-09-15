@@ -6,6 +6,7 @@ import {
   useCreateProduct,
   useUpdateProduct,
   useDeleteProduct,
+  useBulkDeleteProducts,
   useCreateProductImages,
   useDeleteProductImage,
   useProductImages,
@@ -14,6 +15,8 @@ import { useCategories } from "@/features/categories/hooks";
 import { useBrands } from "@/features/brands/hooks";
 import { useHsnCodes } from "@/features/hsn-codes/hooks";
 import { DataTable } from "@/components/admin/data-table/DataTable";
+import { BulkActionsBar } from "@/components/admin/data-table/BulkActionsBar";
+import { toast } from "@/components/ui/Toast";
 import {
   AdminPageHeader,
   AdminContent,
@@ -45,6 +48,17 @@ export default function AdminProductsPage() {
   const [selectedProduct, setSelectedProduct] =
     useState<AdminProductResponse | null>(null);
 
+  // Bulk Selection State
+  const [selectedRowIds, setSelectedRowIds] = useState<Record<string, boolean>>({});
+  const [selectedRows, setSelectedRows] = useState<AdminProductResponse[]>([]);
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
+
+  // Reset selection when filters or pagination change
+  useEffect(() => {
+    setSelectedRowIds({});
+    setSelectedRows([]);
+  }, [search, selectedCategoryFilter, page, pageSize]);
+
   // Main Products Query (filtered by search and selected category)
   const { data, isLoading, error, refetch } = useAdminProducts({
     page,
@@ -68,6 +82,7 @@ export default function AdminProductsPage() {
   const createMutation = useCreateProduct();
   const updateMutation = useUpdateProduct();
   const deleteMutation = useDeleteProduct();
+  const bulkDeleteMutation = useBulkDeleteProducts();
   const createImagesMutation = useCreateProductImages();
   const deleteImageMutation = useDeleteProductImage();
 
@@ -124,6 +139,21 @@ export default function AdminProductsPage() {
       })),
     ];
   }, [categories]);
+
+  const activeCategoryName = useMemo(() => {
+    if (!selectedCategoryFilter) return null;
+    const match = categories.find(
+      (c: any) => String(c.uuid || c.id) === selectedCategoryFilter
+    );
+    return match?.name || null;
+  }, [selectedCategoryFilter, categories]);
+
+  const filterNotice = useMemo(() => {
+    const parts: string[] = [];
+    if (search.trim()) parts.push(`"${search.trim()}"`);
+    if (activeCategoryName) parts.push(`Category: ${activeCategoryName}`);
+    return parts.length > 0 ? `Filtered by ${parts.join(" & ")}` : undefined;
+  }, [search, activeCategoryName]);
 
   // Options for form dropdowns (used only when modal is open)
   const categoryOptions = useMemo(() => {
@@ -284,6 +314,18 @@ export default function AdminProductsPage() {
           </div>
 
           <div className="mt-6 flex-1 min-h-0 overflow-hidden flex flex-col">
+            <BulkActionsBar
+              selectedCount={selectedRows.length}
+              entityName="product"
+              filterNotice={filterNotice}
+              onClearSelection={() => {
+                setSelectedRowIds({});
+                setSelectedRows([]);
+              }}
+              onDelete={() => setIsBulkDeleteOpen(true)}
+              isDeleting={bulkDeleteMutation.isPending}
+            />
+
             <DataTable
               columns={columns}
               data={products}
@@ -297,6 +339,12 @@ export default function AdminProductsPage() {
                 setPageSize(newSize);
                 setPage(1);
               }}
+              selectedRowIds={selectedRowIds}
+              onRowSelectionChange={(newSelection, items) => {
+                setSelectedRowIds(newSelection);
+                setSelectedRows(items);
+              }}
+              getRowId={(row) => String(row.id)}
               className="bg-white"
             />
           </div>
@@ -407,8 +455,12 @@ export default function AdminProductsPage() {
           if (deleteId) {
             deleteMutation.mutate(deleteId, {
               onSuccess: () => {
+                toast.success("Product Deleted", "Product removed successfully.");
                 setDeleteId(null);
                 refetch();
+              },
+              onError: (err: any) => {
+                toast.error("Delete Failed", err.message || "Could not delete product.");
               },
             });
           }
@@ -418,6 +470,34 @@ export default function AdminProductsPage() {
         confirmText="Delete Product"
         variant="destructive"
         isLoading={deleteMutation.isPending}
+      />
+
+      {/* BULK DELETE DIALOG */}
+      <ConfirmDialog
+        open={isBulkDeleteOpen}
+        onClose={() => setIsBulkDeleteOpen(false)}
+        onConfirm={async () => {
+          const uuidsToDelete = selectedRows.map((p) => p.id);
+          if (uuidsToDelete.length === 0) return;
+          try {
+            await bulkDeleteMutation.mutateAsync(uuidsToDelete);
+            toast.success(
+              "Products Deleted",
+              `Successfully deleted ${uuidsToDelete.length} ${uuidsToDelete.length === 1 ? "product" : "products"}.`
+            );
+            setSelectedRowIds({});
+            setSelectedRows([]);
+            setIsBulkDeleteOpen(false);
+            refetch();
+          } catch (err: any) {
+            toast.error("Delete Failed", err.message || "Could not delete selected products.");
+          }
+        }}
+        title={`Delete ${selectedRows.length} Selected ${selectedRows.length === 1 ? "Product" : "Products"}`}
+        description={`Are you sure you want to delete ${selectedRows.length} selected ${selectedRows.length === 1 ? "product" : "products"}${activeCategoryName ? ` in category "${activeCategoryName}"` : ""}? Deleting will remove these products and all their variants and items. This action cannot be undone.`}
+        confirmText={`Delete ${selectedRows.length} ${selectedRows.length === 1 ? "Product" : "Products"}`}
+        variant="destructive"
+        isLoading={bulkDeleteMutation.isPending}
       />
     </div>
   );

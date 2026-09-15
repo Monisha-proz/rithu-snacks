@@ -6,6 +6,7 @@ import {
   createAdminProduct,
   updateAdminProduct,
   deleteAdminProduct,
+  bulkDeleteAdminProducts,
 } from "../api/get-products";
 
 export function useCreateProduct() {
@@ -46,6 +47,7 @@ export function useDeleteProduct() {
 
   return useMutation({
     mutationFn: (uuid: string) => deleteAdminProduct(uuid),
+    meta: { skipToast: true },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: productKeys.all });
       queryClient.invalidateQueries({ queryKey: variantKeys.all });
@@ -56,6 +58,25 @@ export function useDeleteProduct() {
     },
   });
 }
+
+export function useBulkDeleteProducts() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (uuids: string[]) => bulkDeleteAdminProducts(uuids),
+    meta: { skipToast: true },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: productKeys.all });
+      queryClient.invalidateQueries({ queryKey: variantKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["admin", "products"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "variants"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["customer", "catalog"] });
+    },
+  });
+}
+
+
 
 export function useCreateProductImages() {
   const queryClient = useQueryClient();

@@ -330,4 +330,57 @@ export const productRepository = {
       return updatedProduct;
     });
   },
+
+  async bulkSoftDeleteByUuids(uuids: string[], adminId?: bigint | null) {
+    if (!uuids || uuids.length === 0) return { count: 0 };
+    const existingProducts = await db.product.findMany({
+      where: { uuid: { in: uuids }, deleted_at: null },
+      select: { id: true },
+    });
+    if (existingProducts.length === 0) return { count: 0 };
+
+    const productIds = existingProducts.map((p) => p.id);
+    const now = new Date();
+
+    return db.$transaction(async (tx) => {
+      const res = await tx.product.updateMany({
+        where: { id: { in: productIds } },
+        data: {
+          isActive: false,
+          status: false,
+          deleted_at: now,
+          ...(adminId ? { updated_by: adminId } : {}),
+        },
+      });
+
+      const relatedVariants = await tx.productVariant.findMany({
+        where: { productId: { in: productIds }, deleted_at: null },
+        select: { id: true },
+      });
+
+      if (relatedVariants.length > 0) {
+        const variantIds = relatedVariants.map((v) => v.id);
+
+        await tx.productVariant.updateMany({
+          where: { id: { in: variantIds } },
+          data: {
+            isActive: false,
+            deleted_at: now,
+            ...(adminId ? { updated_by: adminId } : {}),
+          },
+        });
+
+        await tx.variantUnitPrice.updateMany({
+          where: { variant_id: { in: variantIds } },
+          data: {
+            isActive: false,
+            deleted_at: now,
+            ...(adminId ? { updated_by: adminId } : {}),
+          },
+        });
+      }
+
+      return res;
+    });
+  },
 };

@@ -181,10 +181,18 @@ function DataTable<TData, TValue>({
         : updaterOrValue;
     setInternalRowSelection(newSelection);
     if (onRowSelectionChange) {
-      const selectedIndices = Object.keys(newSelection).filter((k) => newSelection[k]);
-      const selectedItems = selectedIndices
-        .map((idx) => paginatedData[Number(idx)] || data[Number(idx)])
-        .filter(Boolean);
+      let selectedItems: TData[] = [];
+      if (getRowId) {
+        selectedItems = (data || []).filter((item, idx) => {
+          const id = getRowId(item, idx);
+          return Boolean(newSelection[id]);
+        });
+      } else {
+        const selectedIndices = Object.keys(newSelection).filter((k) => newSelection[k]);
+        selectedItems = selectedIndices
+          .map((idx) => paginatedData[Number(idx)] || data[Number(idx)])
+          .filter(Boolean);
+      }
       onRowSelectionChange(newSelection, selectedItems);
     }
   };

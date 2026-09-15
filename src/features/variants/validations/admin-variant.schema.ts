@@ -270,3 +270,14 @@ export const variantPriceHistoryQuerySchema = z
 export type VariantPriceHistoryQueryInput = z.infer<
   typeof variantPriceHistoryQuerySchema
 >;
+
+export const bulkDeleteAdminVariantsSchema = z
+  .object({
+    ids: z.array(z.string().min(1)).min(1, "At least one item ID is required"),
+  })
+  .strict();
+
+export type BulkDeleteAdminVariantsInput = z.infer<
+  typeof bulkDeleteAdminVariantsSchema
+>;
+
