@@ -25,6 +25,16 @@ const productAdminInclude = Prisma.validator<Prisma.ProductInclude>()({
       is_active: true,
     },
   },
+  images: {
+    where: { is_active: true },
+    select: {
+      id: true,
+      image_url: true,
+      isPrimary: true,
+      sortOrder: true,
+    },
+    orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }],
+  },
 });
 
 export const productRepository = {

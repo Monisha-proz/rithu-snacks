@@ -97,7 +97,12 @@ function formatAdminVariantResponse(
     out_of_stock?: boolean;
     createdAt: Date;
     updatedAt: Date;
-    product?: { uuid: string | null; name: string; slug?: string | null } | null;
+    product?: {
+      uuid: string | null;
+      name: string;
+      slug?: string | null;
+      images?: Array<{ id: bigint; image_url: string; isPrimary: boolean; sortOrder: number }> | null;
+    } | null;
     product_variant_images?: Array<{ image_url: string; is_primary: boolean }> | null;
     variant_unit_prices?: VariantUnitPriceWithRelations[] | null;
   },
@@ -113,7 +118,11 @@ function formatAdminVariantResponse(
   const primaryImgObj =
     variant.product_variant_images?.find((img) => img.is_primary) ??
     variant.product_variant_images?.[0];
-  const primaryImage = primaryImgObj ? primaryImgObj.image_url : null;
+  const fallbackProductImg =
+    variant.product?.images?.find((img) => img.isPrimary)?.image_url ??
+    variant.product?.images?.[0]?.image_url ??
+    null;
+  const primaryImage = primaryImgObj ? primaryImgObj.image_url : fallbackProductImg;
 
   const unitPrices = (variant.variant_unit_prices || []).map((up) =>
     formatUnitPriceResponse(variantUuid, up)

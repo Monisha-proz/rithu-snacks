@@ -88,7 +88,8 @@ function toVariantListItemDto(
     product_variant_images?: Array<{ image_url: string }> | null;
   },
   productUuid: string,
-  productName: string
+  productName: string,
+  fallbackImageUrl?: string | null
 ): CustomerVariantListItemDto {
   const defaultUnitPrice = pickDefaultUnitPrice(variant.variant_unit_prices);
 
@@ -123,7 +124,7 @@ function toVariantListItemDto(
     salePrice: defaultUnitPrice
       ? computeSellingPrice(Number(defaultUnitPrice.base_price))
       : 0,
-    primaryImage: variant.product_variant_images?.[0]?.image_url ?? null,
+    primaryImage: variant.product_variant_images?.[0]?.image_url ?? fallbackImageUrl ?? null,
     outOfStock: Boolean(variant.out_of_stock),
     ingredients: variant.ingredients ?? null,
     isReadyToMix: Boolean(variant.is_ready_to_mix),
@@ -573,7 +574,7 @@ export const catalogRepository = {
 
     const productUuid = product.uuid || String(product.id);
     const variantsDto: CustomerVariantListItemDto[] = product.variants.map((v) =>
-      toVariantListItemDto(v, productUuid, product.name)
+      toVariantListItemDto(v, productUuid, product.name, imgUrl)
     );
 
     const primaryVariant =
@@ -713,7 +714,16 @@ export const catalogRepository = {
         isActive: true,
         deleted_at: null,
       },
-      select: { id: true, uuid: true, name: true },
+      select: {
+        id: true,
+        uuid: true,
+        name: true,
+        images: {
+          where: { is_active: true },
+          orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }],
+          take: 1,
+        },
+      },
     });
 
     if (!product) return null;
@@ -774,8 +784,9 @@ export const catalogRepository = {
       db.productVariant.count({ where }),
     ]);
 
+    const fallbackImg = product.images?.[0]?.image_url ?? null;
     let data: CustomerVariantListItemDto[] = variants.map((v) =>
-      toVariantListItemDto(v, product.uuid || String(product.id), product.name)
+      toVariantListItemDto(v, product.uuid || String(product.id), product.name, fallbackImg)
     );
 
     if (isPriceSort) {
@@ -820,7 +831,15 @@ export const catalogRepository = {
       },
       include: {
         product: {
-          select: { id: true, uuid: true, name: true },
+          select: {
+            id: true,
+            uuid: true,
+            name: true,
+            images: {
+              where: { is_active: true },
+              orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }],
+            },
+          },
         },
         product_variant_images: {
           where: { is_active: true },
@@ -832,17 +851,28 @@ export const catalogRepository = {
 
     if (!variant || !variant.product) return null;
 
-    const images: CustomerVariantImageDto[] = variant.product_variant_images.map((img) => ({
+    let images: CustomerVariantImageDto[] = variant.product_variant_images.map((img) => ({
       id: img.uuid || String(img.id),
       imageUrl: img.image_url,
       sortOrder: img.sort_order,
       isPrimary: Boolean(img.is_primary),
     }));
 
+    const fallbackProductImg = variant.product.images?.[0]?.image_url ?? null;
+    if (images.length === 0 && variant.product.images && variant.product.images.length > 0) {
+      images = variant.product.images.map((img) => ({
+        id: String(img.id),
+        imageUrl: img.image_url,
+        sortOrder: img.sortOrder,
+        isPrimary: Boolean(img.isPrimary),
+      }));
+    }
+
     const listItem = toVariantListItemDto(
       variant,
       variant.product.uuid || String(variant.product.id),
-      variant.product.name
+      variant.product.name,
+      fallbackProductImg
     );
 
     return {
@@ -980,7 +1010,16 @@ export const catalogRepository = {
         ...(isPriceSort ? {} : { skip: (page - 1) * pageSize, take: pageSize }),
         include: {
           product: {
-            select: { id: true, uuid: true, name: true },
+            select: {
+              id: true,
+              uuid: true,
+              name: true,
+              images: {
+                where: { is_active: true },
+                orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }],
+                take: 1,
+              },
+            },
           },
           product_variant_images: {
             where: { is_active: true },
@@ -1002,7 +1041,8 @@ export const catalogRepository = {
       toVariantListItemDto(
         v,
         v.product ? v.product.uuid || String(v.product.id) : "",
-        v.product ? v.product.name : ""
+        v.product ? v.product.name : "",
+        v.product?.images?.[0]?.image_url ?? null
       )
     );
 
@@ -1434,7 +1474,16 @@ export const catalogRepository = {
         take: 6,
         include: {
           product: {
-            select: { id: true, uuid: true, name: true },
+            select: {
+              id: true,
+              uuid: true,
+              name: true,
+              images: {
+                where: { is_active: true },
+                orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }],
+                take: 1,
+              },
+            },
           },
           product_variant_images: {
             where: { is_active: true },
@@ -1527,7 +1576,8 @@ export const catalogRepository = {
       toVariantListItemDto(
         v,
         v.product ? v.product.uuid || String(v.product.id) : "",
-        v.product ? v.product.name : ""
+        v.product ? v.product.name : "",
+        v.product?.images?.[0]?.image_url ?? null
       )
     );
 
