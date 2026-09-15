@@ -441,7 +441,8 @@ export default function AdminProductsPage() {
                 slug: formData.slug,
                 categoryId: formData.categoryId,
                 brandId: formData.brandId,
-                hsnCodeId: formData.hsnCodeId,
+                hsnCodeId: formData.hsnCodeId || null,
+                productImage: formData.productImage || null,
               };
 
               await updateMutation.mutateAsync({
@@ -459,6 +460,15 @@ export default function AdminProductsPage() {
                   selectedProduct.id,
                   formData.productImage,
                   selectedProductImages
+                );
+              } else if (!formData.productImage && selectedProductPrimaryImage) {
+                await Promise.all(
+                  selectedProductImages.map((img) =>
+                    deleteImageMutation.mutateAsync({
+                      productUuid: selectedProduct.id,
+                      imageId: img.id,
+                    })
+                  )
                 );
               }
 

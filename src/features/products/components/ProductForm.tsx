@@ -29,8 +29,9 @@ const productFormSchema = z.object({
     .optional(),
   hsnCodeId: z
     .string()
-    .min(1, "Please select an HSN code"),
-  productImage: z.string().optional(),
+    .optional()
+    .nullable(),
+  productImage: z.string().optional().nullable(),
 });
 
 export type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -314,15 +315,16 @@ function ProductForm({
         </div>
 
         {/* Row 3: HSN Code */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormSelect
-            name="hsnCodeId"
-            label="HSN Code"
-            placeholder="Select HSN code"
-            options={hsnCodeOptions}
-            required
-          />
-        </div>
+        {hsnCodeOptions.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormSelect
+              name="hsnCodeId"
+              label="HSN Code"
+              placeholder="Select HSN code"
+              options={hsnCodeOptions}
+            />
+          </div>
+        )}
 
         <FormImageUpload
           name="productImage"

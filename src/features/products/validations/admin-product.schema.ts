@@ -12,8 +12,10 @@ export const createAdminProductSchema = z
       .string({ message: "Brand ID is required" })
       .uuid("Invalid Brand UUID format"),
     hsnCodeId: z
-      .string({ message: "HSN Code ID is required" })
-      .uuid("Invalid HSN Code UUID format"),
+      .string()
+      .uuid("Invalid HSN Code UUID format")
+      .optional()
+      .nullable(),
     name: z
       .string({ message: "Product name is required" })
       .trim()
