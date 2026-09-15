@@ -54,6 +54,7 @@ export {
   useCustomerVariant,
   useCustomerGlobalVariants,
   useCustomerBanners,
+  useCustomerCatalogSearch,
   CUSTOMER_CATALOG_QUERY_KEYS,
 } from "./use-customer-catalog";
 export {

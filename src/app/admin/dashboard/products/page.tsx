@@ -30,7 +30,8 @@ import { FormModal } from "@/components/common/FormModal";
 import { SearchInput } from "@/components/ui/search-input";
 import { ClearFiltersButton } from "@/components/common/clear-filters-button";
 import Link from "next/link";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import Image from "next/image";
+import { Plus, Pencil, Trash2, Package } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { AdminProductResponse } from "@/features/products/types";
 import { ProductForm } from "@/features/products/components/ProductForm";
@@ -180,6 +181,27 @@ export default function AdminProductsPage() {
   }, [hsnCodes]);
 
   const columns: ColumnDef<AdminProductResponse>[] = [
+    {
+      accessorKey: "imageUrl",
+      header: "Image",
+      cell: ({ row }) => {
+        const imageUrl = row.original.imageUrl;
+        return (
+          <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-xl border border-[var(--color-neutral-200)] bg-[var(--color-neutral-100)] flex items-center justify-center">
+            {imageUrl ? (
+              <Image
+                src={imageUrl}
+                alt={row.original.name}
+                fill
+                className="object-cover"
+              />
+            ) : (
+              <Package className="h-4 w-4 text-[var(--color-neutral-400)]" />
+            )}
+          </div>
+        );
+      },
+    },
     {
       accessorKey: "name",
       header: "Product Name",
@@ -419,7 +441,8 @@ export default function AdminProductsPage() {
                 slug: formData.slug,
                 categoryId: formData.categoryId,
                 brandId: formData.brandId,
-                hsnCodeId: formData.hsnCodeId,
+                hsnCodeId: formData.hsnCodeId || null,
+                productImage: formData.productImage || null,
               };
 
               await updateMutation.mutateAsync({
@@ -437,6 +460,15 @@ export default function AdminProductsPage() {
                   selectedProduct.id,
                   formData.productImage,
                   selectedProductImages
+                );
+              } else if (!formData.productImage && selectedProductPrimaryImage) {
+                await Promise.all(
+                  selectedProductImages.map((img) =>
+                    deleteImageMutation.mutateAsync({
+                      productUuid: selectedProduct.id,
+                      imageId: img.id,
+                    })
+                  )
                 );
               }
 

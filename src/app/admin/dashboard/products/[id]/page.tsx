@@ -1218,6 +1218,15 @@ export default function AdminProductDetailsPage() {
                 formData.productImage !== primaryProductImage
               ) {
                 await saveProductPrimaryImage(canonicalProductId, formData.productImage);
+              } else if (!formData.productImage && primaryProductImage) {
+                await Promise.all(
+                  productImages.map((img) =>
+                    deleteProductImageMutation.mutateAsync({
+                      productUuid: canonicalProductId,
+                      imageId: img.id,
+                    })
+                  )
+                );
               }
             } catch (err: any) {
               console.error("Failed to update product", err);
