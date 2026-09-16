@@ -137,10 +137,14 @@ export const productService = {
       throw ApiError.badRequest("Invalid or inactive brand");
     }
 
-    // 3. Resolve & Validate HSN Code UUID
-    const hsnCode = await hsnCodeRepository.findByUuid(data.hsnCodeId);
-    if (!hsnCode || !hsnCode.is_active) {
-      throw ApiError.badRequest("Invalid or inactive HSN code");
+    // 3. Resolve & Validate HSN Code UUID (optional)
+    let resolvedHsnCodeId: bigint | null = null;
+    if (data.hsnCodeId) {
+      const hsnCode = await hsnCodeRepository.findByUuid(data.hsnCodeId);
+      if (!hsnCode || !hsnCode.is_active) {
+        throw ApiError.badRequest("Invalid or inactive HSN code");
+      }
+      resolvedHsnCodeId = hsnCode.id;
     }
 
     // 4. Check duplicate slug
@@ -159,7 +163,7 @@ export const productService = {
       uuid: crypto.randomUUID(),
       categoryId: category.id,
       brandId: brand.id,
-      hsn_code_id: hsnCode.id,
+      hsn_code_id: resolvedHsnCodeId,
       name: data.name,
       slug: data.slug, // Frontend-supplied slug preserved without modification
       status: true, // Static reserved field - always true
@@ -367,11 +371,15 @@ export const productService = {
 
     // Resolve HSN Code UUID if provided
     if (data.hsnCodeId !== undefined) {
-      const hsnCode = await hsnCodeRepository.findByUuid(data.hsnCodeId);
-      if (!hsnCode || !hsnCode.is_active) {
-        throw ApiError.badRequest("Invalid or inactive HSN code");
+      if (data.hsnCodeId === null) {
+        updateData.hsn_code_id = null;
+      } else {
+        const hsnCode = await hsnCodeRepository.findByUuid(data.hsnCodeId);
+        if (!hsnCode || !hsnCode.is_active) {
+          throw ApiError.badRequest("Invalid or inactive HSN code");
+        }
+        updateData.hsn_code_id = hsnCode.id;
       }
-      updateData.hsn_code_id = hsnCode.id;
     }
 
     // Check duplicate slug if slug changes
@@ -421,6 +429,12 @@ export const productService = {
             },
           });
         }
+      } else {
+        // User cleared/deleted the product image
+        await db.productImage.updateMany({
+          where: { productId: existing.id, is_active: true },
+          data: { is_active: false, isPrimary: false, updated_at: new Date(), ...(adminId ? { updated_by: adminId } : {}) },
+        });
       }
     }
 

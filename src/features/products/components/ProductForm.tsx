@@ -29,8 +29,9 @@ const productFormSchema = z.object({
     .optional(),
   hsnCodeId: z
     .string()
-    .min(1, "Please select an HSN code"),
-  productImage: z.string().optional(),
+    .optional()
+    .nullable(),
+  productImage: z.string().optional().nullable(),
 });
 
 export type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -181,11 +182,17 @@ function ProductForm({
       ...formData,
       brandId: finalBrandId,
       slug: finalSlug,
+      hsnCodeId: formData.hsnCodeId ? formData.hsnCodeId : null,
     });
   };
 
   const categoryOptions = categories;
-  const hsnCodeOptions = hsnCodes;
+  const hsnCodeOptions = useMemo(() => {
+    return [
+      { value: "", label: "None / Not Applicable" },
+      ...hsnCodes,
+    ];
+  }, [hsnCodes]);
 
   return (
     <FormProvider {...methods}>
@@ -318,9 +325,9 @@ function ProductForm({
           <FormSelect
             name="hsnCodeId"
             label="HSN Code"
-            placeholder="Select HSN code"
+            placeholder={hsnCodes.length > 0 ? "Select HSN code" : "None / No HSN codes available"}
             options={hsnCodeOptions}
-            required
+            description="Optional: Harmonized System of Nomenclature code for GST"
           />
         </div>
 

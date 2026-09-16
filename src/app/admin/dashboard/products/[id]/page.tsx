@@ -1207,9 +1207,13 @@ export default function AdminProductDetailsPage() {
           submitLabel="Save Changes"
           onSubmit={async (formData: ProductFormValues) => {
             try {
+              const payload = {
+                ...formData,
+                hsnCodeId: formData.hsnCodeId || null,
+              };
               await updateProductMutation.mutateAsync({
                 uuid: canonicalProductId,
-                data: formData as any,
+                data: payload as any,
               });
               setIsEditProductOpen(false);
 
@@ -1218,6 +1222,15 @@ export default function AdminProductDetailsPage() {
                 formData.productImage !== primaryProductImage
               ) {
                 await saveProductPrimaryImage(canonicalProductId, formData.productImage);
+              } else if (!formData.productImage && primaryProductImage) {
+                await Promise.all(
+                  productImages.map((img) =>
+                    deleteProductImageMutation.mutateAsync({
+                      productUuid: canonicalProductId,
+                      imageId: img.id,
+                    })
+                  )
+                );
               }
             } catch (err: any) {
               console.error("Failed to update product", err);
