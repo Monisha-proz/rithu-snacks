@@ -9,7 +9,7 @@ const uuid = z.string().trim().min(1);
 /** `""` from an untouched form field means "not provided", not "set to empty". */
 const optionalText = (max: number, label = "Field") =>
   z
-    .string({ invalid_type_error: `${label} must be text` })
+    .string({ message: `${label} must be text` })
     .trim()
     .max(max, `${label} cannot exceed ${max} characters`)
     .optional()
@@ -118,7 +118,7 @@ export type GetOffersQueryInput = z.infer<typeof getOffersQuerySchema>;
 
 const offerBaseSchema = z.object({
   name: z
-    .string({ required_error: "Offer name is required" })
+    .string({ message: "Offer name is required" })
     .trim()
     .min(1, "Offer name is required")
     .max(150, "Offer name cannot exceed 150 characters"),

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import {
   useCustomerAddresses,
   useCreateCustomerAddress,
@@ -14,11 +14,13 @@ import {
 } from "../../validations/customer-address.schema";
 import type { CustomerAddressResponse } from "../../types/customer-address.types";
 import { CustomDropdown } from "./CustomDropdown";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { toast } from "@/components/ui/Toast";
 
 const LABEL_OPTIONS = [
   { value: "home", label: "Home" },
   { value: "work", label: "Work / Office" },
-  { value: "parents", label: "Parents / Family"},
+  { value: "parents", label: "Parents / Family" },
   { value: "other", label: "Other" },
 ];
 
@@ -37,59 +39,6 @@ type AddressFormData = {
   isDefault: boolean;
 };
 
-function getDirtyAddressFields(
-  current: AddressFormData,
-  initial: AddressFormData
-): Record<string, any> {
-  const dirty: Record<string, any> = {};
-
-  if (current.fullName.trim() !== initial.fullName.trim()) {
-    dirty.fullName = current.fullName.trim();
-  }
-
-  if (current.phone.trim() !== initial.phone.trim()) {
-    dirty.phone = current.phone.trim();
-  }
-
-  if (current.label.trim() !== initial.label.trim()) {
-    dirty.label = current.label.trim() || undefined;
-  }
-
-  if (current.addressType !== initial.addressType) {
-    dirty.addressType = current.addressType;
-  }
-
-  if (current.addressLine1.trim() !== initial.addressLine1.trim()) {
-    dirty.addressLine1 = current.addressLine1.trim();
-  }
-
-  if (current.addressLine2.trim() !== initial.addressLine2.trim()) {
-    dirty.addressLine2 = current.addressLine2.trim() || undefined;
-  }
-
-  if (current.landmark.trim() !== initial.landmark.trim()) {
-    dirty.landmark = current.landmark.trim() || undefined;
-  }
-
-  if (current.city.trim() !== initial.city.trim()) {
-    dirty.city = current.city.trim();
-  }
-
-  if (current.state.trim() !== initial.state.trim()) {
-    dirty.state = current.state.trim();
-  }
-
-  if (current.pincode.trim() !== initial.pincode.trim()) {
-    dirty.pincode = current.pincode.trim();
-  }
-
-  if (current.isDefault !== initial.isDefault) {
-    dirty.isDefault = current.isDefault;
-  }
-
-  return dirty;
-}
-
 export function AddressesTab() {
   const { data: addresses = [], isLoading, error, refetch } = useCustomerAddresses();
   const createMutation = useCreateCustomerAddress();
@@ -101,10 +50,7 @@ export function AddressesTab() {
   const [dirtyFields, setDirtyFields] = useState<Set<string>>(new Set());
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState<string | null>(null);
-
-  // Custom dropdown open state
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [addressToDelete, setAddressToDelete] = useState<CustomerAddressResponse | null>(null);
 
   const [formData, setFormData] = useState<AddressFormData>({
     label: "home",
@@ -120,17 +66,6 @@ export function AddressesTab() {
     addressType: "shipping",
     isDefault: false,
   });
-
-  // Handle clicking outside custom dropdown
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   const validateAddressField = (field: string, value: string): string => {
     switch (field) {
@@ -243,7 +178,6 @@ export function AddressesTab() {
     setDirtyFields(new Set());
     setFieldErrors({});
     setServerError(null);
-    setIsDropdownOpen(false);
     setFormData({
       label: "home",
       fullName: "",
@@ -309,6 +243,7 @@ export function AddressesTab() {
           uuid: editingId,
           data: dirtyPayload,
         });
+        toast.success("Address updated successfully!");
         handleCancel();
       } catch (err: unknown) {
         const errorMsg =
@@ -316,6 +251,7 @@ export function AddressesTab() {
             ? err.message
             : "Failed to update address. Please verify your details.";
         setServerError(errorMsg);
+        toast.error(errorMsg);
       }
     } else {
       // CREATE MODE: Full payload validation and submission
@@ -349,6 +285,7 @@ export function AddressesTab() {
 
       try {
         await createMutation.mutateAsync(payload);
+        toast.success("Address added successfully!");
         handleCancel();
       } catch (err: unknown) {
         const errorMsg =
@@ -356,11 +293,39 @@ export function AddressesTab() {
             ? err.message
             : "Failed to save address. Please verify your details.";
         setServerError(errorMsg);
+        toast.error(errorMsg);
       }
     }
   };
 
-  const currentLabelObj = LABEL_OPTIONS.find((opt) => opt.value === formData.label) || LABEL_OPTIONS[0];
+  const handleSetDefault = async (addressId: string) => {
+    try {
+      await updateMutation.mutateAsync({
+        uuid: addressId,
+        data: { isDefault: true },
+      });
+      toast.success("Default delivery address updated!");
+    } catch (err: unknown) {
+      const errorMsg =
+        err instanceof Error ? err.message : "Failed to update default address.";
+      toast.error(errorMsg);
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!addressToDelete) return;
+    const targetId = addressToDelete.id;
+    try {
+      await deleteMutation.mutateAsync(targetId);
+      toast.success("Address deleted successfully!");
+    } catch (err: unknown) {
+      const errorMsg =
+        err instanceof Error ? err.message : "Failed to delete address.";
+      toast.error(errorMsg);
+    } finally {
+      setAddressToDelete(null);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -386,7 +351,7 @@ export function AddressesTab() {
         <button
           type="button"
           onClick={() => refetch()}
-          className="bg-theme-primary text-theme-primary-fg px-5 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider"
+          className="bg-theme-primary text-theme-primary-fg px-5 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider cursor-pointer"
         >
           Retry
         </button>
@@ -399,7 +364,11 @@ export function AddressesTab() {
       {/* Tab Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <h2 className="text-xl sm:text-2xl font-bold uppercase tracking-wide text-theme-text-secondary">
-          Saved Addresses
+          {isAdding
+            ? editingId
+              ? "Edit Delivery Address"
+              : "New Delivery Address"
+            : "Saved Addresses"}
         </h2>
         {!isAdding && (
           <button
@@ -415,8 +384,8 @@ export function AddressesTab() {
         )}
       </div>
 
-      {/* Add / Edit Address Form Modal / Inline */}
-      {isAdding && (
+      {/* Add / Edit Address Form */}
+      {isAdding ? (
         <form
           onSubmit={handleSubmit}
           noValidate
@@ -683,10 +652,7 @@ export function AddressesTab() {
             </button>
           </div>
         </form>
-      )}
-
-      {/* Address Cards Grid */}
-      {addresses.length === 0 && !isAdding ? (
+      ) : addresses.length === 0 ? (
         <div className="bg-theme-surface border border-theme-border rounded-2xl p-10 text-center shadow-2xs">
           <p className="text-sm text-theme-text-muted">No saved delivery addresses found.</p>
           <button
@@ -713,11 +679,13 @@ export function AddressesTab() {
                     <span className="text-xs font-semibold uppercase tracking-wider text-theme-primary">
                       {labelUpper}
                     </span>
-                    <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                      isBilling
-                        ? "bg-purple-100 text-purple-700"
-                        : "bg-blue-100 text-blue-700"
-                    }`}>
+                    <span
+                      className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                        isBilling
+                          ? "bg-purple-100 text-purple-700"
+                          : "bg-blue-100 text-blue-700"
+                      }`}
+                    >
                       {a.addressType || "shipping"}
                     </span>
                     {a.isDefault && (
@@ -727,16 +695,16 @@ export function AddressesTab() {
                     )}
                   </div>
 
-                  <div className="text-xs sm:text-sm font-semibold text-theme-text-primary">
+                  <div className="text-sm font-bold text-theme-text-primary">
                     {a.fullName}
                   </div>
-                  <div className="text-xs text-theme-text-subtle font-light leading-relaxed">
+                  <div className="text-xs sm:text-sm text-theme-text-primary font-normal leading-relaxed">
                     {a.addressLine1}
                     {a.addressLine2 ? `, ${a.addressLine2}` : ""}
                     {a.landmark ? ` (Near ${a.landmark})` : ""}, {a.city} — {a.pincode}, {a.state}
                   </div>
-                  <div className="text-xs text-theme-text-muted font-medium">
-                    {a.phone}
+                  <div className="text-xs text-theme-text-secondary font-medium">
+                    Phone: {a.phone}
                   </div>
                 </div>
 
@@ -745,12 +713,7 @@ export function AddressesTab() {
                   {!a.isDefault && (
                     <button
                       type="button"
-                      onClick={() =>
-                        updateMutation.mutate({
-                          uuid: a.id,
-                          data: { isDefault: true },
-                        })
-                      }
+                      onClick={() => handleSetDefault(a.id)}
                       disabled={updateMutation.isPending || deleteMutation.isPending}
                       className="font-medium text-theme-primary hover:text-theme-secondary cursor-pointer transition-colors disabled:opacity-50"
                     >
@@ -768,7 +731,7 @@ export function AddressesTab() {
                   <button
                     type="button"
                     disabled={updateMutation.isPending || deleteMutation.isPending}
-                    onClick={() => deleteMutation.mutate(a.id)}
+                    onClick={() => setAddressToDelete(a)}
                     className="font-medium text-theme-status-can-fg hover:text-red-700 cursor-pointer transition-colors disabled:opacity-50"
                   >
                     Delete
@@ -779,6 +742,19 @@ export function AddressesTab() {
           })}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={Boolean(addressToDelete)}
+        onClose={() => setAddressToDelete(null)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Address"
+        description={`Are you sure you want to delete the saved address for "${addressToDelete?.fullName || "this contact"}"? This action cannot be undone.`}
+        confirmText={deleteMutation.isPending ? "Deleting..." : "Delete"}
+        cancelText="Cancel"
+        variant="destructive"
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   );
 }

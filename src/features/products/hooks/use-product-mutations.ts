@@ -36,6 +36,12 @@ export function useUpdateProduct() {
     onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({ queryKey: productKeys.all });
       queryClient.invalidateQueries({ queryKey: productKeys.detail(variables.uuid) });
+      queryClient.invalidateQueries({
+        queryKey: [...productKeys.all, "images", variables.uuid],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "products", "detail", variables.uuid],
+      });
       queryClient.invalidateQueries({ queryKey: ["admin", "products"] });
       queryClient.invalidateQueries({ queryKey: ["customer", "catalog"] });
     },

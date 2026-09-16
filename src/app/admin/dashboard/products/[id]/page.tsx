@@ -34,7 +34,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { toast } from "@/components/ui/Toast";
-import { useAdminProduct, useProductImages, useCreateProductImages, useDeleteProductImage } from "@/features/products/hooks";
+import { useAdminProduct, useProductImages } from "@/features/products/hooks";
 import {
   useVariants,
   useVariantUnitPrices,
@@ -234,8 +234,6 @@ export default function AdminProductDetailsPage() {
   const createVariantMutation = useCreateVariant();
   const updateVariantMutation = useUpdateVariant();
   const deleteVariantMutation = useDeleteVariant();
-  const createProductImagesMutation = useCreateProductImages();
-  const deleteProductImageMutation = useDeleteProductImage();
 
   // Product Images Query (product carries at most one image)
   const { data: productImages = [] } = useProductImages(productUuid || null);
@@ -246,23 +244,6 @@ export default function AdminProductDetailsPage() {
     newlyCreatedVariant?.id || null
   );
   const hasNewlyCreatedPrices = newlyCreatedPrices.length > 0;
-
-  const saveProductPrimaryImage = async (productUuid: string, imageUrl: string) => {
-    try {
-      // Remove any previous image(s) first — a product carries only one image
-      await Promise.all(
-        productImages.map((img) =>
-          deleteProductImageMutation.mutateAsync({ productUuid, imageId: img.id })
-        )
-      );
-      await createProductImagesMutation.mutateAsync({
-        productUuid,
-        images: [{ imageUrl, isPrimary: true }],
-      });
-    } catch (err) {
-      console.error("Failed to upload product image", err);
-    }
-  };
 
   // Selection State
   const [selectedVariants, setSelectedVariants] = React.useState<Record<string, boolean>>({});
@@ -1210,28 +1191,13 @@ export default function AdminProductDetailsPage() {
               const payload = {
                 ...formData,
                 hsnCodeId: formData.hsnCodeId || null,
+                productImage: formData.productImage || null,
               };
               await updateProductMutation.mutateAsync({
                 uuid: canonicalProductId,
                 data: payload as any,
               });
               setIsEditProductOpen(false);
-
-              if (
-                formData.productImage &&
-                formData.productImage !== primaryProductImage
-              ) {
-                await saveProductPrimaryImage(canonicalProductId, formData.productImage);
-              } else if (!formData.productImage && primaryProductImage) {
-                await Promise.all(
-                  productImages.map((img) =>
-                    deleteProductImageMutation.mutateAsync({
-                      productUuid: canonicalProductId,
-                      imageId: img.id,
-                    })
-                  )
-                );
-              }
             } catch (err: any) {
               console.error("Failed to update product", err);
             }

@@ -14,6 +14,19 @@ import {
 } from "../constants/offer-options";
 import type { OfferListItem } from "../types";
 
+function formatDate(date?: string | Date | null): string {
+  if (!date) return "—";
+  try {
+    return new Date(date).toLocaleDateString("en-IN", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return String(date);
+  }
+}
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>

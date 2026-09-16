@@ -22,6 +22,7 @@ export function ProfileDetailsTab({
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [dob, setDob] = useState("");
+  const [isDobFocused, setIsDobFocused] = useState(false);
   const [gender, setGender] = useState<"male" | "female" | "other" | "">("");
   const [isWhatsapp, setIsWhatsapp] = useState(false);
   const [whatsappNo, setWhatsappNo] = useState("");
@@ -195,9 +196,13 @@ export function ProfileDetailsTab({
               Date of Birth
             </span>
             <input
-              type="date"
+              type={isDobFocused || dob ? "date" : "text"}
               value={dob}
+              onFocus={() => setIsDobFocused(true)}
+              onBlur={() => setIsDobFocused(false)}
               onChange={(e) => handleFieldChange(setDob, "dob", e.target.value)}
+              placeholder="DD/MM/YYYY"
+              max={new Date().toISOString().split("T")[0]}
               className={`border rounded-lg px-3.5 py-3 text-xs sm:text-sm text-theme-text-primary bg-theme-surface-warm focus:border-theme-primary transition-colors min-h-[44px] ${
                 fieldErrors.dob ? "border-red-500 bg-red-50/20" : "border-theme-border-input"
               }`}
