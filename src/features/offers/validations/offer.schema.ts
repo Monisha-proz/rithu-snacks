@@ -7,28 +7,86 @@ export const OFFER_STATUSES = ["active", "inactive", "scheduled", "expired"] as 
 const uuid = z.string().trim().min(1);
 
 /** `""` from an untouched form field means "not provided", not "set to empty". */
-const optionalText = (max: number) =>
+const optionalText = (max: number, label = "Field") =>
   z
-    .string()
+    .string({ invalid_type_error: `${label} must be text` })
     .trim()
-    .max(max)
+    .max(max, `${label} cannot exceed ${max} characters`)
     .optional()
     .nullable()
     .transform((v) => (v === "" || v === undefined ? null : v));
 
-const optionalNumber = z
-  .union([z.number(), z.string(), z.null()])
-  .optional()
-  .transform((v) => {
-    if (v === null || v === undefined || v === "") return null;
-    const n = typeof v === "string" ? Number(v) : v;
-    return Number.isFinite(n) ? n : null;
-  });
+const optionalInt = (opts: { min?: number; max?: number; label: string }) =>
+  z
+    .union([z.number(), z.string(), z.null(), z.undefined()])
+    .transform((v, ctx) => {
+      if (v === null || v === undefined || v === "") return null;
+      const n = typeof v === "string" ? Number(v) : v;
+      if (!Number.isFinite(n)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `${opts.label} must be a valid number`,
+        });
+        return z.NEVER;
+      }
+      if (!Number.isInteger(n)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `${opts.label} must be a whole number`,
+        });
+        return z.NEVER;
+      }
+      if (opts.min !== undefined && n < opts.min) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `${opts.label} must be at least ${opts.min}`,
+        });
+        return z.NEVER;
+      }
+      if (opts.max !== undefined && n > opts.max) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `${opts.label} cannot exceed ${opts.max.toLocaleString("en-IN")}`,
+        });
+        return z.NEVER;
+      }
+      return n;
+    });
+
+const optionalDecimal = (opts: { min?: number; max?: number; label: string }) =>
+  z
+    .union([z.number(), z.string(), z.null(), z.undefined()])
+    .transform((v, ctx) => {
+      if (v === null || v === undefined || v === "") return null;
+      const n = typeof v === "string" ? Number(v) : v;
+      if (!Number.isFinite(n)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Please enter a valid amount within limits",
+        });
+        return z.NEVER;
+      }
+      if (opts.min !== undefined && n < opts.min) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `${opts.label} cannot be negative`,
+        });
+        return z.NEVER;
+      }
+      if (opts.max !== undefined && n > opts.max) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Please enter a valid amount within limits",
+        });
+        return z.NEVER;
+      }
+      return n;
+    });
 
 const dateString = z
   .string()
   .trim()
-  .min(1, "Required")
+  .min(1, "Date is required")
   .refine((v) => !Number.isNaN(new Date(v).getTime()), "Enter a valid date");
 
 // ---------------------------------------------------------------------------
@@ -59,28 +117,118 @@ export type GetOffersQueryInput = z.infer<typeof getOffersQuerySchema>;
 // ---------------------------------------------------------------------------
 
 const offerBaseSchema = z.object({
-  name: z.string().trim().min(1, "Offer name is required").max(150),
-  code: optionalText(50),
+  name: z
+    .string({ required_error: "Offer name is required" })
+    .trim()
+    .min(1, "Offer name is required")
+    .max(150, "Offer name cannot exceed 150 characters"),
+  code: optionalText(50, "Offer code"),
   level: z.enum(OFFER_LEVELS, { message: "Select an offer level" }),
   type: z.enum(OFFER_TYPES, { message: "Select an offer type" }),
-  value: z.coerce.number().min(0, "Discount value cannot be negative"),
-  buyQuantity: optionalNumber,
-  getQuantity: optionalNumber,
-  minQuantity: z.coerce
-    .number()
-    .int("Minimum quantity must be a whole number")
-    .min(1, "Minimum quantity must be at least 1")
-    .default(1),
-  maxQuantity: optionalNumber,
-  minCartValue: optionalNumber,
-  maxDiscountAmount: optionalNumber,
-  priority: z.coerce
-    .number()
-    .int("Priority must be a whole number")
-    .min(0, "Priority cannot be negative")
-    .max(1000, "Priority cannot exceed 1000")
-    .default(0),
-  terms: optionalText(5000),
+  value: z
+    .union([z.number(), z.string(), z.null(), z.undefined()])
+    .transform((v, ctx) => {
+      if (v === null || v === undefined || v === "") return 0;
+      const n = typeof v === "string" ? Number(v) : v;
+      if (!Number.isFinite(n)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Enter a valid discount value",
+        });
+        return z.NEVER;
+      }
+      if (n < 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Discount value cannot be negative",
+        });
+        return z.NEVER;
+      }
+      if (n > 99999999.99) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Please enter a valid amount within limits",
+        });
+        return z.NEVER;
+      }
+      return n;
+    }),
+  buyQuantity: optionalInt({ min: 1, max: 99999, label: "Buy quantity" }),
+  getQuantity: optionalInt({ min: 1, max: 99999, label: "Get quantity" }),
+  minQuantity: z
+    .union([z.number(), z.string(), z.null(), z.undefined()])
+    .transform((v, ctx) => {
+      if (v === null || v === undefined || v === "") return 1;
+      const n = typeof v === "string" ? Number(v) : v;
+      if (!Number.isFinite(n)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Minimum quantity must be a valid number",
+        });
+        return z.NEVER;
+      }
+      if (!Number.isInteger(n)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Minimum quantity must be a whole number",
+        });
+        return z.NEVER;
+      }
+      if (n < 1) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Minimum quantity must be at least 1",
+        });
+        return z.NEVER;
+      }
+      if (n > 99999) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Minimum quantity cannot exceed 99,999",
+        });
+        return z.NEVER;
+      }
+      return n;
+    }),
+  maxQuantity: optionalInt({ min: 1, max: 99999, label: "Maximum quantity" }),
+  minCartValue: optionalDecimal({ min: 0, max: 99999999.99, label: "Minimum cart value" }),
+  maxDiscountAmount: optionalDecimal({ min: 0, max: 99999999.99, label: "Maximum discount" }),
+  priority: z
+    .union([z.number(), z.string(), z.null(), z.undefined()])
+    .transform((v, ctx) => {
+      if (v === null || v === undefined || v === "") return 0;
+      const n = typeof v === "string" ? Number(v) : v;
+      if (!Number.isFinite(n)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Priority must be a valid number",
+        });
+        return z.NEVER;
+      }
+      if (!Number.isInteger(n)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Priority must be a whole number",
+        });
+        return z.NEVER;
+      }
+      if (n < 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Priority cannot be negative",
+        });
+        return z.NEVER;
+      }
+      if (n > 1000) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Priority cannot exceed 1000",
+        });
+        return z.NEVER;
+      }
+      return n;
+    }),
+  terms: optionalText(5000, "Terms & Conditions"),
   startsAt: dateString,
   endsAt: dateString,
   isActive: z.boolean().default(true),
@@ -129,14 +277,13 @@ function applyOfferRules<T extends Partial<OfferBaseShape>>(
 
   // Offer type rules
   if (type === "percentage") {
-    if (value !== undefined && value <= 0) {
+    if (value === undefined || value === null || value <= 0) {
       ctx.addIssue({
         code: "custom",
         path: ["value"],
-        message: "Discount percentage must be greater than 0",
+        message: "Discount Percentage must be greater than 0",
       });
-    }
-    if (value !== undefined && value > 100) {
+    } else if (value > 100) {
       ctx.addIssue({
         code: "custom",
         path: ["value"],
@@ -145,15 +292,36 @@ function applyOfferRules<T extends Partial<OfferBaseShape>>(
     }
   }
 
-  if ((type === "flat" || type === "special_price") && value !== undefined && value <= 0) {
-    ctx.addIssue({
-      code: "custom",
-      path: ["value"],
-      message:
-        type === "flat"
-          ? "Discount amount must be greater than 0"
-          : "Special offer price must be greater than 0",
-    });
+  if (type === "flat") {
+    if (value === undefined || value === null || value <= 0) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["value"],
+        message: "Discount amount must be greater than 0",
+      });
+    } else if (value > 99999999.99) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["value"],
+        message: "Please enter a valid amount within limits",
+      });
+    }
+  }
+
+  if (type === "special_price") {
+    if (value === undefined || value === null || value <= 0) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["value"],
+        message: "Special offer price must be greater than 0",
+      });
+    } else if (value > 99999999.99) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["value"],
+        message: "Please enter a valid amount within limits",
+      });
+    }
   }
 
   if (type === "bxgy") {
@@ -163,14 +331,28 @@ function applyOfferRules<T extends Partial<OfferBaseShape>>(
         path: ["buyQuantity"],
         message: "Buy quantity is required and must be at least 1",
       });
+    } else if (buyQuantity > 99999) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["buyQuantity"],
+        message: "Buy quantity cannot exceed 99,999",
+      });
     }
+
     if (!getQuantity || getQuantity < 1) {
       ctx.addIssue({
         code: "custom",
         path: ["getQuantity"],
         message: "Get quantity is required and must be at least 1",
       });
+    } else if (getQuantity > 99999) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["getQuantity"],
+        message: "Get quantity cannot exceed 99,999",
+      });
     }
+
     if (buyQuantity && getQuantity && getQuantity > buyQuantity) {
       ctx.addIssue({
         code: "custom",
@@ -197,6 +379,12 @@ function applyOfferRules<T extends Partial<OfferBaseShape>>(
         path: ["maxQuantity"],
         message: "Maximum quantity must be at least 1",
       });
+    } else if (maxQuantity > 99999) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["maxQuantity"],
+        message: "Maximum quantity cannot exceed 99,999",
+      });
     } else if (minQuantity != null && maxQuantity < minQuantity) {
       ctx.addIssue({
         code: "custom",
@@ -214,19 +402,48 @@ function applyOfferRules<T extends Partial<OfferBaseShape>>(
     });
   }
 
-  if (minCartValue != null && minCartValue < 0) {
-    ctx.addIssue({
-      code: "custom",
-      path: ["minCartValue"],
-      message: "Minimum cart value cannot be negative",
-    });
+  if (minCartValue != null) {
+    if (minCartValue < 0) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["minCartValue"],
+        message: "Minimum cart value cannot be negative",
+      });
+    } else if (minCartValue > 99999999.99) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["minCartValue"],
+        message: "Please enter a valid amount within limits",
+      });
+    }
   }
 
-  if (maxDiscountAmount != null && maxDiscountAmount < 0) {
+  if (maxDiscountAmount != null) {
+    if (maxDiscountAmount < 0) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["maxDiscountAmount"],
+        message: "Maximum discount cannot be negative",
+      });
+    } else if (maxDiscountAmount > 99999999.99) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["maxDiscountAmount"],
+        message: "Please enter a valid amount within limits",
+      });
+    }
+  }
+
+  if (
+    minCartValue != null &&
+    maxDiscountAmount != null &&
+    minCartValue > 0 &&
+    maxDiscountAmount > minCartValue
+  ) {
     ctx.addIssue({
       code: "custom",
       path: ["maxDiscountAmount"],
-      message: "Maximum discount amount cannot be negative",
+      message: "Maximum discount cannot be greater than the minimum cart value",
     });
   }
 

@@ -16,16 +16,21 @@ export const couponService = {
   },
 
   async createCoupon(data: CreateCouponInput) {
-    const existing = await couponRepository.findByCode(data.code.toUpperCase());
+    const code = data.code.trim().toUpperCase();
+    const existing = await couponRepository.findByCode(code);
     if (existing) {
       throw ApiError.conflict("A coupon with this code already exists");
     }
 
+    if (data.startsAt && data.expiresAt && new Date(data.expiresAt) < new Date(data.startsAt)) {
+      throw ApiError.badRequest("Expiry date cannot be earlier than start date");
+    }
+
     const couponType =
-      String(data.type).toLowerCase() === "percentage" ? "percentage" as const : "flat" as const;
+      String(data.type).toLowerCase() === "percentage" ? ("percentage" as const) : ("flat" as const);
 
     return couponRepository.create({
-      code: data.code.toUpperCase(),
+      code,
       type: couponType,
       value: data.value,
       minOrderAmount: data.minOrderAmount,
@@ -43,15 +48,26 @@ export const couponService = {
       throw ApiError.notFound("Coupon not found");
     }
 
-    if (data.code && data.code.toUpperCase() !== existing.code) {
-      const codeExists = await couponRepository.findByCode(data.code.toUpperCase());
+    const code = data.code !== undefined ? data.code.trim().toUpperCase() : undefined;
+    if (code && code !== existing.code) {
+      const codeExists = await couponRepository.findByCode(code);
       if (codeExists) {
         throw ApiError.conflict("A coupon with this code already exists");
       }
     }
 
+    const effectiveStartsAt = data.startsAt !== undefined ? data.startsAt : existing.startsAt;
+    const effectiveExpiresAt = data.expiresAt !== undefined ? data.expiresAt : existing.expiresAt;
+    if (
+      effectiveStartsAt &&
+      effectiveExpiresAt &&
+      new Date(effectiveExpiresAt) < new Date(effectiveStartsAt)
+    ) {
+      throw ApiError.badRequest("Expiry date cannot be earlier than start date");
+    }
+
     const updateData: Record<string, unknown> = {};
-    if (data.code !== undefined) updateData.code = data.code.toUpperCase();
+    if (code !== undefined) updateData.code = code;
     if (data.type !== undefined) {
       updateData.type =
         String(data.type).toLowerCase() === "percentage" ? "percentage" : "flat";

@@ -23,7 +23,19 @@ export function computeOfferStatus(
   now: Date = new Date()
 ): OfferComputedStatus {
   if (!offer.isActive) return "inactive";
-  if (offer.endsAt && offer.endsAt.getTime() < now.getTime()) return "expired";
+
+  let effectiveEndsAt = offer.endsAt;
+  if (
+    effectiveEndsAt &&
+    effectiveEndsAt.getUTCHours() === 0 &&
+    effectiveEndsAt.getUTCMinutes() === 0 &&
+    effectiveEndsAt.getUTCSeconds() === 0
+  ) {
+    // If endsAt is at midnight 00:00:00 (e.g. from date-only inputs), extend to end of day 23:59:59.999
+    effectiveEndsAt = new Date(effectiveEndsAt.getTime() + (24 * 60 * 60 * 1000 - 1));
+  }
+
+  if (effectiveEndsAt && effectiveEndsAt.getTime() < now.getTime()) return "expired";
   if (offer.startsAt && offer.startsAt.getTime() > now.getTime()) return "scheduled";
   return "active";
 }

@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createAdminGstRateSchema } from "../validations/admin-gst-rate.schema";
@@ -30,20 +29,11 @@ export function GstRateForm({
     reValidateMode: "onChange",
     defaultValues: {
       name: initialData?.name || "",
-      cgstPercent: initialData?.cgstPercent ?? ("" as unknown as number),
-      sgstPercent: initialData?.sgstPercent ?? ("" as unknown as number),
-      igstPercent: initialData?.igstPercent ?? ("" as unknown as number),
+      cgstPercent: initialData?.cgstPercent ?? 0,
+      sgstPercent: initialData?.sgstPercent ?? 0,
+      igstPercent: initialData?.igstPercent ?? 0,
     },
   });
-
-  useEffect(() => {
-    methods.reset({
-      name: initialData?.name || "",
-      cgstPercent: initialData?.cgstPercent ?? ("" as unknown as number),
-      sgstPercent: initialData?.sgstPercent ?? ("" as unknown as number),
-      igstPercent: initialData?.igstPercent ?? ("" as unknown as number),
-    });
-  }, [initialData, methods]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     // Prevent minus sign and exponential notation
@@ -82,7 +72,7 @@ export function GstRateForm({
             min="0"
             max="100"
             step="any"
-            placeholder="0"
+            placeholder="9"
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
             required
@@ -95,7 +85,7 @@ export function GstRateForm({
             min="0"
             max="100"
             step="any"
-            placeholder="0"
+            placeholder="9"
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
             required
@@ -108,7 +98,7 @@ export function GstRateForm({
             min="0"
             max="100"
             step="any"
-            placeholder="0"
+            placeholder="18"
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
             required

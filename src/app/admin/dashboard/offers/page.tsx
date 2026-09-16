@@ -9,7 +9,6 @@ import { Select } from "@/components/ui/select";
 import { SearchInput } from "@/components/ui/search-input";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/ui/error-state";
-import { toast } from "@/components/ui/Toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/forms/label";
 import { DataTable } from "@/components/admin/data-table/DataTable";
@@ -39,6 +38,7 @@ import {
   OFFER_TYPE_LABELS,
   OFFER_TYPE_OPTIONS,
   formatOfferDiscount,
+  formatOfferValidity,
 } from "@/features/offers/constants/offer-options";
 import type { CreateOfferSchemaInput } from "@/features/offers/validations/offer.schema";
 import type {
@@ -164,7 +164,6 @@ export default function AdminOffersPage() {
     setFormError(null);
     try {
       await createMutation.mutateAsync(formData as Record<string, unknown>);
-      toast.success("Offer created", `"${formData.name}" is ready.`);
       setIsCreateOpen(false);
     } catch (err) {
       setFormError(errorMessage(err, "Could not create the offer."));
@@ -179,7 +178,6 @@ export default function AdminOffersPage() {
         id: editingOffer.id,
         data: formData as Record<string, unknown>,
       });
-      toast.success("Offer updated", `"${formData.name}" has been saved.`);
       setEditingOffer(null);
     } catch (err) {
       setFormError(errorMessage(err, "Could not update the offer."));
@@ -191,12 +189,8 @@ export default function AdminOffersPage() {
     const nextActive = !statusTarget.isActive;
     try {
       await statusMutation.mutateAsync({ id: statusTarget.id, isActive: nextActive });
-      toast.success(
-        nextActive ? "Offer activated" : "Offer deactivated",
-        `"${statusTarget.name}" is now ${nextActive ? "live" : "switched off"}.`
-      );
-    } catch (err) {
-      toast.error("Status not changed", errorMessage(err, "Please try again."));
+    } catch {
+      // Error toast handled by MutationCache
     } finally {
       setStatusTarget(null);
     }
@@ -206,9 +200,8 @@ export default function AdminOffersPage() {
     if (!deleteTarget) return;
     try {
       await deleteMutation.mutateAsync(deleteTarget.id);
-      toast.success("Offer deleted", `"${deleteTarget.name}" has been removed.`);
-    } catch (err) {
-      toast.error("Offer not deleted", errorMessage(err, "Please try again."));
+    } catch {
+      // Error toast handled by MutationCache
     } finally {
       setDeleteTarget(null);
     }
@@ -301,7 +294,7 @@ export default function AdminOffersPage() {
       cell: ({ row }) => (
         <div className="flex items-center gap-1.5 whitespace-nowrap text-xs text-neutral-600">
           <Calendar className="h-3.5 w-3.5 text-neutral-400" />
-          {formatDate(row.original.startsAt)} — {formatDate(row.original.endsAt)}
+          {formatOfferValidity(row.original.startsAt, row.original.endsAt)}
         </div>
       ),
     },

@@ -55,14 +55,14 @@ function buildDefaults(offer?: OfferListItem | null): CreateOfferSchemaInput {
       code: "",
       level: "product",
       type: "percentage",
-      value: 0,
+      value: "" as unknown as number,
       buyQuantity: null,
       getQuantity: null,
       minQuantity: 1,
       maxQuantity: null,
       minCartValue: null,
       maxDiscountAmount: null,
-      priority: 0,
+      priority: "" as unknown as number,
       terms: "",
       startsAt: todayInputValue(),
       endsAt: todayInputValue(),
@@ -176,6 +176,13 @@ export function OfferForm({
     }
   };
 
+  // Revalidate relevant fields when the offer type changes if the form has been touched
+  React.useEffect(() => {
+    if (formState.isSubmitted || formState.touchedFields.value) {
+      methods.trigger(["value", "maxDiscountAmount", "buyQuantity", "getQuantity"]);
+    }
+  }, [type, methods, formState.isSubmitted, formState.touchedFields.value]);
+
   const showValueField = type !== "bxgy";
   const showBxgyFields = type === "bxgy";
   const showMaxDiscount = type === "percentage" || type === "flat";
@@ -245,6 +252,7 @@ export function OfferForm({
             name="name"
             label="Offer Name"
             required
+            maxLength={150}
             placeholder="e.g. Diwali Festival Offer"
           />
           <FormInput
@@ -252,6 +260,7 @@ export function OfferForm({
             label="Offer / Coupon Code"
             placeholder="Optional, e.g. DIWALI15"
             isSlug={false}
+            maxLength={50}
             description="Leave blank for an automatic offer that needs no code."
           />
         </section>
@@ -295,10 +304,11 @@ export function OfferForm({
               name="value"
               type="number"
               step="0.01"
-              min={0}
+              min={0.01}
+              max={type === "percentage" ? 100 : 99999999.99}
               label={offerValueFieldLabel(type)}
               required
-              placeholder={type === "percentage" ? "e.g. 15" : "e.g. 50"}
+              placeholder="0"
             />
           )}
 
@@ -308,6 +318,8 @@ export function OfferForm({
                 name="buyQuantity"
                 type="number"
                 min={1}
+                max={99999}
+                step={1}
                 label="Buy Quantity"
                 required
                 placeholder="e.g. 2"
@@ -316,6 +328,8 @@ export function OfferForm({
                 name="getQuantity"
                 type="number"
                 min={1}
+                max={99999}
+                step={1}
                 label="Get Quantity (free)"
                 required
                 placeholder="e.g. 1"
@@ -330,6 +344,8 @@ export function OfferForm({
             name="minQuantity"
             type="number"
             min={1}
+            max={99999}
+            step={1}
             label="Minimum Quantity"
             required
           />
@@ -337,6 +353,8 @@ export function OfferForm({
             name="maxQuantity"
             type="number"
             min={1}
+            max={99999}
+            step={1}
             label="Maximum Quantity"
             placeholder="Optional"
             description="Units beyond this pay full price."
@@ -346,6 +364,7 @@ export function OfferForm({
             type="number"
             step="0.01"
             min={0}
+            max={99999999.99}
             label="Minimum Cart Value (₹)"
             placeholder="Optional"
           />
@@ -355,6 +374,7 @@ export function OfferForm({
               type="number"
               step="0.01"
               min={0}
+              max={99999999.99}
               label="Maximum Discount (₹)"
               placeholder="Optional"
             />
@@ -370,7 +390,9 @@ export function OfferForm({
             type="number"
             min={0}
             max={1000}
+            step={1}
             label="Priority"
+            placeholder="0"
             required
             description="Higher wins when two offers of the same level compete."
           />
@@ -382,6 +404,7 @@ export function OfferForm({
             name="terms"
             label="Terms & Conditions"
             rows={3}
+            maxLength={5000}
             placeholder="Shown to customers on the product page. Optional."
           />
 

@@ -7,7 +7,6 @@ import {
   Users,
   UserCheck,
   UserX,
-  RotateCcw,
 } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
@@ -19,6 +18,7 @@ import { SearchInput } from "@/components/ui/search-input";
 import { Select } from "@/components/ui/select";
 import { AdminTableSkeleton } from "@/components/admin/AdminTableSkeleton";
 import { ErrorState } from "@/components/ui/error-state";
+import { ClearFiltersButton } from "@/components/common/clear-filters-button";
 import { useStaffList, useStaffCount, StaffFormModal } from "@/features/staff";
 import type { StaffResponse } from "@/features/staff/types";
 
@@ -134,11 +134,18 @@ export default function AdminStaffPage() {
       {
         accessorKey: "phone",
         header: "Phone Number",
-        cell: ({ row }) => (
-          <span className="text-sm text-neutral-600">
-            {row.original.phone || "—"}
-          </span>
-        ),
+        cell: ({ row }) => {
+          const rawPhone = row.original.phone;
+          const displayPhone = rawPhone
+            ? rawPhone.replace(/^\+91\s*/, "").replace(/^91\s*/, "").trim()
+            : "";
+
+          return (
+            <span className="text-sm text-neutral-600">
+              {displayPhone || "—"}
+            </span>
+          );
+        },
       },
       {
         accessorKey: "isActive",
@@ -258,16 +265,7 @@ export default function AdminStaffPage() {
           </div>
 
           {hasActiveFilters && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleResetFilters}
-              className="h-10 px-3 text-xs font-semibold text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-xl flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              <span>Reset</span>
-            </Button>
+            <ClearFiltersButton onClick={handleResetFilters} />
           )}
         </div>
 

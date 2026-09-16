@@ -34,10 +34,10 @@ export const OFFER_STATUS_LABELS: Record<OfferComputedStatus, string> = {
 /** Maps a computed status onto the shared Badge variants. */
 export const OFFER_STATUS_BADGE: Record<
   OfferComputedStatus,
-  "success" | "secondary" | "info" | "warning"
+  "success" | "destructive" | "info" | "warning"
 > = {
   active: "success",
-  inactive: "secondary",
+  inactive: "destructive",
   scheduled: "info",
   expired: "warning",
 };
@@ -85,4 +85,43 @@ export function offerValueFieldLabel(type: OfferType): string {
     default:
       return "Discount Value";
   }
+}
+
+/**
+ * Format a single offer date cleanly in UTC so date-only values (e.g. 2026-09-16)
+ * do not shift into next day across timezones.
+ */
+export function formatOfferDate(value: string | Date | null | undefined): string {
+  if (!value) return "—";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+/**
+ * Formats offer validity range. If the offer is for a single day, shows only that date.
+ * E.g., "16 Sept 2026" instead of "16 Sept 2026 — 16 Sept 2026".
+ * If multiple days, shows "16 Sept 2026 — 20 Sept 2026".
+ */
+export function formatOfferValidity(
+  startsAt: string | Date | null | undefined,
+  endsAt: string | Date | null | undefined
+): string {
+  if (!startsAt && !endsAt) return "—";
+  if (!startsAt) return `Until ${formatOfferDate(endsAt)}`;
+  if (!endsAt) return `From ${formatOfferDate(startsAt)}`;
+
+  const startFormatted = formatOfferDate(startsAt);
+  const endFormatted = formatOfferDate(endsAt);
+
+  if (startFormatted === endFormatted) {
+    return startFormatted;
+  }
+
+  return `${startFormatted} — ${endFormatted}`;
 }

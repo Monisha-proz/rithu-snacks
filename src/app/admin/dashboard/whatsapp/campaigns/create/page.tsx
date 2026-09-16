@@ -29,6 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Radio } from "@/components/ui/Radio";
+import { toast } from "@/components/ui/Toast";
 
 const CAMPAIGN_TYPE_OPTIONS: SelectOption[] = [
   { value: "FESTIVAL", label: "Festival Special (Diwali, Pongal, New Year)" },
@@ -68,9 +69,11 @@ function CreateCampaignContent() {
 
   // Form states
   const [name, setName] = useState("");
+  const [nameError, setNameError] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState("FESTIVAL");
   const [message, setMessage] = useState("");
+  const [messageError, setMessageError] = useState("");
   const [mediaUrl, setMediaUrl] = useState("");
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
 
@@ -80,6 +83,7 @@ function CreateCampaignContent() {
   const [customerFilter, setCustomerFilter] = useState("whatsapp_only");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCustomerIds, setSelectedCustomerIds] = useState<Set<string>>(new Set());
+  const [audienceError, setAudienceError] = useState("");
 
   // Templates
   const [templates, setTemplates] = useState<TemplateItem[]>([]);
@@ -88,6 +92,7 @@ function CreateCampaignContent() {
   // Scheduling states
   const [scheduleMode, setScheduleMode] = useState<"NOW" | "SCHEDULED">("NOW");
   const [scheduledDateTime, setScheduledDateTime] = useState<string>("");
+  const [scheduledDateTimeError, setScheduledDateTimeError] = useState("");
 
   // Submission
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -156,8 +161,12 @@ function CreateCampaignContent() {
     const tmpl = templates.find((t) => t.id === tId);
     if (tmpl) {
       setMessage(tmpl.message);
+      if (messageError) setMessageError("");
       if (tmpl.media_url) setMediaUrl(tmpl.media_url);
-      if (!name) setName(tmpl.name);
+      if (!name) {
+        setName(tmpl.name);
+        if (nameError) setNameError("");
+      }
     }
   };
 
@@ -182,6 +191,7 @@ function CreateCampaignContent() {
       next.add(id);
     }
     setSelectedCustomerIds(next);
+    if (audienceError) setAudienceError("");
   };
 
   // Select all / Deselect all
@@ -189,6 +199,7 @@ function CreateCampaignContent() {
     const next = new Set(selectedCustomerIds);
     filteredCustomers.forEach((c) => next.add(c.id));
     setSelectedCustomerIds(next);
+    if (audienceError) setAudienceError("");
   };
 
   const deselectAllFiltered = () => {
@@ -200,6 +211,7 @@ function CreateCampaignContent() {
   // Insert variable tag into message
   const insertVariable = (variable: string) => {
     setMessage((prev) => prev + " " + variable);
+    if (messageError) setMessageError("");
   };
 
   // Media file upload
@@ -210,22 +222,27 @@ function CreateCampaignContent() {
     setIsUploadingMedia(true);
     try {
       const formData = new FormData();
+      formData.append("folder", "campaigns");
       formData.append("file", file);
 
       const res = await fetch("/api/admin/upload", {
         method: "POST",
         body: formData,
+        credentials: "include",
       });
       const json = await res.json();
-      if (json.success && json.data?.url) {
-        setMediaUrl(json.data.url);
+      const uploadedPath = json.data?.path || json.data?.url;
+      if (json.success && uploadedPath) {
+        setMediaUrl(uploadedPath);
+        toast.success("Image uploaded successfully");
       } else {
-        alert(json.message || "Failed to upload image.");
+        toast.error(json.message || "Failed to upload image.");
       }
     } catch (err: unknown) {
-      alert("Image upload error: " + (err as Error)?.message);
+      toast.error("Image upload error: " + (err as Error)?.message);
     } finally {
       setIsUploadingMedia(false);
+      e.target.value = "";
     }
   };
 
@@ -237,23 +254,28 @@ function CreateCampaignContent() {
   // Submit Campaign
   const handleLaunchCampaign = async () => {
     setSubmitError(null);
+    setNameError("");
+    setAudienceError("");
+    setMessageError("");
+    setScheduledDateTimeError("");
+
     if (!name.trim()) {
-      setSubmitError("Please enter a campaign name.");
+      setNameError("Campaign name is required");
       setCurrentStep(1);
       return;
     }
     if (totalSelected === 0) {
-      setSubmitError("Please select at least 1 customer recipient.");
+      setAudienceError("At least 1 customer recipient is required");
       setCurrentStep(2);
       return;
     }
     if (!message.trim()) {
-      setSubmitError("Please compose a message.");
+      setMessageError("Message content is required");
       setCurrentStep(3);
       return;
     }
     if (scheduleMode === "SCHEDULED" && !scheduledDateTime) {
-      setSubmitError("Please pick a scheduled date and time.");
+      setScheduledDateTimeError("Execution date and time is required");
       return;
     }
 
@@ -396,7 +418,11 @@ function CreateCampaignContent() {
               <Input
                 type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                error={nameError}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (nameError) setNameError("");
+                }}
                 placeholder="e.g. Diwali Sweets & Mixture 20% Off"
               />
             </div>
@@ -429,9 +455,10 @@ function CreateCampaignContent() {
             <Button
               onClick={() => {
                 if (!name.trim()) {
-                  setSubmitError("Please enter a campaign name.");
+                  setNameError("Campaign name is required");
                   return;
                 }
+                setNameError("");
                 setSubmitError(null);
                 setCurrentStep(2);
               }}
@@ -476,25 +503,30 @@ function CreateCampaignContent() {
           )}
 
           {/* Audience Filter Pills */}
-          <div className="flex flex-wrap items-center gap-2">
-            {[
-              { id: "whatsapp_only", label: "WhatsApp Ready Only" },
-              { id: "recent_buyers", label: "Recent Buyers (Last 30 Days)" },
-              { id: "with_orders", label: "Customers With Orders" },
-              { id: "all", label: "All Database Customers" },
-            ].map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setCustomerFilter(f.id)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
-                  customerFilter === f.id
-                    ? "bg-secondary-600 text-white shadow-xs"
-                    : "bg-white text-neutral-600 hover:bg-neutral-50 border border-neutral-200"
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {[
+                { id: "whatsapp_only", label: "WhatsApp Ready Only" },
+                { id: "recent_buyers", label: "Recent Buyers (Last 30 Days)" },
+                { id: "with_orders", label: "Customers With Orders" },
+                { id: "all", label: "All Database Customers" },
+              ].map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => setCustomerFilter(f.id)}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                    customerFilter === f.id
+                      ? "bg-secondary-600 text-white shadow-xs"
+                      : "bg-white text-neutral-600 hover:bg-neutral-50 border border-neutral-200"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+            {audienceError && (
+              <p className="text-xs text-red-500 font-medium">{audienceError}</p>
+            )}
           </div>
 
           {/* Search and Bulk Select */}
@@ -627,9 +659,10 @@ function CreateCampaignContent() {
             <Button
               onClick={() => {
                 if (totalSelected === 0) {
-                  setSubmitError("Please select at least 1 customer recipient.");
+                  setAudienceError("At least 1 customer recipient is required");
                   return;
                 }
+                setAudienceError("");
                 setSubmitError(null);
                 setCurrentStep(3);
               }}
@@ -706,7 +739,11 @@ function CreateCampaignContent() {
               <Textarea
                 rows={8}
                 value={message}
-                onChange={(e) => setMessage(e.target.value)}
+                error={messageError}
+                onChange={(e) => {
+                  setMessage(e.target.value);
+                  if (messageError) setMessageError("");
+                }}
                 placeholder={`Namaste {{customer_name}}! 🪔\n\nCelebrate this festive season with freshly prepared snacks from Rithu Snacks! Use coupon *FESTIVE20* for 20% OFF today.`}
               />
             </div>
@@ -780,9 +817,10 @@ function CreateCampaignContent() {
               <Button
                 onClick={() => {
                   if (!message.trim()) {
-                    setSubmitError("Please compose a message.");
+                    setMessageError("Message content is required");
                     return;
                   }
+                  setMessageError("");
                   setSubmitError(null);
                   setCurrentStep(4);
                 }}
@@ -964,7 +1002,11 @@ function CreateCampaignContent() {
                   <Input
                     type="datetime-local"
                     value={scheduledDateTime}
-                    onChange={(e) => setScheduledDateTime(e.target.value)}
+                    error={scheduledDateTimeError}
+                    onChange={(e) => {
+                      setScheduledDateTime(e.target.value);
+                      if (scheduledDateTimeError) setScheduledDateTimeError("");
+                    }}
                   />
                 </div>
                 <p className="text-[11px] text-neutral-500">

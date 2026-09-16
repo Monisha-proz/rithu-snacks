@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormModal } from "@/components/common/FormModal";
 import { SearchInput } from "@/components/ui/search-input";
+import { toast } from "@/components/ui/Toast";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import {
   createCouponSchema,
@@ -31,7 +32,9 @@ import type { CouponListItem } from "@/features/coupons/types";
 
 const typeBadgeVariant: Record<string, "info" | "success"> = {
   PERCENTAGE: "info",
+  percentage: "info",
   FIXED: "success",
+  flat: "success",
 };
 
 export default function AdminCouponsPage() {
@@ -60,36 +63,69 @@ export default function AdminCouponsPage() {
     reset,
     formState: { errors },
   } = useForm<CreateCouponSchemaInput>({
-    resolver: zodResolver(createCouponSchema),
+    resolver: zodResolver(createCouponSchema) as any,
     defaultValues: {
       code: "",
       type: "PERCENTAGE",
-      value: 0,
+      value: "" as unknown as number,
+      minOrderAmount: "" as unknown as number,
+      maxDiscount: "" as unknown as number,
+      usageLimit: "" as unknown as number,
       isActive: true,
+      startsAt: "",
+      expiresAt: "",
     },
   });
 
   useEffect(() => {
     if (editingCoupon) {
+      const normalizedType =
+        editingCoupon.type?.toUpperCase() === "FLAT" || editingCoupon.type?.toUpperCase() === "FIXED"
+          ? "FIXED"
+          : "PERCENTAGE";
       reset({
         code: editingCoupon.code,
-        type: editingCoupon.type as "PERCENTAGE" | "FIXED",
+        type: normalizedType,
         value: editingCoupon.value,
-        minOrderAmount: editingCoupon.minOrderAmount ?? undefined,
-        maxDiscount: editingCoupon.maxDiscount ?? undefined,
-        usageLimit: editingCoupon.usageLimit ?? undefined,
+        minOrderAmount: editingCoupon.minOrderAmount ?? ("" as unknown as number),
+        maxDiscount: editingCoupon.maxDiscount ?? ("" as unknown as number),
+        usageLimit: editingCoupon.usageLimit ?? ("" as unknown as number),
         isActive: editingCoupon.isActive,
         startsAt: editingCoupon.startsAt
           ? new Date(editingCoupon.startsAt).toISOString().split("T")[0]
-          : undefined,
+          : "",
         expiresAt: editingCoupon.expiresAt
           ? new Date(editingCoupon.expiresAt).toISOString().split("T")[0]
-          : undefined,
+          : "",
       });
     } else {
-      reset({ code: "", type: "PERCENTAGE", value: 0, isActive: true });
+      reset({
+        code: "",
+        type: "PERCENTAGE",
+        value: "" as unknown as number,
+        minOrderAmount: "" as unknown as number,
+        maxDiscount: "" as unknown as number,
+        usageLimit: "" as unknown as number,
+        isActive: true,
+        startsAt: "",
+        expiresAt: "",
+      });
     }
   }, [editingCoupon, reset]);
+
+  const onInvalid = (formErrors: any) => {
+    const firstErrorMessage =
+      formErrors.code?.message ||
+      formErrors.value?.message ||
+      formErrors.type?.message ||
+      formErrors.minOrderAmount?.message ||
+      formErrors.maxDiscount?.message ||
+      formErrors.usageLimit?.message ||
+      formErrors.expiresAt?.message ||
+      formErrors.startsAt?.message ||
+      "Please fill in all required fields correctly.";
+    toast.error("Validation Error", firstErrorMessage);
+  };
 
   const onSubmit = (formData: CreateCouponSchemaInput) => {
     if (editingCoupon) {
@@ -106,7 +142,17 @@ export default function AdminCouponsPage() {
       createMutation.mutate(formData, {
         onSuccess: () => {
           setModalOpen(false);
-          reset();
+          reset({
+            code: "",
+            type: "PERCENTAGE",
+            value: "" as unknown as number,
+            minOrderAmount: "" as unknown as number,
+            maxDiscount: "" as unknown as number,
+            usageLimit: "" as unknown as number,
+            isActive: true,
+            startsAt: "",
+            expiresAt: "",
+          });
         },
       });
     }
@@ -117,6 +163,17 @@ export default function AdminCouponsPage() {
       setEditingCoupon(coupon);
     } else {
       setEditingCoupon(null);
+      reset({
+        code: "",
+        type: "PERCENTAGE",
+        value: "" as unknown as number,
+        minOrderAmount: "" as unknown as number,
+        maxDiscount: "" as unknown as number,
+        usageLimit: "" as unknown as number,
+        isActive: true,
+        startsAt: "",
+        expiresAt: "",
+      });
     }
     setModalOpen(true);
   };
@@ -132,22 +189,30 @@ export default function AdminCouponsPage() {
     {
       accessorKey: "type",
       header: "Type",
-      cell: ({ row }) => (
-        <Badge variant={typeBadgeVariant[row.original.type] ?? "secondary"}>
-          {row.original.type}
-        </Badge>
-      ),
+      cell: ({ row }) => {
+        const typeStr =
+          row.original.type?.toUpperCase() === "FLAT" || row.original.type?.toUpperCase() === "FIXED"
+            ? "FIXED"
+            : "PERCENTAGE";
+        return (
+          <Badge variant={typeBadgeVariant[typeStr] ?? "secondary"}>
+            {typeStr}
+          </Badge>
+        );
+      },
     },
     {
       accessorKey: "value",
       header: "Value",
-      cell: ({ row }) => (
-        <span className="font-semibold text-neutral-900">
-          {row.original.type === "PERCENTAGE"
-            ? `${row.original.value}%`
-            : `₹${row.original.value}`}
-        </span>
-      ),
+      cell: ({ row }) => {
+        const isPercentage =
+          row.original.type?.toUpperCase() === "PERCENTAGE";
+        return (
+          <span className="font-semibold text-neutral-900">
+            {isPercentage ? `${row.original.value}%` : `₹${row.original.value}`}
+          </span>
+        );
+      },
     },
     {
       id: "usage",
@@ -290,57 +355,79 @@ export default function AdminCouponsPage() {
               Cancel
             </Button>
             <Button
-              onClick={handleSubmit(onSubmit)}
+              type="button"
+              onClick={handleSubmit(onSubmit, onInvalid)}
               disabled={createMutation.isPending || updateMutation.isPending}
               className="bg-[var(--color-secondary-600)] hover:bg-[var(--color-secondary-700)] text-white"
             >
-              {editingCoupon ? "Update" : "Create"}
+              {createMutation.isPending || updateMutation.isPending
+                ? "Saving..."
+                : editingCoupon
+                ? "Update"
+                : "Create"}
             </Button>
           </>
         }
       >
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Code <span className="text-error-600">*</span>
+              Code <span className="text-rose-500">*</span>
             </label>
             <input
               {...register("code")}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm uppercase focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className={`w-full rounded-lg border px-3 py-2 text-sm uppercase focus:outline-none focus:ring-2 ${
+                errors.code
+                  ? "border-rose-500 focus:border-rose-500 focus:ring-rose-200"
+                  : "border-gray-300 focus:border-primary focus:ring-primary/30"
+              }`}
               placeholder="e.g. SUMMER20"
             />
             {errors.code && (
-              <p className="mt-1 text-xs text-red-500 font-medium">{errors.code.message}</p>
+              <p className="mt-1 text-xs text-rose-600 font-medium">{errors.code.message}</p>
             )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Type <span className="text-error-600">*</span>
+                Type <span className="text-rose-500">*</span>
               </label>
               <select
                 {...register("type")}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 ${
+                  errors.type
+                    ? "border-rose-500 focus:border-rose-500 focus:ring-rose-200"
+                    : "border-gray-300 focus:border-primary focus:ring-primary/30"
+                }`}
               >
                 <option value="PERCENTAGE">Percentage</option>
                 <option value="FIXED">Fixed Amount</option>
               </select>
+              {errors.type && (
+                <p className="mt-1 text-xs text-rose-600 font-medium">{errors.type.message}</p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Value <span className="text-error-600">*</span>
+                Value <span className="text-rose-500">*</span>
               </label>
               <input
                 type="number"
                 step="0.01"
-                {...register("value", { valueAsNumber: true })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                {...register("value", {
+                  setValueAs: (v) => (v === "" || v === null || v === undefined ? "" : Number(v)),
+                })}
+                className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 ${
+                  errors.value
+                    ? "border-rose-500 focus:border-rose-500 focus:ring-rose-200"
+                    : "border-gray-300 focus:border-primary focus:ring-primary/30"
+                }`}
                 placeholder="0"
               />
               {errors.value && (
-                <p className="mt-1 text-xs text-red-500 font-medium">{errors.value.message}</p>
+                <p className="mt-1 text-xs text-rose-600 font-medium">{errors.value.message}</p>
               )}
             </div>
           </div>
@@ -348,41 +435,68 @@ export default function AdminCouponsPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Min Order Amount
+                Min Order Amount <span className="text-rose-500">*</span>
               </label>
               <input
                 type="number"
                 step="0.01"
-                {...register("minOrderAmount", { valueAsNumber: true })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                {...register("minOrderAmount", {
+                  setValueAs: (v) => (v === "" || v === null || v === undefined ? "" : Number(v)),
+                })}
+                className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 ${
+                  errors.minOrderAmount
+                    ? "border-rose-500 focus:border-rose-500 focus:ring-rose-200"
+                    : "border-gray-300 focus:border-primary focus:ring-primary/30"
+                }`}
                 placeholder="0"
               />
+              {errors.minOrderAmount && (
+                <p className="mt-1 text-xs text-rose-600 font-medium">{errors.minOrderAmount.message}</p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Max Discount
+                Max Discount <span className="text-rose-500">*</span>
               </label>
               <input
                 type="number"
                 step="0.01"
-                {...register("maxDiscount", { valueAsNumber: true })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                {...register("maxDiscount", {
+                  setValueAs: (v) => (v === "" || v === null || v === undefined ? "" : Number(v)),
+                })}
+                className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 ${
+                  errors.maxDiscount
+                    ? "border-rose-500 focus:border-rose-500 focus:ring-rose-200"
+                    : "border-gray-300 focus:border-primary focus:ring-primary/30"
+                }`}
                 placeholder="0"
               />
+              {errors.maxDiscount && (
+                <p className="mt-1 text-xs text-rose-600 font-medium">{errors.maxDiscount.message}</p>
+              )}
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Usage Limit
+              Usage Limit <span className="text-rose-500">*</span>
             </label>
             <input
               type="number"
-              {...register("usageLimit", { valueAsNumber: true })}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-              placeholder="Unlimited"
+              {...register("usageLimit", {
+                setValueAs: (v) => (v === "" || v === null || v === undefined ? "" : Number(v)),
+              })}
+              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 ${
+                errors.usageLimit
+                  ? "border-rose-500 focus:border-rose-500 focus:ring-rose-200"
+                  : "border-gray-300 focus:border-primary focus:ring-primary/30"
+              }`}
+              placeholder="e.g. 100"
             />
+            {errors.usageLimit && (
+              <p className="mt-1 text-xs text-rose-600 font-medium">{errors.usageLimit.message}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -393,8 +507,15 @@ export default function AdminCouponsPage() {
               <input
                 type="date"
                 {...register("startsAt")}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 ${
+                  errors.startsAt
+                    ? "border-rose-500 focus:border-rose-500 focus:ring-rose-200"
+                    : "border-gray-300 focus:border-primary focus:ring-primary/30"
+                }`}
               />
+              {errors.startsAt && (
+                <p className="mt-1 text-xs text-rose-600 font-medium">{errors.startsAt.message}</p>
+              )}
             </div>
 
             <div>
@@ -404,8 +525,15 @@ export default function AdminCouponsPage() {
               <input
                 type="date"
                 {...register("expiresAt")}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 ${
+                  errors.expiresAt
+                    ? "border-rose-500 focus:border-rose-500 focus:ring-rose-200"
+                    : "border-gray-300 focus:border-primary focus:ring-primary/30"
+                }`}
               />
+              {errors.expiresAt && (
+                <p className="mt-1 text-xs text-rose-600 font-medium">{errors.expiresAt.message}</p>
+              )}
             </div>
           </div>
 
@@ -414,9 +542,9 @@ export default function AdminCouponsPage() {
               type="checkbox"
               {...register("isActive")}
               id="isActive"
-              className="h-4 w-4 rounded border-gray-300"
+              className="h-4 w-4 rounded border-gray-300 text-secondary-600 focus:ring-secondary-500"
             />
-            <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
+            <label htmlFor="isActive" className="text-sm font-medium text-gray-700 cursor-pointer">
               Active
             </label>
           </div>
@@ -429,7 +557,9 @@ export default function AdminCouponsPage() {
         onConfirm={() => {
           if (deleteId) {
             deleteMutation.mutate(deleteId, {
-              onSuccess: () => setDeleteId(null),
+              onSuccess: () => {
+                setDeleteId(null);
+              },
             });
           }
         }}

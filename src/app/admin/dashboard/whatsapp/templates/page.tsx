@@ -43,8 +43,10 @@ export default function WhatsAppTemplatesPage() {
   // Modal State for New Template
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newTmplName, setNewTmplName] = useState("");
+  const [nameError, setNameError] = useState("");
   const [newTmplCategory, setNewTmplCategory] = useState("FESTIVAL");
   const [newTmplMessage, setNewTmplMessage] = useState("");
+  const [messageError, setMessageError] = useState("");
   const [newTmplMediaUrl, setNewTmplMediaUrl] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
@@ -65,8 +67,7 @@ export default function WhatsAppTemplatesPage() {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadTemplates(false);
+    loadTemplates(true);
   }, [loadTemplates]);
 
   const handleCopy = (text: string, id: string) => {
@@ -78,15 +79,19 @@ export default function WhatsAppTemplatesPage() {
   const handleCreateTemplate = async (e: React.FormEvent) => {
     e.preventDefault();
     setModalError(null);
+    setNameError("");
+    setMessageError("");
 
+    let hasError = false;
     if (!newTmplName.trim()) {
-      setModalError("Please provide a template title.");
-      return;
+      setNameError("Template name is required");
+      hasError = true;
     }
     if (!newTmplMessage.trim()) {
-      setModalError("Please provide message body.");
-      return;
+      setMessageError("Message content is required");
+      hasError = true;
     }
+    if (hasError) return;
 
     setIsSaving(true);
     try {
@@ -104,7 +109,9 @@ export default function WhatsAppTemplatesPage() {
       if (json.success) {
         setIsModalOpen(false);
         setNewTmplName("");
+        setNameError("");
         setNewTmplMessage("");
+        setMessageError("");
         setNewTmplMediaUrl("");
         loadTemplates(true);
       } else {
@@ -315,10 +322,13 @@ export default function WhatsAppTemplatesPage() {
               Template Name <span className="text-error-600">*</span>
             </label>
             <Input
-              required
               size="sm"
               value={newTmplName}
-              onChange={(e) => setNewTmplName(e.target.value)}
+              error={nameError}
+              onChange={(e) => {
+                setNewTmplName(e.target.value);
+                if (nameError) setNameError("");
+              }}
               placeholder="e.g. Diwali Sweets 20% Special"
             />
           </div>
@@ -343,14 +353,20 @@ export default function WhatsAppTemplatesPage() {
               <div className="flex gap-1.5">
                 <button
                   type="button"
-                  onClick={() => setNewTmplMessage((m) => m + " {{customer_name}}")}
+                  onClick={() => {
+                    setNewTmplMessage((m) => m + " {{customer_name}}");
+                    if (messageError) setMessageError("");
+                  }}
                   className="text-[10px] px-2 py-0.5 rounded bg-secondary-50 text-secondary-700 border border-secondary-200 font-mono cursor-pointer hover:bg-secondary-100"
                 >
                   + {"{{customer_name}}"}
                 </button>
                 <button
                   type="button"
-                  onClick={() => setNewTmplMessage((m) => m + " {{store_name}}")}
+                  onClick={() => {
+                    setNewTmplMessage((m) => m + " {{store_name}}");
+                    if (messageError) setMessageError("");
+                  }}
                   className="text-[10px] px-2 py-0.5 rounded bg-neutral-100 text-neutral-700 border border-neutral-200 font-mono cursor-pointer hover:bg-neutral-200"
                 >
                   + {"{{store_name}}"}
@@ -359,9 +375,12 @@ export default function WhatsAppTemplatesPage() {
             </div>
             <Textarea
               rows={5}
-              required
               value={newTmplMessage}
-              onChange={(e) => setNewTmplMessage(e.target.value)}
+              error={messageError}
+              onChange={(e) => {
+                setNewTmplMessage(e.target.value);
+                if (messageError) setMessageError("");
+              }}
               placeholder="Namaste {{customer_name}}! 🪔..."
             />
           </div>
