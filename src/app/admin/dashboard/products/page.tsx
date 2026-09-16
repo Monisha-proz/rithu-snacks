@@ -393,7 +393,7 @@ export default function AdminProductsPage() {
               slug: formData.slug,
               categoryId: formData.categoryId,
               brandId: formData.brandId,
-              hsnCodeId: formData.hsnCodeId,
+              hsnCodeId: formData.hsnCodeId || null,
             };
 
             const created = await createMutation.mutateAsync(payload);
