@@ -182,11 +182,17 @@ function ProductForm({
       ...formData,
       brandId: finalBrandId,
       slug: finalSlug,
+      hsnCodeId: formData.hsnCodeId ? formData.hsnCodeId : null,
     });
   };
 
   const categoryOptions = categories;
-  const hsnCodeOptions = hsnCodes;
+  const hsnCodeOptions = useMemo(() => {
+    return [
+      { value: "", label: "None / Not Applicable" },
+      ...hsnCodes,
+    ];
+  }, [hsnCodes]);
 
   return (
     <FormProvider {...methods}>
@@ -315,16 +321,15 @@ function ProductForm({
         </div>
 
         {/* Row 3: HSN Code */}
-        {hsnCodeOptions.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormSelect
-              name="hsnCodeId"
-              label="HSN Code"
-              placeholder="Select HSN code"
-              options={hsnCodeOptions}
-            />
-          </div>
-        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormSelect
+            name="hsnCodeId"
+            label="HSN Code"
+            placeholder={hsnCodes.length > 0 ? "Select HSN code" : "None / No HSN codes available"}
+            options={hsnCodeOptions}
+            description="Optional: Harmonized System of Nomenclature code for GST"
+          />
+        </div>
 
         <FormImageUpload
           name="productImage"

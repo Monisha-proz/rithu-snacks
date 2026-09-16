@@ -433,7 +433,7 @@ export const productService = {
         // User cleared/deleted the product image
         await db.productImage.updateMany({
           where: { productId: existing.id, is_active: true },
-          data: { is_active: false, updated_at: new Date(), ...(adminId ? { updated_by: adminId } : {}) },
+          data: { is_active: false, isPrimary: false, updated_at: new Date(), ...(adminId ? { updated_by: adminId } : {}) },
         });
       }
     }
