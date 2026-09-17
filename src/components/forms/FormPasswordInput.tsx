@@ -52,6 +52,7 @@ function FormPasswordInput({
             <input
               id={name}
               {...field}
+              value={field.value ?? ""}
               {...props}
               type={showPassword ? "text" : "password"}
               className={cn(
