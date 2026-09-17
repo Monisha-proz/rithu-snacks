@@ -1,29 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import {
-  FormModal,
-} from "@/components/common/FormModal";
+import { FormModal } from "@/components/common/FormModal";
 import { AdminTableSkeleton } from "@/components/admin/AdminTableSkeleton";
 import { ErrorState } from "@/components/ui/error-state";
-import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
 import {
   AdminPageHeader,
   AdminContent,
 } from "@/components/admin/AdminPageHeader";
 import { DataTable } from "@/components/admin/data-table/DataTable";
+import { SearchInput } from "@/components/ui/search-input";
+import { toast } from "@/components/ui/Toast";
+import { Plus, Pencil } from "lucide-react";
 import {
   useInventory,
   useAdjustStock,
   useCreateInventory,
 } from "@/features/inventory/hooks";
-import { formatDate } from "@/lib/utils";
 import type {
   InventoryListItem,
   InventoryTransactionType,
@@ -77,27 +76,29 @@ function getStatusBadge(item: InventoryListItem) {
   }
   if (item.quantity <= item.reorderLevel) {
     return (
-      <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200">
+      <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-200">
         Low Stock
       </Badge>
     );
   }
   return (
-    <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
+    <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200">
       In Stock
     </Badge>
   );
 }
 
 export default function InventoryStockPage() {
-  const [params, setParams] = useState<GetInventoryParams>({
-    page: 1,
-    limit: 10,
-  });
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
 
-  const { data, isLoading, error } = useInventory(params);
+  const { data, isLoading, error, refetch } = useInventory({
+    page,
+    limit: pageSize,
+  });
   const adjustMutation = useAdjustStock();
   const createMutation = useCreateInventory();
 
@@ -111,60 +112,6 @@ export default function InventoryStockPage() {
     },
   });
 
-  const columns: ColumnDef<InventoryListItem>[] = [
-    {
-      accessorKey: "productName",
-      header: "Product Name",
-    },
-    {
-      accessorKey: "variantName",
-      header: "Variant",
-      cell: ({ row }) => row.original.variantName ?? "—",
-    },
-    {
-      accessorKey: "quantity",
-      header: "Quantity",
-    },
-    {
-      accessorKey: "reservedQuantity",
-      header: "Reserved",
-    },
-    {
-      accessorKey: "availableQuantity",
-      header: "Available",
-    },
-    {
-      accessorKey: "reorderLevel",
-      header: "Reorder Level",
-    },
-    {
-      id: "status",
-      header: "Status",
-      cell: ({ row }) => getStatusBadge(row.original),
-    },
-    {
-      id: "actions",
-      header: "Actions",
-      cell: ({ row }) => (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            adjustForm.reset({
-              inventoryId: row.original.id,
-              type: "ADJUSTMENT",
-              quantity: 0,
-              notes: "",
-            });
-            setAdjustOpen(true);
-          }}
-        >
-          Adjust Stock
-        </Button>
-      ),
-    },
-  ];
-
   const createForm = useForm<CreateInventoryForm>({
     resolver: zodResolver(createInventoryFormSchema),
     defaultValues: {
@@ -175,11 +122,113 @@ export default function InventoryStockPage() {
     },
   });
 
+  const inventoryData = data?.data?.data ?? [];
+
+  const filteredData = useMemo(() => {
+    if (!search.trim()) return inventoryData;
+    const q = search.toLowerCase();
+    return inventoryData.filter(
+      (item) =>
+        item.productName.toLowerCase().includes(q) ||
+        (item.variantName && item.variantName.toLowerCase().includes(q))
+    );
+  }, [inventoryData, search]);
+
+  const columns: ColumnDef<InventoryListItem>[] = [
+    {
+      accessorKey: "productName",
+      header: "Product Name",
+      cell: ({ row }) => (
+        <p className="font-semibold text-[var(--color-neutral-900)]">
+          {row.original.productName}
+        </p>
+      ),
+    },
+    {
+      accessorKey: "variantName",
+      header: "Variant",
+      cell: ({ row }) => (
+        <span className="text-[var(--color-neutral-700)]">
+          {row.original.variantName ?? "—"}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "quantity",
+      header: "Quantity",
+      cell: ({ row }) => (
+        <span className="font-medium text-[var(--color-neutral-800)]">
+          {row.original.quantity}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "reservedQuantity",
+      header: "Reserved",
+      cell: ({ row }) => (
+        <span className="text-[var(--color-neutral-600)]">
+          {row.original.reservedQuantity}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "availableQuantity",
+      header: "Available",
+      cell: ({ row }) => (
+        <span className="font-medium text-[var(--color-neutral-800)]">
+          {row.original.availableQuantity}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "reorderLevel",
+      header: "Reorder Level",
+      cell: ({ row }) => (
+        <span className="text-[var(--color-neutral-600)]">
+          {row.original.reorderLevel}
+        </span>
+      ),
+    },
+    {
+      id: "status",
+      header: "Status",
+      cell: ({ row }) => getStatusBadge(row.original),
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => (
+        <div className="flex items-center justify-center">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              adjustForm.reset({
+                inventoryId: row.original.id,
+                type: "ADJUSTMENT",
+                quantity: 0,
+                notes: "",
+              });
+              setAdjustOpen(true);
+            }}
+            className="h-8 rounded-lg text-xs font-semibold hover:border-secondary-600 hover:text-secondary-700"
+          >
+            Adjust Stock
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
   const handleAdjustSubmit = (values: AdjustStockForm) => {
     adjustMutation.mutate(values, {
       onSuccess: () => {
+        toast.success("Stock Adjusted", "Inventory stock adjusted successfully.");
         setAdjustOpen(false);
         adjustForm.reset();
+      },
+      onError: (err: any) => {
+        toast.error("Adjustment Failed", err?.message || "Could not adjust stock.");
       },
     });
   };
@@ -187,40 +236,72 @@ export default function InventoryStockPage() {
   const handleCreateSubmit = (values: CreateInventoryForm) => {
     createMutation.mutate(values, {
       onSuccess: () => {
+        toast.success("Inventory Created", "New inventory record created successfully.");
         setCreateOpen(false);
         createForm.reset();
+      },
+      onError: (err: any) => {
+        toast.error("Creation Failed", err?.message || "Could not create inventory record.");
       },
     });
   };
 
-  if (isLoading) return <AdminTableSkeleton />;
-  if (error) return <ErrorState message={error.message} />;
-
-  const inventoryData = data?.data?.data ?? [];
+  if (isLoading && !data) return <AdminTableSkeleton />;
+  if (error) return <ErrorState message={error.message} onRetry={() => refetch()} />;
 
   return (
     <div className="flex flex-1 min-h-0 flex-col">
-      <AdminBreadcrumb
-        items={[
-          { label: "Dashboard", href: "/admin/dashboard" },
-          { label: "Inventory" },
-          { label: "Stock" },
-        ]}
-      />
       <AdminPageHeader
         title="Inventory Stock"
-        description="Manage your inventory stock levels"
-        actions={
-          <Button onClick={() => setCreateOpen(true)}>Add Inventory</Button>
-        }
+        description="Manage your inventory stock levels and threshold alerts."
       />
       <AdminContent className="flex-1 min-h-0 overflow-hidden">
-        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-          <DataTable
-            columns={columns}
-            data={inventoryData}
-            className="bg-white border border-neutral-200"
-          />
+        <div className="flex h-full flex-col overflow-hidden bg-[var(--color-background)] py-1 rounded-2xl">
+          {/* Search + Add Button Header */}
+          <div className="flex-shrink-0 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <SearchInput
+              placeholder="Search inventory by product or variant..."
+              defaultValue={search}
+              onSearch={(val) => {
+                setSearch(val);
+                setPage(1);
+              }}
+              className="w-full max-w-md"
+            />
+
+            <Button
+              type="button"
+              onClick={() => setCreateOpen(true)}
+              className="h-11 rounded-xl bg-[var(--color-secondary-600)] px-5 text-sm font-semibold text-white hover:bg-[var(--color-secondary-700)] cursor-pointer"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Inventory
+            </Button>
+          </div>
+
+          {/* Table Container */}
+          <div className="mt-6 flex-1 min-h-0 overflow-hidden flex flex-col">
+            <DataTable
+              columns={columns}
+              data={filteredData}
+              pageSize={pageSize}
+              pageSizeOptions={[10, 20, 30, 50]}
+              page={page}
+              totalPages={Math.max(1, Math.ceil(filteredData.length / pageSize))}
+              totalItems={filteredData.length}
+              onPageChange={setPage}
+              onPageSizeChange={(newSize) => {
+                setPageSize(newSize);
+                setPage(1);
+              }}
+              emptyMessage={
+                search
+                  ? "No inventory items match your search."
+                  : "No inventory records created yet."
+              }
+              className="bg-white"
+            />
+          </div>
         </div>
       </AdminContent>
 
@@ -231,8 +312,14 @@ export default function InventoryStockPage() {
         description="Adjust inventory stock levels"
         footer={
           <>
-            <Button variant="outline" onClick={() => setAdjustOpen(false)}>Cancel</Button>
-            <Button onClick={adjustForm.handleSubmit(handleAdjustSubmit)} disabled={adjustMutation.isPending}>
+            <Button variant="outline" onClick={() => setAdjustOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={adjustForm.handleSubmit(handleAdjustSubmit)}
+              disabled={adjustMutation.isPending}
+              className="bg-[var(--color-secondary-600)] hover:bg-[var(--color-secondary-700)] text-white"
+            >
               {adjustMutation.isPending ? "Saving..." : "Save"}
             </Button>
           </>
@@ -240,9 +327,11 @@ export default function InventoryStockPage() {
       >
         <div className="space-y-4">
           <div>
-            <label className="text-sm font-medium">Inventory Item <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Inventory Item <span className="text-rose-500">*</span>
+            </label>
             <select
-              className="w-full border rounded-md p-2"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               {...adjustForm.register("inventoryId", { valueAsNumber: true })}
             >
               <option value={0} disabled>
@@ -257,9 +346,11 @@ export default function InventoryStockPage() {
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium">Type <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Type <span className="text-rose-500">*</span>
+            </label>
             <select
-              className="w-full border rounded-md p-2"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               {...adjustForm.register("type")}
             >
               {transactionTypes.map((t) => (
@@ -270,19 +361,20 @@ export default function InventoryStockPage() {
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium">
-              Quantity (negative for out) <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Quantity (negative for reduction) <span className="text-rose-500">*</span>
             </label>
             <input
               type="number"
-              className="w-full border rounded-md p-2"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               {...adjustForm.register("quantity", { valueAsNumber: true })}
             />
           </div>
           <div>
-            <label className="text-sm font-medium">Notes</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
             <textarea
-              className="w-full border rounded-md p-2"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              rows={3}
               {...adjustForm.register("notes")}
             />
           </div>
@@ -296,8 +388,14 @@ export default function InventoryStockPage() {
         description="Create a new inventory record"
         footer={
           <>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
-            <Button onClick={createForm.handleSubmit(handleCreateSubmit)} disabled={createMutation.isPending}>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={createForm.handleSubmit(handleCreateSubmit)}
+              disabled={createMutation.isPending}
+              className="bg-[var(--color-secondary-600)] hover:bg-[var(--color-secondary-700)] text-white"
+            >
               {createMutation.isPending ? "Saving..." : "Save"}
             </Button>
           </>
@@ -305,36 +403,44 @@ export default function InventoryStockPage() {
       >
         <div className="space-y-4">
           <div>
-            <label className="text-sm font-medium">Product ID <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Product ID <span className="text-rose-500">*</span>
+            </label>
             <input
               type="number"
-              className="w-full border rounded-md p-2"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               placeholder="Enter product ID"
               {...createForm.register("productId", { valueAsNumber: true })}
             />
           </div>
           <div>
-            <label className="text-sm font-medium">Variant ID (optional)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Variant ID (optional)
+            </label>
             <input
               type="number"
-              className="w-full border rounded-md p-2"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               placeholder="Enter variant ID"
               {...createForm.register("variantId", { valueAsNumber: true })}
             />
           </div>
           <div>
-            <label className="text-sm font-medium">Quantity <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Quantity <span className="text-rose-500">*</span>
+            </label>
             <input
               type="number"
-              className="w-full border rounded-md p-2"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               {...createForm.register("quantity", { valueAsNumber: true })}
             />
           </div>
           <div>
-            <label className="text-sm font-medium">Reorder Level</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Reorder Level
+            </label>
             <input
               type="number"
-              className="w-full border rounded-md p-2"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               {...createForm.register("reorderLevel", { valueAsNumber: true })}
             />
           </div>

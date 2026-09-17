@@ -138,21 +138,27 @@ export default function WhatsAppTemplatesPage() {
   ];
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-16">
+    <div className="space-y-6">
       {/* Header */}
       <AdminPageHeader
         title="WhatsApp Message Templates"
         description="Ready-to-use festive, promotional, and seasonal templates formatted for WhatsApp"
-      >
-        <Button
-          onClick={() => setIsModalOpen(true)}
-          className="bg-secondary-600 hover:bg-secondary-700 text-white gap-2 font-semibold text-xs h-9 shadow-xs"
-          size="sm"
-        >
-          <PlusCircle className="w-4 h-4" />
-          Create Template
-        </Button>
-      </AdminPageHeader>
+        breadcrumbs={[
+          { label: "Dashboard", href: "/admin/dashboard" },
+          { label: "WhatsApp", href: "/admin/dashboard/whatsapp" },
+          { label: "Templates" },
+        ]}
+        actions={
+          <Button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-secondary-600 hover:bg-secondary-700 text-white gap-2 font-semibold text-xs h-9 shadow-xs cursor-pointer"
+            size="sm"
+          >
+            <PlusCircle className="w-4 h-4" />
+            Create Template
+          </Button>
+        }
+      />
 
       {/* Tabs */}
       <WhatsAppNavTabs active="templates" />

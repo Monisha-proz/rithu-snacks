@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -11,13 +11,14 @@ import {
 } from "@/features/roles/hooks";
 import { DataTable } from "@/components/admin/data-table/DataTable";
 import { AdminPageHeader, AdminContent } from "@/components/admin/AdminPageHeader";
-import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
 import { AdminTableSkeleton } from "@/components/admin/AdminTableSkeleton";
 import { ErrorState } from "@/components/ui/error-state";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { SearchInput } from "@/components/ui/search-input";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormModal } from "@/components/common/FormModal";
+import { toast } from "@/components/ui/Toast";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import {
   createPermissionSchema,
@@ -27,6 +28,9 @@ import type { ColumnDef } from "@tanstack/react-table";
 import type { PermissionListItem } from "@/features/roles/types";
 
 export default function AdminPermissionsPage() {
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPermission, setEditingPermission] = useState<PermissionListItem | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -37,6 +41,23 @@ export default function AdminPermissionsPage() {
   const deleteMutation = useDeletePermission();
 
   const permissions = permissionsData ?? [];
+
+  const filteredPermissions = useMemo(() => {
+    if (!search.trim()) return permissions;
+    const q = search.toLowerCase();
+    return permissions.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.module.toLowerCase().includes(q) ||
+        (p.description && p.description.toLowerCase().includes(q))
+    );
+  }, [permissions, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredPermissions.length / pageSize));
+  const paginatedPermissions = useMemo(() => {
+    const startIndex = (page - 1) * pageSize;
+    return filteredPermissions.slice(startIndex, startIndex + pageSize);
+  }, [filteredPermissions, page, pageSize]);
 
   const {
     register,
@@ -70,16 +91,24 @@ export default function AdminPermissionsPage() {
         { id: editingPermission.id, data: formData },
         {
           onSuccess: () => {
+            toast.success("Permission Updated", "Permission updated successfully.");
             setModalOpen(false);
             setEditingPermission(null);
+          },
+          onError: (err: any) => {
+            toast.error("Update Failed", err?.message || "Could not update permission.");
           },
         }
       );
     } else {
       createMutation.mutate(formData, {
         onSuccess: () => {
+          toast.success("Permission Created", "Permission created successfully.");
           setModalOpen(false);
           reset();
+        },
+        onError: (err: any) => {
+          toast.error("Creation Failed", err?.message || "Could not create permission.");
         },
       });
     }
@@ -98,7 +127,11 @@ export default function AdminPermissionsPage() {
     {
       accessorKey: "name",
       header: "Name",
-      cell: ({ row }) => <p className="font-medium">{row.original.name}</p>,
+      cell: ({ row }) => (
+        <p className="font-semibold text-[var(--color-neutral-900)]">
+          {row.original.name}
+        </p>
+      ),
     },
     {
       accessorKey: "module",
@@ -108,7 +141,11 @@ export default function AdminPermissionsPage() {
     {
       accessorKey: "description",
       header: "Description",
-      cell: ({ row }) => row.original.description || "-",
+      cell: ({ row }) => (
+        <span className="text-[var(--color-neutral-700)]">
+          {row.original.description || "—"}
+        </span>
+      ),
     },
     {
       id: "actions",
@@ -119,6 +156,8 @@ export default function AdminPermissionsPage() {
             variant="ghost"
             size="icon"
             onClick={() => handleOpenModal(row.original)}
+            className="h-8 w-8 text-neutral-500 hover:text-secondary-700 hover:bg-secondary-50 cursor-pointer"
+            title="Edit Permission"
           >
             <Pencil className="h-4 w-4" />
           </Button>
@@ -126,42 +165,74 @@ export default function AdminPermissionsPage() {
             variant="ghost"
             size="icon"
             onClick={() => setDeleteId(row.original.id)}
+            className="h-8 w-8 text-neutral-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"
+            title="Delete Permission"
           >
-            <Trash2 className="h-4 w-4 text-error-600" />
+            <Trash2 className="h-4 w-4" />
           </Button>
         </div>
       ),
     },
   ];
 
-  if (isLoading) return <AdminTableSkeleton />;
+  if (isLoading && !permissionsData) return <AdminTableSkeleton />;
   if (error) return <ErrorState message="Failed to load permissions" onRetry={() => refetch()} />;
 
   const isMutating = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div className="flex flex-1 min-h-0 flex-col">
-      <AdminBreadcrumb items={[{ label: "Permissions" }]} />
       <AdminPageHeader
-        title="Permissions"
-        description="Manage granular permissions for roles"
-        actions={
-          <Button onClick={() => handleOpenModal()}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Permission
-          </Button>
-        }
+        title="Permission Management"
+        description="Manage granular permissions for system roles."
       />
       <AdminContent className="flex-1 min-h-0 overflow-hidden">
-        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-          <DataTable
-            columns={columns}
-            data={permissions}
-            searchKey="name"
-            searchPlaceholder="Search permissions..."
-            pageSize={20}
-            className="bg-white border border-neutral-200"
-          />
+        <div className="flex h-full flex-col overflow-hidden bg-[var(--color-background)] py-1 rounded-2xl">
+          {/* Search + Add Button Header */}
+          <div className="flex-shrink-0 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <SearchInput
+              placeholder="Search permissions..."
+              defaultValue={search}
+              onSearch={(val) => {
+                setSearch(val);
+                setPage(1);
+              }}
+              className="w-full max-w-md"
+            />
+
+            <Button
+              type="button"
+              onClick={() => handleOpenModal()}
+              className="h-11 rounded-xl bg-[var(--color-secondary-600)] px-5 text-sm font-semibold text-white hover:bg-[var(--color-secondary-700)] cursor-pointer"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Permission
+            </Button>
+          </div>
+
+          {/* Table Container */}
+          <div className="mt-6 flex-1 min-h-0 overflow-hidden flex flex-col">
+            <DataTable
+              columns={columns}
+              data={paginatedPermissions}
+              pageSize={pageSize}
+              pageSizeOptions={[10, 20, 30, 50]}
+              page={page}
+              totalPages={totalPages}
+              totalItems={filteredPermissions.length}
+              onPageChange={setPage}
+              onPageSizeChange={(newSize) => {
+                setPageSize(newSize);
+                setPage(1);
+              }}
+              emptyMessage={
+                search
+                  ? "No permissions match your search."
+                  : "No permissions created yet."
+              }
+              className="bg-white"
+            />
+          </div>
         </div>
       </AdminContent>
 
@@ -188,8 +259,12 @@ export default function AdminPermissionsPage() {
             >
               Cancel
             </Button>
-            <Button onClick={handleSubmit(onSubmit)} disabled={isMutating}>
-              {editingPermission ? "Update" : "Create"}
+            <Button
+              onClick={handleSubmit(onSubmit)}
+              disabled={isMutating}
+              className="bg-[var(--color-secondary-600)] hover:bg-[var(--color-secondary-700)] text-white"
+            >
+              {isMutating ? "Saving..." : editingPermission ? "Update" : "Create"}
             </Button>
           </>
         }
@@ -197,29 +272,37 @@ export default function AdminPermissionsPage() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Name <span className="text-error-600">*</span>
+              Name <span className="text-rose-500">*</span>
             </label>
             <input
               {...register("name")}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 ${
+                errors.name
+                  ? "border-rose-500 focus:border-rose-500 focus:ring-rose-200"
+                  : "border-gray-300 focus:border-primary focus:ring-primary/30"
+              }`}
               placeholder="e.g. products.create"
             />
             {errors.name && (
-              <p className="mt-1 text-xs text-red-500 font-medium">{errors.name.message}</p>
+              <p className="mt-1 text-xs text-rose-500 font-medium">{errors.name.message}</p>
             )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Module <span className="text-error-600">*</span>
+              Module <span className="text-rose-500">*</span>
             </label>
             <input
               {...register("module")}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 ${
+                errors.module
+                  ? "border-rose-500 focus:border-rose-500 focus:ring-rose-200"
+                  : "border-gray-300 focus:border-primary focus:ring-primary/30"
+              }`}
               placeholder="e.g. products"
             />
             {errors.module && (
-              <p className="mt-1 text-xs text-red-500 font-medium">{errors.module.message}</p>
+              <p className="mt-1 text-xs text-rose-500 font-medium">{errors.module.message}</p>
             )}
           </div>
 
@@ -230,11 +313,15 @@ export default function AdminPermissionsPage() {
             <textarea
               {...register("description")}
               rows={3}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 ${
+                errors.description
+                  ? "border-rose-500 focus:border-rose-500 focus:ring-rose-200"
+                  : "border-gray-300 focus:border-primary focus:ring-primary/30"
+              }`}
               placeholder="Permission description"
             />
             {errors.description && (
-              <p className="mt-1 text-xs text-red-500 font-medium">{errors.description.message}</p>
+              <p className="mt-1 text-xs text-rose-500 font-medium">{errors.description.message}</p>
             )}
           </div>
         </form>
@@ -246,7 +333,13 @@ export default function AdminPermissionsPage() {
         onConfirm={() => {
           if (deleteId) {
             deleteMutation.mutate(deleteId, {
-              onSuccess: () => setDeleteId(null),
+              onSuccess: () => {
+                toast.success("Permission Deleted", "Permission removed successfully.");
+                setDeleteId(null);
+              },
+              onError: (err: any) => {
+                toast.error("Delete Failed", err?.message || "Could not delete permission.");
+              },
             });
           }
         }}

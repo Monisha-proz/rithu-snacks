@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { useSubmitBulkOrderEnquiry } from "../hooks";
 import {
   createBulkOrderSchema,
@@ -16,8 +17,16 @@ function FieldError({ message }: { message?: string }) {
   return <p className="mt-1 text-xs text-red-500 font-medium">{message}</p>;
 }
 
-const inputClass =
-  "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary";
+const baseInputClass =
+  "w-full rounded-lg border px-3 py-2 text-sm transition-colors focus:outline-none";
+
+const getInputClass = (hasError?: boolean) =>
+  cn(
+    baseInputClass,
+    hasError
+      ? "border-red-500 bg-red-50/20 focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
+      : "border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/30"
+  );
 
 export function BulkOrderForm() {
   const { mutate, isPending, isSuccess, reset } = useSubmitBulkOrderEnquiry();
@@ -29,6 +38,7 @@ export function BulkOrderForm() {
     formState: { errors },
   } = useForm<CreateBulkOrderInput>({
     resolver: zodResolver(createBulkOrderSchema),
+    mode: "onTouched",
     defaultValues: {
       name: "",
       email: "",
@@ -77,14 +87,25 @@ export function BulkOrderForm() {
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Full Name <span className="text-red-600">*</span>
           </label>
-          <input {...register("name")} className={inputClass} placeholder="Your name" />
+          <input
+            {...register("name")}
+            className={getInputClass(!!errors.name)}
+            placeholder="Your name"
+          />
           <FieldError message={errors.name?.message} />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Phone Number <span className="text-red-600">*</span>
           </label>
-          <input {...register("phone")} className={inputClass} placeholder="Mobile number" />
+          <input
+            {...register("phone")}
+            type="tel"
+            inputMode="numeric"
+            maxLength={10}
+            className={getInputClass(!!errors.phone)}
+            placeholder="Enter 10-digit phone number"
+          />
           <FieldError message={errors.phone?.message} />
         </div>
       </div>
@@ -96,7 +117,7 @@ export function BulkOrderForm() {
         <input
           {...register("email")}
           type="email"
-          className={inputClass}
+          className={getInputClass(!!errors.email)}
           placeholder="you@example.com"
         />
         <FieldError message={errors.email?.message} />
@@ -108,7 +129,7 @@ export function BulkOrderForm() {
         </label>
         <input
           {...register("companyName")}
-          className={inputClass}
+          className={getInputClass(!!errors.companyName)}
           placeholder="Optional"
         />
         <FieldError message={errors.companyName?.message} />
@@ -121,7 +142,7 @@ export function BulkOrderForm() {
           </label>
           <input
             {...register("productInterest")}
-            className={inputClass}
+            className={getInputClass(!!errors.productInterest)}
             placeholder="e.g. Butter Murukku"
           />
           <FieldError message={errors.productInterest?.message} />
@@ -134,7 +155,7 @@ export function BulkOrderForm() {
             {...register("quantity", { valueAsNumber: true })}
             type="number"
             min={1}
-            className={inputClass}
+            className={getInputClass(!!errors.quantity)}
             placeholder="e.g. 50"
           />
           <FieldError message={errors.quantity?.message} />
@@ -148,7 +169,7 @@ export function BulkOrderForm() {
         <textarea
           {...register("message")}
           rows={4}
-          className={inputClass}
+          className={getInputClass(!!errors.message)}
           placeholder="Tell us about your requirements, delivery timeline, etc. (optional)"
         />
         <FieldError message={errors.message?.message} />

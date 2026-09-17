@@ -3,22 +3,24 @@ import { z } from "zod";
 export const createBulkOrderSchema = z
   .object({
     name: z
-      .string({ message: "Name is required" })
+      .string({ message: "Full name is required" })
       .trim()
-      .min(1, "Name is required")
-      .max(150, "Name cannot exceed 150 characters"),
+      .min(1, "Full name is required")
+      .max(150, "Full name cannot exceed 150 characters"),
     email: z
       .string({ message: "Email address is required" })
       .trim()
       .min(1, "Email address is required")
-      .email("Invalid email address")
+      .email("Please enter a valid email address")
       .max(150, "Email cannot exceed 150 characters"),
     phone: z
       .string({ message: "Phone number is required" })
       .trim()
       .min(1, "Phone number is required")
-      .min(5, "Phone number must be at least 5 digits")
-      .max(20, "Phone number cannot exceed 20 characters"),
+      .regex(
+        /^[6-9]\d{9}$/,
+        "Please enter a valid 10-digit phone number"
+      ),
     companyName: z
       .string()
       .trim()

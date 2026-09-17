@@ -225,12 +225,12 @@ export default function WhatsAppCampaignsPage() {
             Refresh
           </Button>
 
-          <Link href="/admin/dashboard/whatsapp/campaigns/create">
+          {/* <Link href="/admin/dashboard/whatsapp/campaigns/create">
             <Button size="sm" className="h-8 text-xs font-semibold gap-1.5 bg-secondary-600 hover:bg-secondary-700 text-white shadow-xs">
               <PlusCircle className="h-3.5 w-3.5" />
               New Campaign
             </Button>
-          </Link>
+          </Link> */}
         </div>
       </div>
 

@@ -196,7 +196,7 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
               <div className="inline-flex items-center gap-1.5 text-[11px] font-medium text-amber-800 bg-amber-50 border border-amber-200/80 rounded-lg py-1.5 px-3 max-w-md mx-auto">
                 <span>⚠️ If price details are not entered, this item remains in the <strong>Inactive list</strong> and hidden from customers.</span>
               </div>
-              <div className="pt-1">
+              {/* <div className="pt-1">
                 <Button
                   type="button"
                   size="sm"
@@ -207,7 +207,7 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
                   <Plus className="w-4 h-4 mr-1.5 stroke-[2.5]" />
                   <span>Add unit + price</span>
                 </Button>
-              </div>
+              </div> */}
             </div>
           )}
 
