@@ -7,8 +7,6 @@ import {
   useUpdateProduct,
   useDeleteProduct,
   useBulkDeleteProducts,
-  useCreateProductImages,
-  useDeleteProductImage,
   useProductImages,
 } from "@/features/products/hooks";
 import { useCategories } from "@/features/categories/hooks";
@@ -84,8 +82,6 @@ export default function AdminProductsPage() {
   const updateMutation = useUpdateProduct();
   const deleteMutation = useDeleteProduct();
   const bulkDeleteMutation = useBulkDeleteProducts();
-  const createImagesMutation = useCreateProductImages();
-  const deleteImageMutation = useDeleteProductImage();
 
   // Existing primary image for the product being edited (to prefill the form)
   const { data: selectedProductImages = [], isLoading: isLoadingSelectedProductImages } = useProductImages(
@@ -95,27 +91,6 @@ export default function AdminProductsPage() {
     selectedProductImages.find((img) => img.isPrimary)?.imageUrl ||
     selectedProductImages[0]?.imageUrl ||
     null;
-
-  // A product carries only one image — remove any existing ones before saving the new one
-  const saveProductPrimaryImage = async (
-    productUuid: string,
-    imageUrl: string,
-    existingImages: { id: string }[] = []
-  ) => {
-    try {
-      await Promise.all(
-        existingImages.map((img) =>
-          deleteImageMutation.mutateAsync({ productUuid, imageId: img.id })
-        )
-      );
-      await createImagesMutation.mutateAsync({
-        productUuid,
-        images: [{ imageUrl, isPrimary: true }],
-      });
-    } catch (err) {
-      console.error("Failed to save product image", err);
-    }
-  };
 
   const handleClearFilters = () => {
     setSearch("");
@@ -394,14 +369,11 @@ export default function AdminProductsPage() {
               categoryId: formData.categoryId,
               brandId: formData.brandId,
               hsnCodeId: formData.hsnCodeId || null,
+              productImage: formData.productImage || null,
             };
 
-            const created = await createMutation.mutateAsync(payload);
+            await createMutation.mutateAsync(payload);
             setIsCreateOpen(false);
-
-            if (formData.productImage && created?.data?.id) {
-              await saveProductPrimaryImage(created.data.id, formData.productImage);
-            }
             refetch();
           }}
         />
@@ -451,27 +423,6 @@ export default function AdminProductsPage() {
               });
 
               setIsEditOpen(false);
-
-              if (
-                formData.productImage &&
-                formData.productImage !== selectedProductPrimaryImage
-              ) {
-                await saveProductPrimaryImage(
-                  selectedProduct.id,
-                  formData.productImage,
-                  selectedProductImages
-                );
-              } else if (!formData.productImage && selectedProductPrimaryImage) {
-                await Promise.all(
-                  selectedProductImages.map((img) =>
-                    deleteImageMutation.mutateAsync({
-                      productUuid: selectedProduct.id,
-                      imageId: img.id,
-                    })
-                  )
-                );
-              }
-
               setSelectedProduct(null);
               refetch();
             }}

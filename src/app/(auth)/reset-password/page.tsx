@@ -4,7 +4,7 @@ import { Suspense, useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, LockKeyhole, AlertCircle, CheckCircle2 } from "lucide-react";
-import { FormProvider, useForm } from "react-hook-form";
+import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormSubmitButton } from "@/components/forms/form-submit-button";
 import { FormPasswordInput } from "@/components/forms/FormPasswordInput";
@@ -31,10 +31,15 @@ function ResetPasswordForm() {
     },
   });
 
-  const password = methods.watch("password") || "";
+  const password = useWatch({
+    control: methods.control,
+    name: "password",
+    defaultValue: "",
+  }) || "";
 
   const strength = useMemo(() => {
-    if (!password) return null;
+    const trimmed = (password || "").trim();
+    if (!trimmed) return null;
 
     let score = 0;
 
@@ -163,7 +168,7 @@ function ResetPasswordForm() {
               required
             />
 
-            {password.length > 0 && strength && (
+            {password.trim().length > 0 && strength && (
               <div className="mt-3">
                 <div className="mb-2 flex items-center justify-between text-[11px] font-medium uppercase tracking-wide text-neutral-500">
                   <span>Password Strength</span>

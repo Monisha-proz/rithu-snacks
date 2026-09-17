@@ -16,13 +16,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
 import { SearchInput } from "@/components/ui/search-input";
+import { ClearFiltersButton } from "@/components/common/clear-filters-button";
 import {
   PackagePlus,
   AlertCircle,
   CheckCircle2,
   Phone,
   Eye,
-  RotateCcw,
 } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 
@@ -307,16 +307,7 @@ export default function AdminBulkOrdersPage() {
             </div>
 
             {hasActiveFilters && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleResetFilters}
-                className="h-10 px-3 text-xs font-semibold text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-xl flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-                <span>Reset</span>
-              </Button>
+              <ClearFiltersButton onClick={handleResetFilters} />
             )}
           </div>
         </div>

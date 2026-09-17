@@ -20,7 +20,7 @@ import { useCustomerOrderDetail } from "@/features/customers/hooks/use-customer-
 
 function SuccessSkeleton() {
   return (
-    <div className="container mx-auto px-4 py-10 sm:py-14 max-w-3xl animate-pulse space-y-6">
+    <div className="container mx-auto px-4 py-10 sm:py-5 max-w-3xl animate-pulse space-y-6">
       <div className="flex flex-col items-center text-center space-y-3">
         <div className="h-16 w-16 rounded-full skeleton-shimmer" />
         <div className="h-8 w-64 rounded-xl skeleton-shimmer" />
@@ -69,7 +69,7 @@ function SuccessContent() {
     (orderId ? `#${orderId.slice(0, 8)}` : "Order Placed");
 
   return (
-    <div className="container mx-auto px-4 py-10 sm:py-14 max-w-3xl">
+    <div className="container mx-auto px-4 py-10 sm:py-5 max-w-3xl">
       {/* Header Congratulations */}
       <div className="mb-8 text-center">
         <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100/80 border-2 border-emerald-300 text-emerald-600 shadow-sm animate-in zoom-in-75 duration-300">

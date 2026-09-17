@@ -132,17 +132,7 @@ function RegisterVerifyOtpForm() {
             return;
           }
 
-          let pendingData: any = null;
-          if (typeof window !== "undefined") {
-            const saved = sessionStorage.getItem("pending_registration");
-            if (saved) {
-              try {
-                pendingData = JSON.parse(saved);
-              } catch {
-                pendingData = null;
-              }
-            }
-          }
+          const pendingData = authFlowState.getPendingRegistration();
 
           if (!pendingData) {
             setErrorMessage(
@@ -154,17 +144,29 @@ function RegisterVerifyOtpForm() {
             return;
           }
 
+          const activeEmail = pendingData.email || email;
+          const activePassword = pendingData.password;
+
+          if (!activeEmail || !activePassword) {
+            setErrorMessage(
+              "Registration details missing. Please fill out the registration form again."
+            );
+            setTimeout(() => {
+              router.push("/register");
+            }, 1500);
+            return;
+          }
+
           registerMutation.mutate(
             {
               ...pendingData,
+              email: activeEmail,
+              password: activePassword,
               emailVerificationToken: verificationToken,
             },
             {
               onSuccess: (regRes) => {
-                if (typeof window !== "undefined") {
-                  sessionStorage.removeItem("pending_registration");
-                }
-                authFlowState.clearRegistrationEmail();
+                authFlowState.clearPendingRegistration();
 
                 const successMsg =
                   regRes.message || "Account created successfully. Redirecting to login...";

@@ -1,8 +1,8 @@
 "use client";
-import { useMemo, Suspense, useState } from "react";
+import { useMemo, Suspense, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormProvider, useForm } from "react-hook-form";
+import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import AuthFormLayout from "@/components/auth/AuthFormLayout";
 import { useSendEmailOtp, authFlowState } from "@/features/auth";
@@ -73,18 +73,57 @@ function RegisterForm() {
     },
   });
 
-  const password = methods.watch("password") || "";
+  // Safely restore previously entered registration data on mount (e.g. when navigating back from OTP verification or Terms & Conditions)
+  useEffect(() => {
+    const saved = authFlowState.getPendingRegistration();
+    if (saved) {
+      methods.reset({
+        name: saved.name || "",
+        email: saved.email || "",
+        phone: saved.phone || "",
+        password: saved.password || "",
+        confirmPassword: saved.confirmPassword || "",
+      });
+      if (typeof saved.acceptTerms === "boolean") {
+        setAcceptTerms(saved.acceptTerms);
+      } else if (saved.name || saved.email || saved.phone) {
+        setAcceptTerms(true);
+      }
+    }
+  }, [methods]);
+
+  // Continuously persist form draft so navigating to Terms, Privacy, or back does not lose progress
+  useEffect(() => {
+    const subscription = methods.watch((values) => {
+      authFlowState.setPendingRegistration({
+        name: values.name,
+        email: values.email,
+        phone: values.phone,
+        password: values.password,
+        confirmPassword: values.confirmPassword,
+        acceptTerms,
+      });
+    });
+    return () => subscription.unsubscribe();
+  }, [methods, acceptTerms]);
+
+  const password = useWatch({
+    control: methods.control,
+    name: "password",
+    defaultValue: "",
+  }) || "";
 
   const strength = useMemo(() => {
-    if (!password) return null;
+    const trimmed = (password || "").trim();
+    if (!trimmed) return null;
 
     let score = 0;
 
-    if (password.length >= 8) score++;
-    if (/[A-Z]/.test(password)) score++;
-    if (/[a-z]/.test(password)) score++;
-    if (/\d/.test(password)) score++;
-    if (/[^A-Za-z0-9]/.test(password)) score++;
+    if (trimmed.length >= 8) score++;
+    if (/[A-Z]/.test(trimmed)) score++;
+    if (/[a-z]/.test(trimmed)) score++;
+    if (/\d/.test(trimmed)) score++;
+    if (/[^A-Za-z0-9]/.test(trimmed)) score++;
 
     if (score <= 2) {
       return {
@@ -122,6 +161,19 @@ function RegisterForm() {
     };
   }, [password]);
 
+  const handleAcceptTermsChange = (checked: boolean) => {
+    setAcceptTerms(checked);
+    const currentValues = methods.getValues();
+    authFlowState.setPendingRegistration({
+      name: currentValues.name,
+      email: currentValues.email,
+      phone: currentValues.phone,
+      password: currentValues.password,
+      confirmPassword: currentValues.confirmPassword,
+      acceptTerms: checked,
+    });
+  };
+
   const onSubmit = (data: RegisterFormData) => {
     methods.clearErrors("root");
 
@@ -139,12 +191,10 @@ function RegisterForm() {
       phone: data.phone.trim(),
       password: data.password,
       confirmPassword: data.confirmPassword,
+      acceptTerms: true,
     };
 
-    if (typeof window !== "undefined") {
-      sessionStorage.setItem("pending_registration", JSON.stringify(regData));
-    }
-    authFlowState.setRegistrationEmail(regData.email);
+    authFlowState.setPendingRegistration(regData);
 
     sendEmailOtpMutation.mutate(
       { email: regData.email },
@@ -242,7 +292,7 @@ function RegisterForm() {
             required
           />
 
-          {password.length > 0 && strength && (
+          {password.trim().length > 0 && strength && (
             <div className="mt-3">
               <div className="mb-2 flex items-center justify-between text-[11px] font-medium uppercase tracking-wide text-neutral-500">
                 <span>Password Strength</span>
@@ -273,13 +323,24 @@ function RegisterForm() {
           <div className="pt-1">
             <Checkbox
               checked={acceptTerms}
-              onChange={(e) => setAcceptTerms(e.target.checked)}
+              onChange={(e) => handleAcceptTermsChange(e.target.checked)}
               label={
                 <>
                   I agree to the{" "}
                   <Link
                     href="/terms-and-conditions"
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const currentValues = methods.getValues();
+                      authFlowState.setPendingRegistration({
+                        name: currentValues.name,
+                        email: currentValues.email,
+                        phone: currentValues.phone,
+                        password: currentValues.password,
+                        confirmPassword: currentValues.confirmPassword,
+                        acceptTerms,
+                      });
+                    }}
                     className="font-medium text-secondary-600 hover:underline"
                   >
                     Terms & Conditions

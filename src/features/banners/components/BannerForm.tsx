@@ -27,7 +27,7 @@ const bannerFormSchema = z
   .object({
     bannerPositionId: z
       .string({ message: "Banner type is required" })
-      .min(1, "Please select a banner type"),
+      .min(1, "Banner type is required"),
     title: z
       .string({ message: "Title is required" })
       .trim()

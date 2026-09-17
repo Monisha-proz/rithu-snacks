@@ -30,8 +30,14 @@ export function AccountShell({ activeTab, onTabChange }: AccountShellProps) {
   const orders = ordersResponse?.data ?? [];
   const wishlistCount = wishlistData?.items?.length ?? wishlistData?.totalItems ?? 0;
 
+  const formatDisplayPhone = (phone?: string | null): string => {
+    if (!phone) return "";
+    const trimmed = phone.trim();
+    return trimmed.replace(/^(\+91|91(?=\d{10}))\s*-?\s*/, "").trim();
+  };
+
   const userName = profile?.name || "Customer";
-  const userPhone = profile?.phone || "";
+  const userPhone = formatDisplayPhone(profile?.phone);
   const userInitials = userName ? userName.slice(0, 2).toUpperCase() : "CU";
 
   const navItems = [

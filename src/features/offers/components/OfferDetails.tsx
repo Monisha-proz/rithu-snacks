@@ -10,18 +10,21 @@ import {
   OFFER_TYPE_BADGE,
   OFFER_TYPE_LABELS,
   formatOfferDiscount,
+  formatOfferValidity,
 } from "../constants/offer-options";
 import type { OfferListItem } from "../types";
 
-function formatDate(value: string | null): string {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+function formatDate(date?: string | Date | null): string {
+  if (!date) return "—";
+  try {
+    return new Date(date).toLocaleDateString("en-IN", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return String(date);
+  }
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -70,7 +73,7 @@ export function OfferDetails({ offer }: { offer: OfferListItem }) {
       <div className="flex items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-neutral-700">
         <Calendar className="h-4 w-4 text-neutral-500" />
         <span>
-          {formatDate(offer.startsAt)} — {formatDate(offer.endsAt)}
+          {formatOfferValidity(offer.startsAt, offer.endsAt)}
         </span>
       </div>
 

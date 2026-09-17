@@ -21,25 +21,71 @@ class AuthFlowState {
       return this.registrationEmail;
     }
     // Fallback to existing application architecture pending_registration in sessionStorage
-    if (typeof window !== "undefined") {
-      try {
-        const saved = sessionStorage.getItem("pending_registration");
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (parsed?.email) {
-            this.registrationEmail = parsed.email.trim().toLowerCase();
-            return this.registrationEmail;
-          }
-        }
-      } catch {
-        // Ignore JSON parse errors
-      }
+    const pending = this.getPendingRegistration();
+    if (pending?.email) {
+      this.registrationEmail = pending.email.trim().toLowerCase();
+      return this.registrationEmail;
     }
     return "";
   }
 
   clearRegistrationEmail(): void {
     this.registrationEmail = "";
+  }
+
+  setPendingRegistration(data: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    password?: string;
+    confirmPassword?: string;
+    acceptTerms?: boolean;
+  }): void {
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem("pending_registration", JSON.stringify(data));
+      } catch {
+        // Ignore storage errors
+      }
+    }
+    if (data?.email) {
+      this.registrationEmail = data.email.trim().toLowerCase();
+    }
+  }
+
+  getPendingRegistration(): {
+    name?: string;
+    email?: string;
+    phone?: string;
+    password?: string;
+    confirmPassword?: string;
+    acceptTerms?: boolean;
+  } | null {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = sessionStorage.getItem("pending_registration");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed === "object") {
+            return parsed;
+          }
+        }
+      } catch {
+        // Ignore JSON parse errors
+      }
+    }
+    return null;
+  }
+
+  clearPendingRegistration(): void {
+    this.registrationEmail = "";
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.removeItem("pending_registration");
+      } catch {
+        // Ignore storage errors
+      }
+    }
   }
 
   // -------------------------------------------------------------

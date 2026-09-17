@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from "react";
 import type { CustomerProfileResponse } from "../../types";
 import { useUpdateCustomerProfile } from "../../hooks/use-customer-profile";
-
 import { updateCustomerProfileSchema } from "../../validations/customer-profile.schema";
 import { CustomDropdown } from "./CustomDropdown";
+import { toast } from "@/components/ui/Toast";
 
 interface ProfileDetailsTabProps {
   profile?: CustomerProfileResponse | null;
@@ -22,11 +22,11 @@ export function ProfileDetailsTab({
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [dob, setDob] = useState("");
+  const [isDobFocused, setIsDobFocused] = useState(false);
   const [gender, setGender] = useState<"male" | "female" | "other" | "">("");
   const [isWhatsapp, setIsWhatsapp] = useState(false);
   const [whatsappNo, setWhatsappNo] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
     if (profile) {
@@ -49,12 +49,10 @@ export function ProfileDetailsTab({
         return next;
       });
     }
-    if (message) setMessage(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage(null);
     setFieldErrors({});
 
     const payload = {
@@ -80,11 +78,10 @@ export function ProfileDetailsTab({
 
     try {
       await updateMutation.mutateAsync(payload);
-
-      setMessage({ type: "success", text: "Profile updated successfully!" });
+      toast.success("Profile updated successfully!");
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : "Failed to update profile";
-      setMessage({ type: "error", text: errorMsg });
+      toast.error(errorMsg);
     }
   };
 
@@ -97,7 +94,6 @@ export function ProfileDetailsTab({
       setGender(profile.gender || "");
       setIsWhatsapp(profile.isWhatsapp || false);
       setWhatsappNo(profile.whatsappNo || "");
-      setMessage(null);
     }
   };
 
@@ -148,19 +144,6 @@ export function ProfileDetailsTab({
             </div>
           </div>
         </div>
-
-        {/* Feedback Message */}
-        {message && (
-          <div
-            className={`p-3 rounded-lg text-xs font-medium ${
-              message.type === "success"
-                ? "bg-theme-status-del-bg text-theme-status-del-fg"
-                : "bg-theme-status-can-bg text-theme-status-can-fg"
-            }`}
-          >
-            {message.text}
-          </div>
-        )}
 
         {/* Form Fields Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
@@ -213,9 +196,13 @@ export function ProfileDetailsTab({
               Date of Birth
             </span>
             <input
-              type="date"
+              type={isDobFocused || dob ? "date" : "text"}
               value={dob}
+              onFocus={() => setIsDobFocused(true)}
+              onBlur={() => setIsDobFocused(false)}
               onChange={(e) => handleFieldChange(setDob, "dob", e.target.value)}
+              placeholder="DD/MM/YYYY"
+              max={new Date().toISOString().split("T")[0]}
               className={`border rounded-lg px-3.5 py-3 text-xs sm:text-sm text-theme-text-primary bg-theme-surface-warm focus:border-theme-primary transition-colors min-h-[44px] ${
                 fieldErrors.dob ? "border-red-500 bg-red-50/20" : "border-theme-border-input"
               }`}
