@@ -40,14 +40,26 @@ function LoginForm() {
       },
       {
         onSuccess: async () => {
-          // Sync NextAuth session and redirect
-          await signIn("credentials", {
-            email: data.email.trim(),
-            password: data.password,
-            redirect: false,
-          });
+          try {
+            // Sync NextAuth session and redirect
+            await signIn("credentials", {
+              email: data.email.trim(),
+              password: data.password,
+              redirect: false,
+            });
+          } catch {
+            // Cookie auth is primary fallback
+          }
           router.push(callbackUrl);
           router.refresh();
+        },
+        onError: (err: any) => {
+          methods.setError("root", {
+            type: "server",
+            message:
+              err?.message ||
+              "Invalid email or password. Please check your credentials.",
+          });
         },
       }
     );

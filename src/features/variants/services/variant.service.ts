@@ -195,7 +195,7 @@ export const variantService = {
     const variantSlug = slugify(data.slug).substring(0, 250);
     const existingSlug = await variantRepository.findBySlug(variantSlug);
     if (existingSlug) {
-      throw ApiError.conflict(`An active variant with slug '${data.slug}' already exists`);
+      throw ApiError.conflict("A product item with this name already exists.");
     }
 
     // 3. Create Variant (item-level only; unit/price combos are managed
@@ -324,7 +324,7 @@ export const variantService = {
       const normalizedSlug = slugify(data.slug).substring(0, 250);
       const slugConflict = await variantRepository.findBySlug(normalizedSlug, variantUuid);
       if (slugConflict) {
-        throw ApiError.conflict(`A variant with slug '${data.slug}' already exists`);
+        throw ApiError.conflict("A product item with this name already exists.");
       }
       updateData.slug = normalizedSlug;
     }
@@ -371,7 +371,7 @@ export const variantService = {
       const normalizedSlug = slugify(data.slug).substring(0, 250);
       const slugConflict = await variantRepository.findBySlug(normalizedSlug, variantUuid);
       if (slugConflict) {
-        throw ApiError.conflict(`A variant with slug '${data.slug}' already exists`);
+        throw ApiError.conflict("A product item with this name already exists.");
       }
       updateData.slug = normalizedSlug;
     }

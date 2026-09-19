@@ -202,11 +202,11 @@ export function formatOrderDelivery(
   const latest = shipments[0];
   const staff = latest.delivery_staff;
 
-  const isAssigned = latest.assignment_status !== null;
+  const isAssigned = Boolean(staff);
 
   return {
     isAssigned,
-    assignmentStatus: latest.assignment_status || null,
+    assignmentStatus: latest.assignment_status || (staff ? "pending" : null),
     deliveryId: latest.uuid || String(latest.id),
     staff: staff
       ? {

@@ -42,7 +42,7 @@ export const gstRateRepository = {
     const [data, total] = await Promise.all([
       db.product_gst_rates.findMany({
         where,
-        orderBy: [{ name: "asc" }, { created_at: "desc" }],
+        orderBy: [{ created_at: "desc" }, { id: "desc" }],
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),

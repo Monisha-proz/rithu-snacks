@@ -1,10 +1,11 @@
 "use client";
 
-import { Bell, Menu } from "lucide-react";
+import { Bell, Menu, ShoppingBag, LogOut } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Dropdown, DropdownItem } from "@/components/common/dropdown";
-import { useSession, signOut } from "next-auth/react";
-import { logoutApi } from "@/features/auth/api/auth.api";
+import { useSession } from "next-auth/react";
+import { logoutUser } from "@/features/auth/api/auth.api";
 import { getInitials } from "@/lib/utils";
 
 interface AdminHeaderProps {
@@ -13,14 +14,10 @@ interface AdminHeaderProps {
 
 function AdminHeader({ onMenuClick }: AdminHeaderProps) {
   const { data: session } = useSession();
+  const router = useRouter();
 
   const handleLogout = async () => {
-    try {
-      await logoutApi();
-    } catch {
-      // ignore network errors on logout
-    }
-    await signOut({ callbackUrl: "/admin/login" });
+    await logoutUser("/admin/login");
   };
 
   return (
@@ -53,8 +50,22 @@ function AdminHeader({ onMenuClick }: AdminHeaderProps) {
             </Button>
           }
         >
+          <DropdownItem onClick={() => router.push("/")}>
+            <span className="flex items-center gap-2 text-xs">
+              <ShoppingBag className="w-3.5 h-3.5 text-amber-700" />
+              Customer Pages
+            </span>
+          </DropdownItem>
+          <DropdownItem onClick={() => router.push("/profile")}>
+            <span className="flex items-center gap-2 text-xs">
+              Customer Account
+            </span>
+          </DropdownItem>
           <DropdownItem onClick={handleLogout}>
-            Logout
+            <span className="flex items-center gap-2 text-xs text-red-600">
+              <LogOut className="w-3.5 h-3.5" />
+              Logout
+            </span>
           </DropdownItem>
         </Dropdown>
       </div>

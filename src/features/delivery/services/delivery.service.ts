@@ -170,19 +170,25 @@ export const deliveryService = {
       throw ApiError.badRequest("Cannot assign delivery to an inactive staff member");
     }
 
-    // 5. Prevent duplicate active assignment
+    // 5. Assign or Reassign Shipment
     const activeShipment = await deliveryRepository.findActiveShipmentByOrderId(order.id);
-    if (activeShipment) {
-      throw ApiError.conflict("Order already has an active delivery assignment");
-    }
+    let shipment;
 
-    // 6. Create Shipment Transaction
-    const shipment = await deliveryRepository.createShipmentTransaction({
-      orderId: order.id,
-      staffId: staff.id,
-      note: input.note,
-      adminId,
-    });
+    if (activeShipment) {
+      shipment = await deliveryRepository.reassignShipmentTransaction({
+        shipmentId: activeShipment.id,
+        staffId: staff.id,
+        note: input.note,
+        adminId,
+      });
+    } else {
+      shipment = await deliveryRepository.createShipmentTransaction({
+        orderId: order.id,
+        staffId: staff.id,
+        note: input.note,
+        adminId,
+      });
+    }
 
     return {
       id: shipment.uuid || String(shipment.id),

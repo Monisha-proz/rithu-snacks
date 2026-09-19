@@ -267,6 +267,58 @@ export const deliveryRepository = {
     });
   },
 
+  async reassignShipmentTransaction(data: {
+    shipmentId: bigint;
+    staffId: bigint;
+    note?: string;
+    adminId?: bigint | null;
+  }) {
+    return db.$transaction(async (tx) => {
+      const now = new Date();
+      const shipment = await tx.shipments.update({
+        where: { id: data.shipmentId },
+        data: {
+          delivery_staff_id: data.staffId,
+          assignment_status: "pending",
+          delivery_notes: data.note || null,
+          updated_at: now,
+          updated_by: data.adminId,
+        },
+        include: {
+          delivery_staff: {
+            select: {
+              id: true,
+              uuid: true,
+              name: true,
+              phone: true,
+            },
+          },
+          orders: {
+            select: {
+              id: true,
+              uuid: true,
+              orderNumber: true,
+            },
+          },
+        },
+      });
+
+      await tx.shipment_tracking.create({
+        data: {
+          shipment_id: shipment.id,
+          status: "reassigned",
+          note:
+            data.note ||
+            `Delivery reassigned to ${shipment.delivery_staff?.name || "staff"}`,
+          created_by: data.adminId,
+          updated_by: data.adminId,
+        },
+      });
+
+      return shipment;
+    });
+  },
+
   buildStaffDeliveriesBaseWhere(
     staffInternalId: bigint,
     params: StaffDeliveryListInput

@@ -19,6 +19,7 @@ import { DataTable } from "@/components/admin/data-table/DataTable";
 import { LoadingState } from "@/components/ui/loading-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Button } from "@/components/ui/button";
+import { Select, type SelectOption } from "@/components/ui/select";
 import { SearchInput } from "@/components/ui/search-input";
 import { ClearFiltersButton } from "@/components/common/clear-filters-button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -33,6 +34,22 @@ import {
   useDeleteAdminReview,
 } from "../hooks/use-admin-reviews";
 import type { ReviewResponse } from "../types/review.types";
+
+const RATING_FILTER_OPTIONS: SelectOption[] = [
+  { value: "all", label: "All Stars" },
+  { value: "5", label: "5 Stars (★★★★★)" },
+  { value: "4", label: "4 Stars (★★★★☆)" },
+  { value: "3", label: "3 Stars (★★★☆☆)" },
+  { value: "2", label: "2 Stars (★★☆☆☆)" },
+  { value: "1", label: "1 Star (★☆☆☆☆)" },
+];
+
+const SORT_OPTIONS: SelectOption[] = [
+  { value: "createdAt_desc", label: "Newest First" },
+  { value: "createdAt_asc", label: "Oldest First" },
+  { value: "rating_desc", label: "Highest Rating" },
+  { value: "rating_asc", label: "Lowest Rating" },
+];
 
 interface AdminReviewListTableProps {
   initialStatus?: "all" | "approved" | "unapproved";
@@ -339,32 +356,26 @@ export function AdminReviewListTable({
           </div>
 
           {/* Rating Dropdown Filter */}
-          <select
-            value={ratingFilter === undefined ? "all" : String(ratingFilter)}
-            onChange={(e) => handleRatingChange(e.target.value)}
-            className="h-9.5 px-3 rounded-lg border border-cream-border bg-white text-xs font-semibold text-neutral-700 focus:outline-none focus:border-secondary-600 cursor-pointer shadow-2xs"
-            title="Filter by rating"
-          >
-            <option value="all">All Stars</option>
-            <option value="5">⭐⭐⭐⭐⭐ (5 Stars)</option>
-            <option value="4">⭐⭐⭐⭐ (4 Stars)</option>
-            <option value="3">⭐⭐⭐ (3 Stars)</option>
-            <option value="2">⭐⭐ (2 Stars)</option>
-            <option value="1">⭐ (1 Star)</option>
-          </select>
+          <div className="w-full sm:w-44">
+            <Select
+              value={ratingFilter === undefined ? "all" : String(ratingFilter)}
+              onValueChange={(val) => handleRatingChange(val)}
+              options={RATING_FILTER_OPTIONS}
+              size="sm"
+              className="h-9.5 rounded-xl font-semibold"
+            />
+          </div>
 
           {/* Sort Dropdown */}
-          <select
-            value={`${sortBy}_${sortOrder}`}
-            onChange={(e) => handleSortChange(e.target.value)}
-            className="h-9.5 px-3 rounded-lg border border-cream-border bg-white text-xs font-semibold text-neutral-700 focus:outline-none focus:border-secondary-600 cursor-pointer shadow-2xs"
-            title="Sort reviews"
-          >
-            <option value="createdAt_desc">Newest First</option>
-            <option value="createdAt_asc">Oldest First</option>
-            <option value="rating_desc">Highest Rating</option>
-            <option value="rating_asc">Lowest Rating</option>
-          </select>
+          <div className="w-full sm:w-40">
+            <Select
+              value={`${sortBy}_${sortOrder}`}
+              onValueChange={(val) => handleSortChange(val)}
+              options={SORT_OPTIONS}
+              size="sm"
+              className="h-9.5 rounded-xl font-semibold"
+            />
+          </div>
 
           {/* Refresh Button */}
           <Button

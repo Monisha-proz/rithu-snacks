@@ -6,9 +6,9 @@ if (!process.env.NODE_OPTIONS?.includes("max-old-space-size")) {
 }
 
 const nextConfig: NextConfig = {
-  // typescript: {
-  //   ignoreBuildErrors: false,
-  // },
+  typescript: {
+    ignoreBuildErrors: false,
+  },
   // Cache recently visited pages to avoid recompilation thrashing, while freeing inactive pages after 3 minutes
   onDemandEntries: {
     maxInactiveAge: 180 * 1000,

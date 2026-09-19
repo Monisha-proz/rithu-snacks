@@ -139,6 +139,8 @@ export function createApiHandler(
 
     if (options.querySchema) {
       context.query = parseSearchParams(searchParams, options.querySchema);
+    } else {
+      context.query = parseSearchParams(searchParams);
     }
 
     if (

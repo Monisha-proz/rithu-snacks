@@ -327,19 +327,26 @@ function CreateCampaignContent() {
   ];
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-16">
+    <div className="space-y-6">
       {/* Header */}
       <AdminPageHeader
         title="Create WhatsApp Campaign"
         description="Deliver festival offers, flash sales, and product updates safely to 200–500 customers"
-      >
-        <Link href="/admin/dashboard/whatsapp/campaigns">
-          <Button variant="outline" size="sm" className="gap-2 border-neutral-200">
-            <ArrowLeft className="w-4 h-4" />
-            Back to Campaigns
-          </Button>
-        </Link>
-      </AdminPageHeader>
+        breadcrumbs={[
+          { label: "Dashboard", href: "/admin/dashboard" },
+          { label: "WhatsApp", href: "/admin/dashboard/whatsapp" },
+          { label: "Campaigns", href: "/admin/dashboard/whatsapp/campaigns" },
+          { label: "Create" },
+        ]}
+        actions={
+          <Link href="/admin/dashboard/whatsapp/campaigns">
+            <Button variant="outline" size="sm" className="gap-2 border-neutral-200 cursor-pointer">
+              <ArrowLeft className="w-4 h-4" />
+              Back to Campaigns
+            </Button>
+          </Link>
+        }
+      />
 
       {/* Tabs */}
       <WhatsAppNavTabs active="campaigns" />

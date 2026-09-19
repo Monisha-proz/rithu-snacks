@@ -231,7 +231,7 @@ function CartItem({
               variant="ghost"
               size="icon"
               className="h-8 w-8 rounded-lg text-theme-text-muted hover:text-theme-status-can-fg hover:bg-theme-status-can-bg transition-colors cursor-pointer"
-              onClick={() => onRemove(itemId)}
+              onClick={() => onRemove(item)}
               disabled={isUpdating || isRemoving}
               title="Remove item"
             >

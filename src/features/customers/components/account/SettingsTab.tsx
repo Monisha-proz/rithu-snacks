@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { toast } from "@/components/ui/Toast";
 
 export function SettingsTab() {
   const [prefs, setPrefs] = useState({
@@ -13,27 +15,25 @@ export function SettingsTab() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [passwordMsg, setPasswordMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setPasswordMsg(null);
 
     if (!currentPassword) {
-      setPasswordMsg({ type: "error", text: "Please enter your current password." });
+      toast.error("Please enter your current password.");
       return;
     }
     if (newPassword.length < 6) {
-      setPasswordMsg({ type: "error", text: "New password must be at least 6 characters long." });
+      toast.error("New password must be at least 6 characters long.");
       return;
     }
     if (newPassword !== confirmPassword) {
-      setPasswordMsg({ type: "error", text: "Passwords do not match." });
+      toast.error("Passwords do not match.");
       return;
     }
 
-    // Success feedback
-    setPasswordMsg({ type: "success", text: "Password changed successfully." });
+    // Success feedback via floating toast (top-right)
+    toast.success("Password changed successfully.");
     setCurrentPassword("");
     setNewPassword("");
     setConfirmPassword("");
@@ -114,60 +114,60 @@ export function SettingsTab() {
         </div>
 
         <form onSubmit={handlePasswordSubmit} className="p-5 sm:p-6 space-y-4">
-          {passwordMsg && (
-            <div
-              className={`p-3 rounded-lg text-xs font-medium ${
-                passwordMsg.type === "success"
-                  ? "bg-theme-status-del-bg text-theme-status-del-fg"
-                  : "bg-theme-status-can-bg text-theme-status-can-fg"
-              }`}
-            >
-              {passwordMsg.text}
-            </div>
-          )}
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <label className="flex flex-col gap-2">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-theme-text-muted">
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="currentPassword"
+                className="text-[11px] font-semibold uppercase tracking-wider text-theme-text-muted"
+              >
                 Current Password
-              </span>
-              <input
+              </label>
+              <Input
+                id="currentPassword"
                 type="password"
                 required
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 placeholder="Enter current password"
-                className="border border-theme-border-input rounded-lg px-3.5 py-2.5 text-xs text-theme-text-primary bg-theme-surface-warm min-h-[44px]"
+                className="bg-theme-surface-warm min-h-[44px]"
               />
-            </label>
+            </div>
 
-            <label className="flex flex-col gap-2">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-theme-text-muted">
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="newPassword"
+                className="text-[11px] font-semibold uppercase tracking-wider text-theme-text-muted"
+              >
                 New Password
-              </span>
-              <input
+              </label>
+              <Input
+                id="newPassword"
                 type="password"
                 required
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Enter new password"
-                className="border border-theme-border-input rounded-lg px-3.5 py-2.5 text-xs text-theme-text-primary bg-theme-surface-warm min-h-[44px]"
+                className="bg-theme-surface-warm min-h-[44px]"
               />
-            </label>
+            </div>
 
-            <label className="flex flex-col gap-2">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-theme-text-muted">
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="confirmPassword"
+                className="text-[11px] font-semibold uppercase tracking-wider text-theme-text-muted"
+              >
                 Confirm Password
-              </span>
-              <input
+              </label>
+              <Input
+                id="confirmPassword"
                 type="password"
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Re-enter new password"
-                className="border border-theme-border-input rounded-lg px-3.5 py-2.5 text-xs text-theme-text-primary bg-theme-surface-warm min-h-[44px]"
+                className="bg-theme-surface-warm min-h-[44px]"
               />
-            </label>
+            </div>
           </div>
 
           <div className="pt-2">

@@ -1,7 +1,10 @@
 "use client";
 
 import React from "react";
-import { signOut } from "next-auth/react";
+import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { logoutUser } from "@/features/auth/api/auth.api";
+import { LayoutDashboard, ChevronRight, ShieldCheck } from "lucide-react";
 import { DashboardTab } from "./DashboardTab";
 import { OrdersTab } from "./OrdersTab";
 import { ProfileDetailsTab } from "./ProfileDetailsTab";
@@ -18,6 +21,10 @@ interface AccountShellProps {
   onTabChange: (tab: string) => void;
 }
 export function AccountShell({ activeTab, onTabChange }: AccountShellProps) {
+  const { data: session } = useSession();
+  const userRole = (session?.user as { role?: string })?.role?.toUpperCase();
+  const isAdmin = userRole === "ADMIN" || userRole === "STAFF";
+
   const { data: profile, isLoading: profileLoading } = useCustomerProfile();
   const {
     data: ordersResponse,
@@ -61,9 +68,9 @@ export function AccountShell({ activeTab, onTabChange }: AccountShellProps) {
     settings: "Settings",
   };
 
-  const handleNavClick = (id: string) => {
+  const handleNavClick = async (id: string) => {
     if (id === "logout") {
-      signOut({ callbackUrl: "/login" });
+      await logoutUser("/login");
       return;
     }
     onTabChange(id);
@@ -116,6 +123,15 @@ export function AccountShell({ activeTab, onTabChange }: AccountShellProps) {
 
         {/* Mobile Horizontal Swipeable Pill Navigation */}
         <div className="md:hidden w-full flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
+          {isAdmin && (
+            <Link
+              href="/admin/dashboard"
+              className="flex-shrink-0 rounded-full px-4 py-2.5 text-xs font-semibold whitespace-nowrap transition-colors min-h-[44px] flex items-center gap-1.5 bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs hover:bg-amber-200"
+            >
+              <LayoutDashboard className="w-3.5 h-3.5 text-amber-800" />
+              <span>Admin Panel</span>
+            </Link>
+          )}
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
             return (
@@ -160,8 +176,16 @@ export function AccountShell({ activeTab, onTabChange }: AccountShellProps) {
                   {userInitials}
                 </div>
                 <div className="min-w-0">
-                  <div className="font-semibold text-sm text-theme-text-primary truncate">
-                    {userName}
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-semibold text-sm text-theme-text-primary truncate">
+                      {userName}
+                    </span>
+                    {isAdmin && (
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-200 uppercase">
+                        <ShieldCheck className="w-2.5 h-2.5" />
+                        {userRole === "STAFF" ? "Staff" : "Admin"}
+                      </span>
+                    )}
                   </div>
                   {userPhone ? (
                     <div className="text-xs text-theme-text-muted mt-0.5 truncate">
@@ -169,7 +193,7 @@ export function AccountShell({ activeTab, onTabChange }: AccountShellProps) {
                     </div>
                   ) : (
                     <div className="text-xs text-theme-text-muted mt-0.5">
-                      Member
+                      {isAdmin ? "Administrator" : "Member"}
                     </div>
                   )}
                 </div>
@@ -179,6 +203,18 @@ export function AccountShell({ activeTab, onTabChange }: AccountShellProps) {
 
           {/* Desktop Nav Items */}
           <nav className="flex flex-col p-2 gap-1">
+            {isAdmin && (
+              <Link
+                href="/admin/dashboard"
+                className="flex items-center justify-between gap-2.5 w-full rounded-xl px-3.5 py-2.5 mb-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 border border-amber-200/80 transition-all font-semibold text-xs sm:text-sm group"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <LayoutDashboard className="w-4 h-4 text-amber-700 shrink-0" />
+                  <span className="truncate">Go to Admin Panel</span>
+                </div>
+                <ChevronRight className="w-4 h-4 text-amber-700 group-hover:translate-x-0.5 transition-transform shrink-0" />
+              </Link>
+            )}
             {navItems.map((item) => {
               const isActive = activeTab === item.id;
               const isLogout = item.id === "logout";

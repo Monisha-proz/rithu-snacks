@@ -65,7 +65,7 @@ import { FormModal } from "@/components/common/FormModal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { AdminVariantResponse } from "@/features/variants/types";
 
-type VariantFilter = "active" | "inactive";
+type VariantFilter = "all" | "active" | "inactive";
 
 function formatMeasurement(m: any): string {
   if (!m) return "—";
@@ -140,13 +140,13 @@ export default function AdminProductDetailsPage() {
 
   const canonicalProductId = productUuid || product?.id || productId;
 
-  // Filter & Selection State (Active by default, Inactive for inactive tab)
-  const [variantFilter, setVariantFilter] = React.useState<VariantFilter>("active");
+  // Filter & Selection State (All by default so items stay visible as inactive when deactivated)
+  const [variantFilter, setVariantFilter] = React.useState<VariantFilter>("all");
   const [variantViewMode, setVariantViewMode] = React.useState<"table" | "cards">("table");
   const [previewVariant, setPreviewVariant] = React.useState<AdminVariantResponse | null>(null);
 
   // 2. Product Variants Query using the POST "Get All Variants" API (POST /api/admin/variants)
-  // Queries variants for this product based on the active tab (isActive: true or false)
+  // Queries variants for this product based on the active tab (all, active, or inactive)
   const {
     data: variantsResponse,
     isLoading: isLoadingVariants,
@@ -155,10 +155,14 @@ export default function AdminProductDetailsPage() {
     productUuid
       ? {
           productIds: [productUuid],
-          isActive: variantFilter === "active",
+          isActive:
+            variantFilter === "active"
+              ? true
+              : variantFilter === "inactive"
+              ? false
+              : undefined,
           pageSize: 100,
           page: 1,
-          
         }
       : undefined,
     { enabled: !!productUuid }
@@ -274,7 +278,13 @@ export default function AdminProductDetailsPage() {
     () => Object.keys(selectedVariants).filter((id) => selectedVariants[id]),
     [selectedVariants]
   );
+  const selectedObjs = React.useMemo(
+    () => variants.filter((v) => selectedVariants[v.id]),
+    [variants, selectedVariants]
+  );
   const hasSelection = selectedIds.length > 0;
+  const hasActiveSelected = selectedObjs.some((v) => v.isActive);
+  const hasInactiveSelected = selectedObjs.some((v) => !v.isActive);
   const isAllSelected =
     variants.length > 0 &&
     variants.every((v) => selectedVariants[v.id]);
@@ -370,11 +380,13 @@ export default function AdminProductDetailsPage() {
 
   // Bulk status update
   const handleBulkStatusChange = async (targetActive: boolean) => {
-    if (!hasSelection) return;
+    if (!hasSelection || isStatusUpdating) return;
+    setIsStatusUpdating(true);
     try {
-      const selectedObjs = variants.filter((v) => selectedVariants[v.id]);
+      const targets = selectedObjs.filter((obj) => obj.isActive !== targetActive);
+      if (targets.length === 0) return;
       await Promise.all(
-        selectedObjs.map((obj) =>
+        targets.map((obj) =>
           updateVariantMutation.mutateAsync({
             productUuid: canonicalProductId,
             variantUuid: obj.id,
@@ -382,9 +394,21 @@ export default function AdminProductDetailsPage() {
           })
         )
       );
+      toast.success(
+        targetActive ? "Items Activated" : "Items Deactivated",
+        `${targets.length} item${targets.length > 1 ? "s" : ""} ${
+          targetActive ? "activated" : "deactivated"
+        } successfully.`
+      );
       setSelectedVariants({});
     } catch (err: any) {
       console.error("Bulk update failed", err);
+      toast.error(
+        "Bulk update failed",
+        err instanceof Error ? err.message : "Failed to update selected items"
+      );
+    } finally {
+      setIsStatusUpdating(false);
     }
   };
 
@@ -633,6 +657,22 @@ export default function AdminProductDetailsPage() {
               <div className="flex p-1 bg-cream-200 border border-cream-border rounded-md gap-1">
                 <button
                   type="button"
+                  onClick={() => setVariantFilter("all")}
+                  className={`px-3 py-1.5 rounded-sm text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                    variantFilter === "all"
+                      ? "bg-secondary-600 text-cream-white"
+                      : "text-neutral-500 hover:text-neutral-900 hover:bg-white"
+                  }`}
+                >
+                  <span>All</span>
+                  {variantFilter === "all" && (
+                    <span className="px-1.5 py-0.5 text-[10.5px] rounded-full font-bold leading-none bg-white/20 text-cream-white">
+                      {currentTabCount}
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
                   onClick={() => setVariantFilter("active")}
                   className={`px-3 py-1.5 rounded-sm text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${
                     variantFilter === "active"
@@ -723,27 +763,38 @@ export default function AdminProductDetailsPage() {
           {hasSelection && variantViewMode === "table" && (
             <div className="px-4 py-2.5 bg-secondary-50 border-b border-secondary-200 flex items-center justify-between gap-3 text-xs">
               <span className="font-bold text-secondary-600">
-                {selectedIds.length} variant{selectedIds.length > 1 ? "s" : ""} selected
+                {selectedIds.length} item{selectedIds.length > 1 ? "s" : ""} selected
               </span>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setSelectedVariants({})}
-                  className="px-2.5 py-1 rounded-md border border-secondary-200 bg-white hover:bg-secondary-100 text-secondary-600 font-semibold cursor-pointer"
+                  disabled={isStatusUpdating}
+                  className="px-2.5 py-1 rounded-md border border-secondary-200 bg-white hover:bg-secondary-100 text-secondary-600 font-semibold cursor-pointer disabled:opacity-50"
                 >
                   Clear
                 </button>
                 <button
                   type="button"
                   onClick={() => handleBulkStatusChange(true)}
-                  className="px-2.5 py-1 rounded-md border border-secondary-200 bg-white hover:bg-secondary-100 text-success-700 font-semibold cursor-pointer"
+                  disabled={isStatusUpdating || !hasInactiveSelected}
+                  className={`px-2.5 py-1 rounded-md border font-semibold transition-all ${
+                    hasInactiveSelected && !isStatusUpdating
+                      ? "border-emerald-300 bg-white hover:bg-emerald-50 text-emerald-700 cursor-pointer shadow-2xs"
+                      : "border-neutral-200 bg-neutral-100 text-neutral-400 cursor-not-allowed opacity-50"
+                  }`}
                 >
                   Activate
                 </button>
                 <button
                   type="button"
                   onClick={() => handleBulkStatusChange(false)}
-                  className="px-2.5 py-1 rounded-md border border-secondary-200 bg-white hover:bg-secondary-100 text-neutral-400 font-semibold cursor-pointer"
+                  disabled={isStatusUpdating || !hasActiveSelected}
+                  className={`px-2.5 py-1 rounded-md border font-semibold transition-all ${
+                    hasActiveSelected && !isStatusUpdating
+                      ? "border-amber-300 bg-white hover:bg-amber-50 text-amber-800 cursor-pointer shadow-2xs"
+                      : "border-neutral-200 bg-neutral-100 text-neutral-400 cursor-not-allowed opacity-50"
+                  }`}
                 >
                   Deactivate
                 </button>
@@ -758,10 +809,14 @@ export default function AdminProductDetailsPage() {
             <div className="text-center py-16 px-4">
               <Package className="mx-auto h-10 w-10 text-neutral-300" />
               <h3 className="mt-3 text-sm font-semibold text-neutral-900">
-                No {variantFilter} Item found
+                {variantFilter === "all"
+                  ? "No Items found"
+                  : `No ${variantFilter} Item found`}
               </h3>
               <p className="mt-1 text-xs text-neutral-500 max-w-sm mx-auto">
-                {variantFilter === "active"
+                {variantFilter === "all"
+                  ? "This product currently has no items associated with it."
+                  : variantFilter === "active"
                   ? "This product currently has no active Items associated with it."
                   : "No Items are currently marked as inactive."}
               </p>
@@ -957,40 +1012,28 @@ export default function AdminProductDetailsPage() {
                           }`}
                         >
                           <div className="flex items-center justify-center">
-                            {variant.isActive ? (
-                              <button
-                                type="button"
-                                data-action-trigger
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (activeMenu?.variant.id === variant.id) {
-                                    setActiveMenu(null);
-                                  } else {
-                                    const rect = e.currentTarget.getBoundingClientRect();
-                                    setActiveMenu({ variant, rect });
-                                  }
-                                }}
-                                className={`w-8 h-8 rounded-md border flex items-center justify-center transition-colors cursor-pointer ${
-                                  activeMenu?.variant.id === variant.id
-                                    ? "bg-secondary-600 text-cream-white border-secondary-600"
-                                    : "border-cream-border bg-white hover:bg-secondary-50 text-neutral-700 hover:text-secondary-600"
-                                }`}
-                                title="More actions"
-                                aria-label="More actions"
-                              >
-                                <MoreHorizontal className="w-4 h-4" />
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => setVariantToActivate(variant)}
-                                className="px-2.5 py-1 text-xs font-semibold rounded-md border border-success-200 bg-success-50 hover:bg-success-100 text-success-700 transition-colors flex items-center gap-1 cursor-pointer"
-                                title="Make Active"
-                              >
-                                <Power className="w-3.5 h-3.5" />
-                                <span>Active</span>
-                              </button>
-                            )}
+                            <button
+                              type="button"
+                              data-action-trigger
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (activeMenu?.variant.id === variant.id) {
+                                  setActiveMenu(null);
+                                } else {
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  setActiveMenu({ variant, rect });
+                                }
+                              }}
+                              className={`w-8 h-8 rounded-md border flex items-center justify-center transition-colors cursor-pointer ${
+                                activeMenu?.variant.id === variant.id
+                                  ? "bg-secondary-600 text-cream-white border-secondary-600"
+                                  : "border-cream-border bg-white hover:bg-secondary-50 text-neutral-700 hover:text-secondary-600"
+                              }`}
+                              title="More actions"
+                              aria-label="More actions"
+                            >
+                              <MoreHorizontal className="w-4 h-4" />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -1006,7 +1049,7 @@ export default function AdminProductDetailsPage() {
             <span>
               Showing <strong className="text-neutral-900">{variants.length}</strong> of{" "}
               <strong className="text-neutral-900">{currentTabCount}</strong>{" "}
-              {variantFilter} Items
+              {variantFilter === "all" ? "" : `${variantFilter} `}Items
             </span>
           </div>
         </section>
@@ -1018,7 +1061,7 @@ export default function AdminProductDetailsPage() {
           (() => {
             const { variant, rect } = activeMenu;
             const menuWidth = 192; // 12rem = 192px
-            const menuHeight = variant.isActive ? 220 : 60;
+            const menuHeight = 240;
 
             // Position on the LEFT side of the button icon:
             let left = rect.left - menuWidth - 8;
@@ -1045,100 +1088,97 @@ export default function AdminProductDetailsPage() {
                 className="rounded-xl border border-cream-border bg-white p-1.5 shadow-2xl animate-in zoom-in-95 duration-100 select-none"
                 onClick={(e) => e.stopPropagation()}
               >
+                {/* 1. View Product Variant */}
+                <Link
+                  href={`/admin/dashboard/variants/${encodeURIComponent(variant.id)}?productId=${encodeURIComponent(canonicalProductId)}`}
+                  onClick={() => setActiveMenu(null)}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-semibold text-neutral-700 hover:text-secondary-600 hover:bg-secondary-50 rounded-lg transition-colors cursor-pointer text-left"
+                >
+                  <Eye className="w-3.5 h-3.5 opacity-70" />
+                  <span>View Product Item</span>
+                </Link>
+
+                {/* 2. Price Change — same Units & Pricing flow as the Edit Item modal */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveMenu(null);
+                    setEditingVariant(variant);
+                    setEditVariantTab("pricing");
+                  }}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-semibold text-neutral-700 hover:text-secondary-600 hover:bg-secondary-50 rounded-lg transition-colors cursor-pointer text-left"
+                >
+                  <IndianRupee className="w-3.5 h-3.5 opacity-70" />
+                  <span>Price Change</span>
+                </button>
+
+                {/* 3. Edit */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveMenu(null);
+                    setEditingVariant(variant);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-semibold text-neutral-700 hover:text-secondary-600 hover:bg-secondary-50 rounded-lg transition-colors cursor-pointer text-left"
+                >
+                  <Pencil className="w-3.5 h-3.5 opacity-70" />
+                  <span>Edit</span>
+                </button>
+
+                {/* Manage Images */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveMenu(null);
+                    setManagingImagesVariant(variant);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-semibold text-neutral-700 hover:text-secondary-600 hover:bg-secondary-50 rounded-lg transition-colors cursor-pointer text-left"
+                >
+                  <ImagesIcon className="w-3.5 h-3.5 opacity-70" />
+                  <span>Manage Images</span>
+                </button>
+
+                <div className="my-1 border-t border-cream-border" />
+
+                {/* Status Toggle: Make Inactive vs Make Active */}
                 {variant.isActive ? (
-                  <>
-                    {/* 1. View Product Variant */}
-                    <Link
-                      href={`/admin/dashboard/variants/${encodeURIComponent(variant.id)}?productId=${encodeURIComponent(canonicalProductId)}`}
-                      onClick={() => setActiveMenu(null)}
-                      className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-semibold text-neutral-700 hover:text-secondary-600 hover:bg-secondary-50 rounded-lg transition-colors cursor-pointer text-left"
-                    >
-                      <Eye className="w-3.5 h-3.5 opacity-70" />
-                      <span>View Product Item</span>
-                    </Link>
-
-                    {/* 2. Price Change — same Units & Pricing flow as the Edit Item modal */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveMenu(null);
-                        setEditingVariant(variant);
-                        setEditVariantTab("pricing");
-                      }}
-                      className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-semibold text-neutral-700 hover:text-secondary-600 hover:bg-secondary-50 rounded-lg transition-colors cursor-pointer text-left"
-                    >
-                      <IndianRupee className="w-3.5 h-3.5 opacity-70" />
-                      <span>Price Change</span>
-                    </button>
-
-                    {/* 3. Edit */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveMenu(null);
-                        setEditingVariant(variant);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-semibold text-neutral-700 hover:text-secondary-600 hover:bg-secondary-50 rounded-lg transition-colors cursor-pointer text-left"
-                    >
-                      <Pencil className="w-3.5 h-3.5 opacity-70" />
-                      <span>Edit</span>
-                    </button>
-
-                    {/* Manage Images */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveMenu(null);
-                        setManagingImagesVariant(variant);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-semibold text-neutral-700 hover:text-secondary-600 hover:bg-secondary-50 rounded-lg transition-colors cursor-pointer text-left"
-                    >
-                      <ImagesIcon className="w-3.5 h-3.5 opacity-70" />
-                      <span>Manage Images</span>
-                    </button>
-
-                    <div className="my-1 border-t border-cream-border" />
-
-                    {/* 4. Make Inactive */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveMenu(null);
-                        setVariantToDeactivate(variant);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-semibold text-amber-700 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer text-left"
-                    >
-                      <PowerOff className="w-3.5 h-3.5" />
-                      <span>Make Inactive</span>
-                    </button>
-
-                    {/* 5. Delete */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveMenu(null);
-                        setDeletingVariant(variant);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors cursor-pointer text-left"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Delete</span>
-                    </button>
-                  </>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveMenu(null);
+                      setVariantToDeactivate(variant);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-semibold text-amber-700 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer text-left"
+                  >
+                    <PowerOff className="w-3.5 h-3.5" />
+                    <span>Make Inactive</span>
+                  </button>
                 ) : (
-                  /* INACTIVE: ONLY Make Active */
                   <button
                     type="button"
                     onClick={() => {
                       setActiveMenu(null);
                       setVariantToActivate(variant);
                     }}
-                    className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-semibold text-success-700 hover:text-success-800 hover:bg-success-50 rounded-lg transition-colors cursor-pointer text-left"
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-semibold text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer text-left"
                   >
                     <Power className="w-3.5 h-3.5" />
                     <span>Make Active</span>
                   </button>
                 )}
+
+                {/* Delete */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveMenu(null);
+                    setDeletingVariant(variant);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors cursor-pointer text-left"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete</span>
+                </button>
               </div>
             );
           })(),

@@ -12,13 +12,13 @@ import {
 } from "@/features/roles/hooks";
 import { DataTable } from "@/components/admin/data-table/DataTable";
 import { AdminPageHeader, AdminContent } from "@/components/admin/AdminPageHeader";
-import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
 import { AdminTableSkeleton } from "@/components/admin/AdminTableSkeleton";
 import { ErrorState } from "@/components/ui/error-state";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { SearchInput } from "@/components/ui/search-input";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormModal } from "@/components/common/FormModal";
+import { toast } from "@/components/ui/Toast";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import {
   createRoleSchema,
@@ -28,6 +28,9 @@ import type { ColumnDef } from "@tanstack/react-table";
 import type { RoleListItem } from "@/features/roles/types";
 
 export default function AdminRolesPage() {
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<RoleListItem | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -40,6 +43,22 @@ export default function AdminRolesPage() {
   const deleteMutation = useDeleteRole();
 
   const roles = rolesData ?? [];
+
+  const filteredRoles = useMemo(() => {
+    if (!search.trim()) return roles;
+    const q = search.toLowerCase();
+    return roles.filter(
+      (r) =>
+        r.name.toLowerCase().includes(q) ||
+        (r.description && r.description.toLowerCase().includes(q))
+    );
+  }, [roles, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredRoles.length / pageSize));
+  const paginatedRoles = useMemo(() => {
+    const startIndex = (page - 1) * pageSize;
+    return filteredRoles.slice(startIndex, startIndex + pageSize);
+  }, [filteredRoles, page, pageSize]);
 
   const permissionsByModule = useMemo(() => {
     if (!permissions) return {};
@@ -89,18 +108,26 @@ export default function AdminRolesPage() {
         { id: editingRole.id, data: payload },
         {
           onSuccess: () => {
+            toast.success("Role Updated", "Role updated successfully.");
             setModalOpen(false);
             setEditingRole(null);
             setSelectedPermissionIds([]);
+          },
+          onError: (err: any) => {
+            toast.error("Update Failed", err?.message || "Could not update role.");
           },
         }
       );
     } else {
       createMutation.mutate(payload, {
         onSuccess: () => {
+          toast.success("Role Created", "Role created successfully.");
           setModalOpen(false);
           reset();
           setSelectedPermissionIds([]);
+        },
+        onError: (err: any) => {
+          toast.error("Creation Failed", err?.message || "Could not create role.");
         },
       });
     }
@@ -120,22 +147,38 @@ export default function AdminRolesPage() {
     {
       accessorKey: "name",
       header: "Name",
-      cell: ({ row }) => <p className="font-medium">{row.original.name}</p>,
+      cell: ({ row }) => (
+        <p className="font-semibold text-[var(--color-neutral-900)]">
+          {row.original.name}
+        </p>
+      ),
     },
     {
       accessorKey: "description",
       header: "Description",
-      cell: ({ row }) => row.original.description || "-",
+      cell: ({ row }) => (
+        <span className="text-[var(--color-neutral-700)]">
+          {row.original.description || "—"}
+        </span>
+      ),
     },
     {
       accessorKey: "_count.users",
       header: "Users",
-      cell: ({ row }) => row.original._count?.users ?? 0,
+      cell: ({ row }) => (
+        <span className="text-[var(--color-neutral-700)] font-medium">
+          {row.original._count?.users ?? 0}
+        </span>
+      ),
     },
     {
       accessorKey: "_count.rolePermissions",
       header: "Permissions",
-      cell: ({ row }) => row.original._count?.rolePermissions ?? 0,
+      cell: ({ row }) => (
+        <span className="text-[var(--color-neutral-700)] font-medium">
+          {row.original._count?.rolePermissions ?? 0}
+        </span>
+      ),
     },
     {
       id: "actions",
@@ -146,6 +189,8 @@ export default function AdminRolesPage() {
             variant="ghost"
             size="icon"
             onClick={() => handleOpenModal(row.original)}
+            className="h-8 w-8 text-neutral-500 hover:text-secondary-700 hover:bg-secondary-50 cursor-pointer"
+            title="Edit Role"
           >
             <Pencil className="h-4 w-4" />
           </Button>
@@ -153,42 +198,74 @@ export default function AdminRolesPage() {
             variant="ghost"
             size="icon"
             onClick={() => setDeleteId(row.original.id)}
+            className="h-8 w-8 text-neutral-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"
+            title="Delete Role"
           >
-            <Trash2 className="h-4 w-4 text-error-600" />
+            <Trash2 className="h-4 w-4" />
           </Button>
         </div>
       ),
     },
   ];
 
-  if (rolesLoading) return <AdminTableSkeleton />;
+  if (rolesLoading && !rolesData) return <AdminTableSkeleton />;
   if (rolesError) return <ErrorState message="Failed to load roles" onRetry={() => refetch()} />;
 
   const isMutating = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div className="flex flex-1 min-h-0 flex-col">
-      <AdminBreadcrumb items={[{ label: "Roles" }]} />
       <AdminPageHeader
-        title="Roles"
-        description="Manage user roles and their permissions"
-        actions={
-          <Button onClick={() => handleOpenModal()}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Role
-          </Button>
-        }
+        title="Role Management"
+        description="Manage user roles and their assigned permissions."
       />
       <AdminContent className="flex-1 min-h-0 overflow-hidden">
-        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-          <DataTable
-            columns={columns}
-            data={roles}
-            searchKey="name"
-            searchPlaceholder="Search roles..."
-            pageSize={20}
-            className="bg-white border border-neutral-200"
-          />
+        <div className="flex h-full flex-col overflow-hidden bg-[var(--color-background)] py-1 rounded-2xl">
+          {/* Search + Add Button Header */}
+          <div className="flex-shrink-0 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <SearchInput
+              placeholder="Search roles..."
+              defaultValue={search}
+              onSearch={(val) => {
+                setSearch(val);
+                setPage(1);
+              }}
+              className="w-full max-w-md"
+            />
+
+            <Button
+              type="button"
+              onClick={() => handleOpenModal()}
+              className="h-11 rounded-xl bg-[var(--color-secondary-600)] px-5 text-sm font-semibold text-white hover:bg-[var(--color-secondary-700)] cursor-pointer"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Role
+            </Button>
+          </div>
+
+          {/* Table Container */}
+          <div className="mt-6 flex-1 min-h-0 overflow-hidden flex flex-col">
+            <DataTable
+              columns={columns}
+              data={paginatedRoles}
+              pageSize={pageSize}
+              pageSizeOptions={[10, 20, 30, 50]}
+              page={page}
+              totalPages={totalPages}
+              totalItems={filteredRoles.length}
+              onPageChange={setPage}
+              onPageSizeChange={(newSize) => {
+                setPageSize(newSize);
+                setPage(1);
+              }}
+              emptyMessage={
+                search
+                  ? "No roles match your search."
+                  : "No roles created yet."
+              }
+              className="bg-white"
+            />
+          </div>
         </div>
       </AdminContent>
 
@@ -214,8 +291,12 @@ export default function AdminRolesPage() {
             >
               Cancel
             </Button>
-            <Button onClick={handleSubmit(onSubmit)} disabled={isMutating}>
-              {editingRole ? "Update" : "Create"}
+            <Button
+              onClick={handleSubmit(onSubmit)}
+              disabled={isMutating}
+              className="bg-[var(--color-secondary-600)] hover:bg-[var(--color-secondary-700)] text-white"
+            >
+              {isMutating ? "Saving..." : editingRole ? "Update" : "Create"}
             </Button>
           </>
         }
@@ -223,15 +304,19 @@ export default function AdminRolesPage() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Name <span className="text-error-600">*</span>
+              Name <span className="text-rose-500">*</span>
             </label>
             <input
               {...register("name")}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 ${
+                errors.name
+                  ? "border-rose-500 focus:border-rose-500 focus:ring-rose-200"
+                  : "border-gray-300 focus:border-primary focus:ring-primary/30"
+              }`}
               placeholder="Role name"
             />
             {errors.name && (
-              <p className="mt-1 text-xs text-red-500 font-medium">{errors.name.message}</p>
+              <p className="mt-1 text-xs text-rose-500 font-medium">{errors.name.message}</p>
             )}
           </div>
 
@@ -242,11 +327,15 @@ export default function AdminRolesPage() {
             <textarea
               {...register("description")}
               rows={3}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 ${
+                errors.description
+                  ? "border-rose-500 focus:border-rose-500 focus:ring-rose-200"
+                  : "border-gray-300 focus:border-primary focus:ring-primary/30"
+              }`}
               placeholder="Role description"
             />
             {errors.description && (
-              <p className="mt-1 text-xs text-red-500 font-medium">{errors.description.message}</p>
+              <p className="mt-1 text-xs text-rose-500 font-medium">{errors.description.message}</p>
             )}
           </div>
 
@@ -273,9 +362,9 @@ export default function AdminRolesPage() {
                           type="checkbox"
                           checked={selectedPermissionIds.includes(perm.id)}
                           onChange={() => handleTogglePermission(perm.id)}
-                          className="h-4 w-4 rounded border-gray-300"
+                          className="h-4 w-4 rounded border-gray-300 text-secondary-600 focus:ring-secondary-500"
                         />
-                        <span className="text-sm">{perm.name}</span>
+                        <span className="text-sm font-medium text-neutral-800">{perm.name}</span>
                         {perm.description && (
                           <span className="text-xs text-muted-foreground">
                             - {perm.description}
@@ -297,7 +386,13 @@ export default function AdminRolesPage() {
         onConfirm={() => {
           if (deleteId) {
             deleteMutation.mutate(deleteId, {
-              onSuccess: () => setDeleteId(null),
+              onSuccess: () => {
+                toast.success("Role Deleted", "Role removed successfully.");
+                setDeleteId(null);
+              },
+              onError: (err: any) => {
+                toast.error("Delete Failed", err?.message || "Could not delete role.");
+              },
             });
           }
         }}

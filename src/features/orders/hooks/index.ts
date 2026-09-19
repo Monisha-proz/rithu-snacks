@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { cartKeys, orderKeys, adminOrderKeys, checkoutKeys, deliveryKeys } from "@/lib/api/query-keys";
+import { toast } from "@/components/ui/Toast";
 import {
   getOrders,
   getOrder,
@@ -188,7 +189,14 @@ export function useAssignOrderDelivery() {
       queryClient.invalidateQueries({
         queryKey: adminOrderKeys.detail(variables.orderId),
       });
+      queryClient.invalidateQueries({ queryKey: orderKeys.all });
       queryClient.invalidateQueries({ queryKey: deliveryKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["delivery"] });
+      toast.success("Delivery staff assigned successfully");
+    },
+    onError: (error: any) => {
+      toast.error(error?.message || "Failed to assign delivery staff");
     },
   });
 }

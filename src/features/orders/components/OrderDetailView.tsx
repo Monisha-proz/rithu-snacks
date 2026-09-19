@@ -13,6 +13,7 @@ import {
   Phone,
   Mail,
   ShieldCheck,
+  UserCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDateTime, formatPrice } from "@/lib/utils";
@@ -141,6 +142,17 @@ export function OrderDetailView({
             </span>
           )}
 
+          {/* Invoice Action */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-theme-border hover:bg-theme-surface-alt text-theme-text-primary rounded-xl text-xs font-semibold min-h-[36px]"
+            onClick={() => window.open(`/invoice/${order.id}`, "_blank", "noopener")}
+          >
+            <FileText className="mr-1.5 h-3.5 w-3.5 text-theme-secondary" />
+            Invoice
+          </Button>
+
           {/* Cancel Order Action */}
           {canCancel && (
             <Button
@@ -186,24 +198,24 @@ export function OrderDetailView({
                     Customer Details
                   </h3>
                 </div>
-                <div className="p-4 text-xs space-y-1 text-theme-text-subtle">
+                <div className="p-4 text-xs space-y-1.5 text-theme-text-subtle">
                   <p className="font-bold text-theme-text-primary text-sm">
                     {customer.name || "Customer"}
                   </p>
                   {customer.customerId && (
-                    <p className="font-mono text-[11px] text-theme-text-muted">
+                    <p className="font-mono text-[11px] text-theme-text-muted font-medium">
                       ID: {customer.customerId}
                     </p>
                   )}
                   {customer.email && (
-                    <p className="flex items-center gap-1.5 truncate pt-0.5">
-                      <Mail className="h-3 w-3 shrink-0 text-theme-text-muted" />
+                    <p className="flex items-center gap-1.5 truncate pt-0.5 text-theme-text-secondary font-medium">
+                      <Mail className="h-3.5 w-3.5 shrink-0 text-theme-text-muted" />
                       <span className="truncate">{customer.email}</span>
                     </p>
                   )}
                   {customer.phone && (
-                    <p className="flex items-center gap-1.5 pt-0.5">
-                      <Phone className="h-3 w-3 shrink-0 text-theme-text-muted" />
+                    <p className="flex items-center gap-1.5 pt-0.5 text-theme-text-secondary font-medium">
+                      <Phone className="h-3.5 w-3.5 shrink-0 text-theme-text-muted" />
                       <span>{customer.phone}</span>
                     </p>
                   )}
@@ -220,29 +232,31 @@ export function OrderDetailView({
                     Delivery Address
                   </h3>
                 </div>
-                <div className="p-4 text-xs text-theme-text-subtle space-y-1">
+                <div className="p-4 text-xs text-theme-text-subtle space-y-1.5">
                   <p className="font-bold text-theme-text-primary text-sm">
                     {shippingAddress.fullName}
                   </p>
-                  <p className="line-clamp-2">
+                  <p className="line-clamp-2 text-theme-text-secondary font-medium leading-relaxed">
                     {shippingAddress.addressLine1}
                     {shippingAddress.addressLine2
                       ? `, ${shippingAddress.addressLine2}`
                       : ""}
                   </p>
                   {shippingAddress.landmark && (
-                    <p className="text-[11px] text-theme-text-muted">
+                    <p className="text-[11px] text-theme-text-muted font-medium">
                       Landmark: {shippingAddress.landmark}
                     </p>
                   )}
-                  <p>
+                  <p className="text-theme-text-secondary font-medium">
                     {shippingAddress.city}, {shippingAddress.state}{" "}
                     {shippingAddress.pincode ? `- ${shippingAddress.pincode}` : ""}
                   </p>
-                  <p>{shippingAddress.country || "India"}</p>
+                  <p className="text-theme-text-subtle font-medium">
+                    {shippingAddress.country || "India"}
+                  </p>
                   {shippingAddress.phone && (
-                    <p className="flex items-center gap-1.5 text-theme-text-muted pt-1">
-                      <Phone className="h-3 w-3 shrink-0" />
+                    <p className="flex items-center gap-1.5 text-theme-text-secondary font-medium pt-1">
+                      <Phone className="h-3.5 w-3.5 shrink-0 text-theme-text-muted" />
                       <span>{shippingAddress.phone}</span>
                     </p>
                   )}
@@ -252,11 +266,19 @@ export function OrderDetailView({
 
             {/* Assigned Delivery Staff */}
             <div className="rounded-2xl border border-theme-border bg-theme-surface shadow-2xs overflow-hidden">
-              <div className="bg-theme-surface-alt border-b border-theme-border-subtle px-4 py-3 flex items-center gap-2">
-                <Truck className="h-4 w-4 text-theme-secondary" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-theme-text-primary">
-                  Assigned Staff
-                </h3>
+              <div className="bg-theme-surface-alt border-b border-theme-border-subtle px-4 py-3 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Truck className="h-4 w-4 text-theme-secondary" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-theme-text-primary">
+                    Assigned Staff
+                  </h3>
+                </div>
+                {delivery?.staff && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    <UserCheck className="h-3 w-3" />
+                    Assigned
+                  </span>
+                )}
               </div>
               <div className="p-4 text-xs space-y-2 text-theme-text-subtle">
                 {delivery?.staff ? (
@@ -270,25 +292,25 @@ export function OrderDetailView({
                           {delivery.staff.name}
                         </p>
                         {delivery.assignmentStatus && (
-                          <span className="inline-block text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded capitalize">
+                          <span className="inline-block text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded capitalize">
                             {delivery.assignmentStatus.replace(/_/g, " ")}
                           </span>
                         )}
                       </div>
                     </div>
                     {delivery.staff.phone && (
-                      <p className="flex items-center gap-1.5 text-xs text-theme-text-muted">
-                        <Phone className="h-3 w-3 shrink-0" />
+                      <p className="flex items-center gap-1.5 text-xs text-theme-text-secondary font-medium">
+                        <Phone className="h-3.5 w-3.5 shrink-0 text-theme-text-muted" />
                         <span className="font-mono">{delivery.staff.phone}</span>
                       </p>
                     )}
                     {delivery.staff.email && (
-                      <p className="text-xs truncate text-theme-text-muted">
+                      <p className="text-xs truncate text-theme-text-secondary font-medium">
                         {delivery.staff.email}
                       </p>
                     )}
                     {delivery.assignedAt && (
-                      <p className="text-[11px] text-theme-text-muted pt-1">
+                      <p className="text-[11px] text-theme-text-muted font-medium pt-1">
                         Assigned on {formatDateTime(delivery.assignedAt)}
                       </p>
                     )}
@@ -298,7 +320,7 @@ export function OrderDetailView({
                     <span className="inline-flex items-center gap-1 text-[11px] font-bold text-theme-text-muted bg-theme-surface-alt px-2.5 py-0.5 rounded-full border border-theme-border">
                       Unassigned
                     </span>
-                    <p className="text-xs text-theme-text-muted mt-2">
+                    <p className="text-xs text-theme-text-subtle font-medium mt-2 leading-relaxed">
                       No delivery staff assigned yet. Kitchen is packaging your order.
                     </p>
                   </div>

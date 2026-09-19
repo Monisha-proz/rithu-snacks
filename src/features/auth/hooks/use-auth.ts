@@ -3,6 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
+import { logoutUser } from "../api/auth.api";
 
 export function useAuth() {
   const { data: session, status, update } = useSession();
@@ -29,6 +30,13 @@ export function useAuth() {
     }
   }, [isLoading, isAdmin, router]);
 
+  const logout = useCallback(
+    async (redirectTo = "/login") => {
+      await logoutUser(redirectTo);
+    },
+    []
+  );
+
   return {
     user,
     session,
@@ -39,6 +47,7 @@ export function useAuth() {
     isCustomer,
     requireAuth,
     requireAdmin,
+    logout,
     update,
   };
 }

@@ -2,13 +2,11 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Check, Package, X, CreditCard, Loader2, AlertCircle } from "lucide-react";
+import { Check, Package, X, Loader2 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import type { OrderDetailResponse } from "@/features/orders/types";
 import { useCustomerOrders, useCancelCustomerOrder } from "../../hooks/use-customer-orders";
 import { useAddToCartMutation } from "../../hooks/use-customer-cart";
-import { useCreateRazorpayOrder, useVerifyRazorpayPayment } from "../../hooks/use-customer-payment";
-import { loadRazorpayScript } from "../../utils/razorpay-loader";
 import { CustomDropdown, type DropdownOption } from "./CustomDropdown";
 import { SearchInput } from "@/components/common/search-input";
 import { ProductImage } from "@/components/common/ProductImage";
@@ -44,13 +42,9 @@ export function OrdersTab({
   const [trackingOrder, setTrackingOrder] = useState<OrderDetailResponse | null>(null);
   const [reorderingId, setReorderingId] = useState<string | null>(null);
   const [reorderSuccessId, setReorderSuccessId] = useState<string | null>(null);
-  const [payingOrderId, setPayingOrderId] = useState<string | null>(null);
-  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   const cancelMutation = useCancelCustomerOrder();
   const addToCartMutation = useAddToCartMutation();
-  const createRazorpayOrderMutation = useCreateRazorpayOrder();
-  const verifyPaymentMutation = useVerifyRazorpayPayment();
 
   const {
     data: ordersResponse,
@@ -138,88 +132,6 @@ export function OrdersTab({
       console.error("Failed to reorder items into cart:", err);
     } finally {
       setReorderingId(null);
-    }
-  };
-
-  const handlePayOrder = async (order: OrderDetailResponse) => {
-    setPaymentError(null);
-    setPayingOrderId(order.id);
-
-    try {
-      const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded) {
-        throw new Error(
-          "Unable to load Razorpay payment gateway. Please check your internet connection."
-        );
-      }
-
-      const rzpData = await createRazorpayOrderMutation.mutateAsync({
-        orderId: order.id,
-      });
-
-      const RazorpayConstructor = (window as any).Razorpay;
-      if (!RazorpayConstructor) {
-        throw new Error("Razorpay SDK is not available in browser context.");
-      }
-
-      const options = {
-        key: rzpData.keyId,
-        amount: rzpData.amount,
-        currency: rzpData.currency || "INR",
-        name: "Rithu Snacks",
-        description: `Order #${order.orderNumber || rzpData.orderNumber}`,
-        order_id: rzpData.razorpayOrderId,
-        theme: {
-          color: "#7A211B",
-        },
-        modal: {
-          ondismiss: () => {
-            setPayingOrderId(null);
-          },
-        },
-        handler: async (response: {
-          razorpay_order_id: string;
-          razorpay_payment_id: string;
-          razorpay_signature: string;
-        }) => {
-          try {
-            await verifyPaymentMutation.mutateAsync({
-              orderId: order.id,
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-            });
-
-            setPayingOrderId(null);
-            handleRefetch();
-            if (trackingOrder?.id === order.id) {
-              setTrackingOrder((prev) =>
-                prev ? { ...prev, paymentStatus: "paid", status: "confirmed" } : null
-              );
-            }
-          } catch (verifyErr: any) {
-            setPayingOrderId(null);
-            setPaymentError(
-              verifyErr.message || "Payment verification failed. Please contact support."
-            );
-          }
-        },
-      };
-
-      const rzpInstance = new RazorpayConstructor(options);
-      rzpInstance.on("payment.failed", (failRes: any) => {
-        setPayingOrderId(null);
-        setPaymentError(
-          failRes.error?.description || "Payment failed. Please try again."
-        );
-      });
-
-      rzpInstance.open();
-    } catch (err: any) {
-      setPayingOrderId(null);
-      setPaymentError(
-        err.message || "Failed to launch payment checkout. Please try again."
-      );
     }
   };
 
@@ -481,28 +393,6 @@ export function OrdersTab({
 
                 {/* Card Action Buttons */}
                 <div className="px-5 pb-4 pt-1 flex items-center gap-2.5 flex-wrap border-t border-theme-border-subtle">
-                  {/* Pay Now button — shown when order exists but payment is still pending */}
-                  {order.paymentStatus === "pending" && order.status !== "cancelled" && (
-                    <button
-                      type="button"
-                      disabled={payingOrderId === order.id}
-                      onClick={() => handlePayOrder(order)}
-                      className="inline-flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold uppercase tracking-wider py-2.5 px-4 rounded-lg transition-colors cursor-pointer min-h-[40px] disabled:opacity-60"
-                    >
-                      {payingOrderId === order.id ? (
-                        <>
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          Processing...
-                        </>
-                      ) : (
-                        <>
-                          <CreditCard className="h-3.5 w-3.5" />
-                          Pay Now
-                        </>
-                      )}
-                    </button>
-                  )}
-
                   {isOngoing ? (
                     <button
                       type="button"
@@ -571,21 +461,6 @@ export function OrdersTab({
                     </button>
                   )}
                 </div>
-
-                {/* Payment error banner */}
-                {paymentError && payingOrderId === null && (
-                  <div className="mx-5 mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 flex items-start gap-2 text-xs text-red-700">
-                    <AlertCircle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5 text-red-500" />
-                    <span>{paymentError}</span>
-                    <button
-                      type="button"
-                      onClick={() => setPaymentError(null)}
-                      className="ml-auto text-red-400 hover:text-red-600 cursor-pointer"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                )}
               </div>
             );
           })}

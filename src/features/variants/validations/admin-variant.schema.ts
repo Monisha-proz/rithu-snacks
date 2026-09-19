@@ -112,15 +112,18 @@ export const bulkEditVariantItemSchema = z
     price: z
       .number()
       .min(0, "Price cannot be negative")
+      .max(99999999.99, "Price exceeds maximum allowed amount")
       .optional(),
     basePrice: z
       .number()
       .min(0, "Base price cannot be negative")
+      .max(99999999.99, "Price exceeds maximum allowed amount")
       .optional(),
     stock: z
       .number()
       .int("Stock must be an integer")
       .min(0, "Stock cannot be negative")
+      .max(2147483647, "Stock quantity exceeds maximum allowed limit")
       .optional(),
     isActive: z.boolean().optional(),
   })
@@ -194,10 +197,12 @@ export const adminVariantListSchema = z
     minPrice: z
       .number()
       .min(0, "minPrice must be greater than or equal to 0")
+      .max(99999999.99, "Price exceeds maximum allowed amount")
       .optional(),
     maxPrice: z
       .number()
       .min(0, "maxPrice must be greater than or equal to 0")
+      .max(99999999.99, "Price exceeds maximum allowed amount")
       .optional(),
     sortBy: z
       .enum([

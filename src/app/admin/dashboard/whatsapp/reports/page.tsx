@@ -134,22 +134,28 @@ export default function WhatsAppReportsPage() {
   }, [campaignDetail, logStatusFilter, logSearchQuery]);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-16">
+    <div className="space-y-6">
       {/* Header */}
       <AdminPageHeader
         title="WhatsApp Campaign Reports & Delivery Logs"
         description="Monitor delivery rates, recipient status, and real-time delivery telemetry"
-      >
-        <Button
-          onClick={() => loadData(true)}
-          variant="outline"
-          size="sm"
-          className="gap-2 border-neutral-200 text-neutral-700 hover:bg-neutral-50 h-9"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          Refresh
-        </Button>
-      </AdminPageHeader>
+        breadcrumbs={[
+          { label: "Dashboard", href: "/admin/dashboard" },
+          { label: "WhatsApp", href: "/admin/dashboard/whatsapp" },
+          { label: "Reports" },
+        ]}
+        actions={
+          <Button
+            onClick={() => loadData(true)}
+            variant="outline"
+            size="sm"
+            className="gap-2 border-neutral-200 text-neutral-700 hover:bg-neutral-50 h-9 cursor-pointer"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Refresh
+          </Button>
+        }
+      />
 
       {/* Tabs */}
       <WhatsAppNavTabs active="reports" />

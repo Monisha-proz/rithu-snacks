@@ -664,21 +664,22 @@ export default function AdminVariantsPage() {
                         <span className="text-xs font-medium text-[var(--color-neutral-600)]">
                           Cards per page:
                         </span>
-                        <select
-                          value={pageSize}
-                          onChange={(e) => {
-                            setPageSize(Number(e.target.value));
-                            setPage(1);
-                          }}
-                          aria-label="Cards per page"
-                          className="h-8 rounded-lg border border-[var(--color-neutral-300)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--color-neutral-700)] cursor-pointer"
-                        >
-                          {[8, 12, 16, 24, 32, 48].map((opt) => (
-                            <option key={opt} value={opt}>
-                              {opt}
-                            </option>
-                          ))}
-                        </select>
+                        <div className="w-20">
+                          <Select
+                            value={String(pageSize)}
+                            onValueChange={(val) => {
+                              setPageSize(Number(val));
+                              setPage(1);
+                            }}
+                            options={[8, 12, 16, 24, 32, 48].map((opt) => ({
+                              value: String(opt),
+                              label: String(opt),
+                            }))}
+                            size="sm"
+                            placement="top"
+                            className="h-8 rounded-lg font-semibold"
+                          />
+                        </div>
                       </div>
                     </div>
 

@@ -49,7 +49,7 @@ export function VariantPriceHistoryCard({
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   const periodApiVal = useMemo(() => {
-    if (range === "30D") return "1m";
+    if (range === "30D") return "30d";
     if (range === "6M") return "6m";
     return "1y";
   }, [range]);
@@ -78,7 +78,20 @@ export function VariantPriceHistoryCard({
 
     if (chartApiData && chartApiData.length > 0) {
       return chartApiData.map((item) => {
-        const [yearStr, monthNumStr] = item.month.split("-");
+        const parts = item.month.split("-");
+        if (parts.length === 3) {
+          const [yearStr, monthNumStr, dayStr] = parts;
+          const monthIndex = parseInt(monthNumStr, 10) - 1;
+          const monthLabel = months[monthIndex] || monthNumStr;
+          const dayNum = parseInt(dayStr, 10);
+          return {
+            date: `${dayNum} ${monthLabel}`,
+            fullDate: `${dayNum} ${monthLabel} ${yearStr}`,
+            value: item.price,
+          };
+        }
+
+        const [yearStr, monthNumStr] = parts;
         const monthIndex = parseInt(monthNumStr, 10) - 1;
         const monthLabel = months[monthIndex] || item.month;
         return {
@@ -95,9 +108,31 @@ export function VariantPriceHistoryCard({
   }, [chartApiData, basePrice]);
 
   const values = chartSeries.map((s) => s.value);
-  const maxVal = Math.max(...values, basePrice, 1);
-  const minVal = Math.min(...values, basePrice);
-  const span = Math.max(1, maxVal - minVal);
+  const maxValue = Math.max(...values, basePrice, 1);
+
+  // Compute a clean upper bound for the Y-axis with headroom for price labels
+  const yMax = useMemo(() => {
+    if (maxValue <= 0) return 100;
+    const target = maxValue * 1.25;
+    if (target <= 50) return 50;
+    if (target <= 100) return 100;
+    if (target <= 200) return 200;
+    if (target <= 500) return Math.ceil(target / 50) * 50;
+    if (target <= 1000) return Math.ceil(target / 100) * 100;
+    if (target <= 5000) return Math.ceil(target / 250) * 250;
+    if (target <= 20000) return Math.ceil(target / 1000) * 1000;
+    return Math.ceil(target / 5000) * 5000;
+  }, [maxValue]);
+
+  // 4 Y-axis ticks: [yMax, ~67%, ~33%, 0]
+  const yTicks = useMemo(() => {
+    return [
+      yMax,
+      Math.round((yMax * 2) / 3),
+      Math.round(yMax / 3),
+      0,
+    ];
+  }, [yMax]);
 
   if (unitPrices.length === 0) {
     return (
@@ -243,12 +278,16 @@ export function VariantPriceHistoryCard({
                   </span>
                 </div>
                 <p className="text-xs text-neutral-400">
-                  Base price trend · monthly average, last 12 months
+                  {range === "30D"
+                    ? "Base price trend · last 30 days"
+                    : range === "6M"
+                    ? "Base price trend · monthly average, last 6 months"
+                    : "Base price trend · monthly average, last 12 months"}
                 </p>
               </div>
 
               <div className="flex items-center gap-1.5 bg-cream-100 p-1 rounded-lg border border-cream-border shadow-2xs self-start sm:self-auto">
-                {(["1Y"] as RangeOption[]).map((r) => (
+                {(["30D", "6M", "1Y"] as RangeOption[]).map((r) => (
                   <button
                     key={r}
                     type="button"
@@ -266,73 +305,118 @@ export function VariantPriceHistoryCard({
             </div>
 
             <div className="rounded-2xl bg-cream-50/50 border border-cream-border p-5">
-              <div className="flex items-end gap-3 sm:gap-6 h-40 pt-4 pb-2 border-b border-cream-border relative">
-                {chartSeries.map((pt, idx) => {
-                  const isLatest = idx === chartSeries.length - 1;
-                  const isHot = hoveredIndex === idx;
-                  const heightPercent =
-                    span > 0
-                      ? Math.min(
-                          100,
-                          Math.max(28, 30 + ((pt.value - minVal) / span) * 65)
-                        )
-                      : 65;
-
-                  return (
-                    <div
-                      key={idx}
-                      onMouseEnter={() => setHoveredIndex(idx)}
-                      onMouseLeave={() => setHoveredIndex(null)}
-                      className="flex-1 relative flex flex-col items-center justify-end h-full group cursor-pointer"
-                    >
-                      {isHot && (
-                        <div
-                          style={{ bottom: `${heightPercent}%` }}
-                          className="absolute z-30 mb-2 left-1/2 -translate-x-1/2 rounded-xl bg-neutral-900 text-white px-3 py-1.5 text-center shadow-xl pointer-events-none whitespace-nowrap animate-in fade-in-0 duration-150"
-                        >
-                          <div className="text-[10px] text-neutral-300 font-medium">
-                            {pt.fullDate}
-                          </div>
-                          <div className="text-xs font-bold font-mono text-emerald-400">
-                            ₹{pt.value.toLocaleString("en-IN")}.00
-                          </div>
-                        </div>
-                      )}
-
-                      <span
-                        className={`text-[10.5px] font-bold font-mono mb-1.5 transition-colors ${
-                          isHot || isLatest
-                            ? "text-secondary-900 font-bold"
-                            : "text-neutral-400"
-                        }`}
-                      >
-                        ₹{pt.value}
-                      </span>
-
-                      <div
-                        style={{ height: `${heightPercent}%` }}
-                        className={`w-full max-w-[48px] rounded-t-lg transition-all duration-200 ${
-                          isHot
-                            ? "bg-secondary-900 shadow-md scale-105"
-                            : isLatest
-                            ? "bg-secondary-600 shadow-xs"
-                            : "bg-secondary-200 hover:bg-secondary-300"
-                        }`}
-                      />
+              <div className="overflow-x-auto pt-4 pb-2">
+                <div className="min-w-[460px]">
+                  <div className="flex">
+                    {/* Y-Axis Labels */}
+                    <div className="relative h-44 w-12 sm:w-14 shrink-0 select-none">
+                      {yTicks.map((tick, i) => {
+                        const topPct = (i / (yTicks.length - 1)) * 100;
+                        return (
+                          <span
+                            key={i}
+                            style={{ top: `${topPct}%` }}
+                            className="absolute right-2.5 -translate-y-1/2 text-[10.5px] font-mono font-medium text-neutral-400 whitespace-nowrap leading-none"
+                          >
+                            ₹{tick.toLocaleString("en-IN")}
+                          </span>
+                        );
+                      })}
                     </div>
-                  );
-                })}
-              </div>
 
-              <div className="flex gap-3 sm:gap-6 mt-2.5">
-                {chartSeries.map((pt, idx) => (
-                  <div
-                    key={idx}
-                    className="flex-1 text-center text-[10.5px] font-semibold text-neutral-400 truncate"
-                  >
-                    {pt.date}
+                    {/* Chart Plot & X-Axis */}
+                    <div className="flex-1 flex flex-col min-w-0">
+                      {/* Plot Area */}
+                      <div className="relative h-44">
+                        {/* Horizontal Grid Lines */}
+                        <div className="absolute inset-0 pointer-events-none">
+                          {yTicks.map((_, i) => {
+                            const topPct = (i / (yTicks.length - 1)) * 100;
+                            return (
+                              <div
+                                key={i}
+                                style={{ top: `${topPct}%` }}
+                                className={`absolute left-0 right-0 ${
+                                  i === yTicks.length - 1
+                                    ? "border-b border-cream-border"
+                                    : "border-b border-dashed border-cream-border/70"
+                                }`}
+                              />
+                            );
+                          })}
+                        </div>
+
+                        {/* Bars Container */}
+                        <div className="relative h-full flex items-end gap-2 sm:gap-4 px-2">
+                          {chartSeries.map((pt, idx) => {
+                            const isLatest = idx === chartSeries.length - 1;
+                            const isHot = hoveredIndex === idx;
+                            const heightPercent =
+                              yMax > 0
+                                ? Math.min(100, Math.max(3, (pt.value / yMax) * 100))
+                                : 0;
+
+                            return (
+                              <div
+                                key={idx}
+                                onMouseEnter={() => setHoveredIndex(idx)}
+                                onMouseLeave={() => setHoveredIndex(null)}
+                                className="flex-1 relative flex flex-col items-center justify-end h-full group cursor-pointer"
+                              >
+                                {isHot && (
+                                  <div
+                                    style={{ bottom: `${heightPercent}%` }}
+                                    className="absolute z-30 mb-2 left-1/2 -translate-x-1/2 rounded-xl bg-neutral-900 text-white px-3 py-1.5 text-center shadow-xl pointer-events-none whitespace-nowrap animate-in fade-in-0 duration-150"
+                                  >
+                                    <div className="text-[10px] text-neutral-300 font-medium">
+                                      {pt.fullDate}
+                                    </div>
+                                    <div className="text-xs font-bold font-mono text-emerald-400">
+                                      ₹{pt.value.toLocaleString("en-IN")}.00
+                                    </div>
+                                  </div>
+                                )}
+
+                                <span
+                                  className={`text-[10px] sm:text-[10.5px] font-bold font-mono mb-1.5 transition-colors whitespace-nowrap select-none ${
+                                    isHot || isLatest
+                                      ? "text-secondary-900 font-bold"
+                                      : "text-neutral-500"
+                                  }`}
+                                >
+                                  ₹{pt.value}
+                                </span>
+
+                                <div
+                                  style={{ height: `${heightPercent}%` }}
+                                  className={`w-full max-w-[42px] rounded-t-md transition-all duration-200 ${
+                                    isHot
+                                      ? "bg-secondary-900 shadow-md scale-105"
+                                      : isLatest
+                                      ? "bg-secondary-600 shadow-xs"
+                                      : "bg-secondary-200 hover:bg-secondary-300"
+                                  }`}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* X-Axis Month Labels */}
+                      <div className="flex gap-2 sm:gap-4 px-2 mt-2.5">
+                        {chartSeries.map((pt, idx) => (
+                          <div
+                            key={idx}
+                            className="flex-1 text-center text-[11px] sm:text-xs font-semibold text-neutral-500 whitespace-nowrap"
+                          >
+                            {pt.date}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                ))}
+                </div>
               </div>
             </div>
           </div>

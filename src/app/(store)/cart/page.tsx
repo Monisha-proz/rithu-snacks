@@ -13,6 +13,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { toast } from "@/components/ui/Toast";
 import { CartItem } from "@/features/cart/components/CartItem";
 import { CartSummary } from "@/features/cart/components/CartSummary";
 import { CartEmpty } from "@/features/cart/components/CartEmpty";
@@ -76,6 +78,12 @@ export default function CartPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [itemToRemove, setItemToRemove] = useState<{
+    variantUuid: string;
+    productName: string;
+    variantName?: string;
+  } | null>(null);
+  const [isClearCartOpen, setIsClearCartOpen] = useState(false);
 
   const {
     data: cart,
@@ -156,14 +164,67 @@ export default function CartPage() {
     updateQuantityMutation.mutate({ variantUuid, quantity });
   };
 
-  const handleRemoveItem = (variantUuid: string) => {
-    removeItemMutation.mutate(variantUuid);
+  const handleRequestRemoveItem = (item: any) => {
+    const variantUuid =
+      typeof item === "string"
+        ? item
+        : item.variantId || item.variantUuid || item.id;
+    const productName =
+      typeof item === "string"
+        ? "this item"
+        : item.productName || item.product?.name || "Traditional Snack";
+    const variantName =
+      typeof item === "string"
+        ? undefined
+        : item.variantName || item.variant?.name || undefined;
+
+    setItemToRemove({
+      variantUuid,
+      productName,
+      variantName,
+    });
   };
 
-  const handleClearCart = () => {
-    if (confirm("Are you sure you want to clear all items in your cart?")) {
-      clearCartMutation.mutate();
-    }
+  const handleConfirmRemoveItem = () => {
+    if (!itemToRemove) return;
+    const { variantUuid, productName } = itemToRemove;
+
+    removeItemMutation.mutate(variantUuid, {
+      onSuccess: () => {
+        toast.success(
+          "Item removed",
+          `"${productName}" has been removed from your cart.`
+        );
+        setItemToRemove(null);
+      },
+      onError: (err: any) => {
+        toast.error(
+          "Failed to remove item",
+          err?.message || "Something went wrong. Please try again."
+        );
+        setItemToRemove(null);
+      },
+    });
+  };
+
+  const handleRequestClearCart = () => {
+    setIsClearCartOpen(true);
+  };
+
+  const handleConfirmClearCart = () => {
+    clearCartMutation.mutate(undefined, {
+      onSuccess: () => {
+        toast.success("Cart cleared", "All items have been removed from your cart.");
+        setIsClearCartOpen(false);
+      },
+      onError: (err: any) => {
+        toast.error(
+          "Failed to clear cart",
+          err?.message || "Something went wrong. Please try again."
+        );
+        setIsClearCartOpen(false);
+      },
+    });
   };
 
   const handleCheckout = () => {
@@ -222,7 +283,7 @@ export default function CartPage() {
             type="button"
             variant="ghost"
             size="sm"
-            onClick={handleClearCart}
+            onClick={handleRequestClearCart}
             disabled={clearCartMutation.isPending || items.length === 0}
             className="text-xs text-theme-text-muted hover:text-theme-status-can-fg hover:bg-theme-status-can-bg rounded-xl cursor-pointer"
           >
@@ -241,7 +302,7 @@ export default function CartPage() {
               key={item.id || item.variantId || item.productId}
               item={item}
               onUpdateQuantity={handleUpdateQuantity}
-              onRemove={handleRemoveItem}
+              onRemove={handleRequestRemoveItem}
               isUpdating={
                 updateQuantityMutation.isPending &&
                 updateQuantityMutation.variables?.variantUuid ===
@@ -266,6 +327,34 @@ export default function CartPage() {
           </div>
         </div>
       </div>
+
+      {/* Remove Single Item Confirmation Modal */}
+      <ConfirmDialog
+        open={Boolean(itemToRemove)}
+        onClose={() => setItemToRemove(null)}
+        onConfirm={handleConfirmRemoveItem}
+        title="Remove Item from Cart?"
+        description={`Are you sure you want to remove "${itemToRemove?.productName || "this item"}"${
+          itemToRemove?.variantName ? ` (${itemToRemove.variantName})` : ""
+        } from your cart?`}
+        confirmText={removeItemMutation.isPending ? "Removing..." : "Remove"}
+        cancelText="Cancel"
+        variant="destructive"
+        isLoading={removeItemMutation.isPending}
+      />
+
+      {/* Clear Entire Cart Confirmation Modal */}
+      <ConfirmDialog
+        open={isClearCartOpen}
+        onClose={() => setIsClearCartOpen(false)}
+        onConfirm={handleConfirmClearCart}
+        title="Clear Shopping Cart?"
+        description="Are you sure you want to remove all items from your shopping cart? This action cannot be undone."
+        confirmText={clearCartMutation.isPending ? "Clearing..." : "Clear Cart"}
+        cancelText="Cancel"
+        variant="destructive"
+        isLoading={clearCartMutation.isPending}
+      />
     </div>
   );
 }

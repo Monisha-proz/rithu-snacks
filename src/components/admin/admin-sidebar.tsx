@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -33,11 +33,12 @@ import {
   Mail,
   PackagePlus,
   HelpCircle,
+  ExternalLink,
 } from "lucide-react";
 import { cn, getInitials } from "@/lib/utils";
 import { APP_NAME } from "@/lib/constants";
-import { signOut, useSession } from "next-auth/react";
-import { logoutApi } from "@/features/auth/api/auth.api";
+import { useSession } from "next-auth/react";
+import { logoutUser } from "@/features/auth/api/auth.api";
 import { Drawer } from "@/components/common/drawer";
 
 interface SidebarItem {
@@ -161,6 +162,16 @@ function IconChip({
   );
 }
 
+function isRouteActive(href: string, pathname: string): boolean {
+  if (href === "/admin/dashboard") {
+    return pathname === "/admin/dashboard";
+  }
+  if (href === "/admin/dashboard/whatsapp") {
+    return pathname === "/admin/dashboard/whatsapp";
+  }
+  return pathname === href || pathname.startsWith(href + "/");
+}
+
 function SidebarItemComponent({
   item,
   pathname,
@@ -174,17 +185,20 @@ function SidebarItemComponent({
   collapsed?: boolean;
   onExpandSidebar?: () => void;
 }) {
-  const [isOpen, setIsOpen] = useState(() => {
-    if (item.children) {
-      return item.children.some(
-        (child) => pathname === child.href || pathname.startsWith(child.href + "/")
-      );
-    }
-    return false;
-  });
+  const isChildRouteActive = useMemo(() => {
+    if (!item.children) return false;
+    return item.children.some((child) => isRouteActive(child.href, pathname));
+  }, [item.children, pathname]);
 
-  const isActive =
-    pathname === item.href || (item.href !== "/admin/dashboard" && pathname.startsWith(item.href));
+  const [isOpen, setIsOpen] = useState(isChildRouteActive);
+
+  useEffect(() => {
+    if (isChildRouteActive) {
+      setIsOpen(true);
+    }
+  }, [isChildRouteActive]);
+
+  const isActive = isRouteActive(item.href, pathname) || isChildRouteActive;
   const hasChildren = item.children && item.children.length > 0;
 
   if (hasChildren) {
@@ -228,7 +242,7 @@ function SidebarItemComponent({
           <div className="mt-1 ml-[1.15rem] space-y-0.5 border-l border-neutral-300/70 pl-3">
             {item.children &&
               item.children.map((child) => {
-                const childActive = pathname === child.href;
+                const childActive = isRouteActive(child.href, pathname);
                 return (
                   <Link
                     key={child.href}
@@ -237,7 +251,7 @@ function SidebarItemComponent({
                     className={cn(
                       "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-all duration-200",
                       childActive
-                        ? "bg-white text-secondary-600 font-medium shadow-sm ring-1 ring-black/[0.04]"
+                        ? "bg-white text-secondary-600 font-semibold shadow-sm ring-1 ring-black/[0.04]"
                         : "text-neutral-600 hover:bg-white/60 hover:text-neutral-900 hover:translate-x-0.5"
                     )}
                   >
@@ -356,26 +370,38 @@ function SidebarFooter({ collapsed }: { collapsed?: boolean }) {
   const roleLabel = role ? role.charAt(0) + role.slice(1).toLowerCase() : "Administrator";
 
   const handleLogout = async () => {
-    try {
-      await logoutApi();
-    } catch {
-      // ignore network errors on logout
-    }
-    await signOut({ callbackUrl: "/admin/login" });
+    await logoutUser("/admin/login");
   };
 
   return (
     <div className="border-t border-neutral-300/70 p-3">
-      {!collapsed && (
-        <div className="mb-2 flex items-center gap-2.5 rounded-xl bg-white/70 px-2.5 py-2.5 shadow-sm ring-1 ring-black/[0.04]">
-          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-secondary-600 text-xs font-semibold text-white ring-2 ring-white">
+      {!collapsed ? (
+        <Link
+          href="/"
+          title="Switch to Customer Storefront / Pages"
+          className="mb-2 flex items-center gap-2.5 rounded-xl bg-white/70 px-2.5 py-2.5 shadow-sm ring-1 ring-black/[0.04] hover:bg-white hover:ring-amber-400 hover:shadow-md transition-all cursor-pointer group"
+        >
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-secondary-600 text-xs font-semibold text-white ring-2 ring-white group-hover:scale-105 transition-transform">
             {getInitials(name)}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-neutral-800">{name}</p>
-            <p className="truncate text-xs text-neutral-500">{roleLabel}</p>
+            <div className="flex items-center justify-between gap-1">
+              <p className="truncate text-sm font-semibold text-neutral-800 group-hover:text-amber-900">{name}</p>
+              <ExternalLink className="w-3.5 h-3.5 text-neutral-400 group-hover:text-amber-700 shrink-0" />
+            </div>
+            <p className="truncate text-xs text-neutral-500 group-hover:text-amber-700/80">{roleLabel} · View Store →</p>
           </div>
-        </div>
+        </Link>
+      ) : (
+        <Link
+          href="/"
+          title="Switch to Customer Storefront / Pages"
+          className="mb-2 flex items-center justify-center rounded-xl p-2 hover:bg-white/70 transition-all cursor-pointer group"
+        >
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary-600 text-xs font-semibold text-white ring-2 ring-white group-hover:scale-110 transition-transform">
+            {getInitials(name)}
+          </div>
+        </Link>
       )}
       <button
         onClick={handleLogout}
