@@ -56,7 +56,10 @@ export function TaxInvoice({ invoice }: { invoice: InvoiceDto }) {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img className="ti-logo" src={logoSrc} alt={seller.name} />
                   <div>
-                    <p className="ti-name ti-seller-name">{seller.name}</p>
+                    <p className="ti-name ti-seller-name">
+                      {seller.name?.replace(/Rithu\s*Snacks/i, "Rithu's Snacks") ||
+                        "Rithu's Snacks"}
+                    </p>
                     <PartyAddress
                       lines={seller.addressLines}
                       city={seller.city}
@@ -212,10 +215,6 @@ export function TaxInvoice({ invoice }: { invoice: InvoiceDto }) {
             </tr>
           )}
 
-          <tr className="ti-spacer">
-            <td colSpan={7} />
-          </tr>
-
           <tr className="ti-total">
             <td />
             <td className="r">Total</td>
@@ -356,7 +355,11 @@ export function TaxInvoice({ invoice }: { invoice: InvoiceDto }) {
                 described and that all particulars are true and correct.
               </td>
               <td colSpan={2} className="ti-sign">
-                <p>for {seller.name}</p>
+                <p>
+                  for{" "}
+                  {seller.name?.replace(/Rithu\s*Snacks/i, "Rithu's Snacks") ||
+                    "Rithu's Snacks"}
+                </p>
                 <p className="ti-sign-line">Authorised Signatory</p>
               </td>
             </tr>

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Plus, Pencil, Trash2, Star, Loader2, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select, type SelectOption } from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useUnits } from "@/features/units/hooks";
 import type { AdminUnitResponse } from "@/features/units/types";
@@ -55,11 +56,18 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<UnitPriceRowFormState>(emptyRow);
+  const [fieldErrors, setFieldErrors] = useState<{
+    unitId?: string;
+    unitValue?: string;
+    sku?: string;
+    basePrice?: string;
+  }>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<VariantUnitPriceResponse | null>(null);
 
   const resetForm = () => {
     setForm(emptyRow);
+    setFieldErrors({});
     setFormError(null);
     setIsAdding(false);
     setEditingId(null);
@@ -67,6 +75,7 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
 
   const startAdd = () => {
     setForm(emptyRow);
+    setFieldErrors({});
     setFormError(null);
     setEditingId(null);
     setIsAdding(true);
@@ -81,9 +90,44 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
       isDefault: item.isDefault,
       isActive: item.isActive,
     });
+    setFieldErrors({});
     setFormError(null);
     setIsAdding(false);
     setEditingId(item.id);
+  };
+
+  const validateField = (name: keyof UnitPriceRowFormState, value: unknown): string | undefined => {
+    if (name === "unitId") {
+      if (!value) return "Please select a unit";
+    }
+    if (name === "unitValue") {
+      const strVal = String(value ?? "").trim();
+      if (!strVal) return "Pack size is required";
+      const num = Number(strVal);
+      if (Number.isNaN(num) || num <= 0) return "Pack size must be greater than 0";
+      if (strVal.length > 10 || num > 99999999.99) return "Pack size exceeds maximum allowed amount";
+    }
+    if (name === "sku") {
+      const strVal = String(value ?? "").trim();
+      if (!strVal) return "SKU is required";
+      if (strVal.length > 100) return "SKU cannot exceed 100 characters";
+    }
+    if (name === "basePrice") {
+      const strVal = String(value ?? "").trim();
+      if (!strVal) return "Base price is required";
+      const num = Number(strVal);
+      if (Number.isNaN(num) || num < 0) return "Base price cannot be negative";
+      if (strVal.length > 10 || num > 99999999.99) return "Price exceeds maximum allowed amount";
+    }
+    return undefined;
+  };
+
+  const handleFieldChange = (name: keyof UnitPriceRowFormState, value: string | boolean) => {
+    setForm((f) => ({ ...f, [name]: value }));
+    if (fieldErrors[name as keyof typeof fieldErrors]) {
+      const err = validateField(name, value);
+      setFieldErrors((prev) => ({ ...prev, [name]: err }));
+    }
   };
 
   const isBusy = createMutation.isPending || updateMutation.isPending;
@@ -91,24 +135,29 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
   const handleSave = async () => {
     setFormError(null);
 
-    if (!form.unitId) {
-      setFormError("Please select a unit");
+    const errors: typeof fieldErrors = {};
+
+    const unitIdErr = validateField("unitId", form.unitId);
+    if (unitIdErr) errors.unitId = unitIdErr;
+
+    const unitValueErr = validateField("unitValue", form.unitValue);
+    if (unitValueErr) errors.unitValue = unitValueErr;
+
+    const skuErr = validateField("sku", form.sku);
+    if (skuErr) errors.sku = skuErr;
+
+    const basePriceErr = validateField("basePrice", form.basePrice);
+    if (basePriceErr) errors.basePrice = basePriceErr;
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
+
+    setFieldErrors({});
+
     const unitValue = Number(form.unitValue);
-    if (!unitValue || unitValue <= 0) {
-      setFormError("Pack size must be greater than 0");
-      return;
-    }
-    if (!form.sku.trim()) {
-      setFormError("SKU is required");
-      return;
-    }
     const basePrice = Number(form.basePrice);
-    if (Number.isNaN(basePrice) || basePrice < 0) {
-      setFormError("Base price must be a non-negative number");
-      return;
-    }
 
     const payload = {
       unitId: form.unitId,
@@ -196,18 +245,6 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
               <div className="inline-flex items-center gap-1.5 text-[11px] font-medium text-amber-800 bg-amber-50 border border-amber-200/80 rounded-lg py-1.5 px-3 max-w-md mx-auto">
                 <span>⚠️ If price details are not entered, this item remains in the <strong>Inactive list</strong> and hidden from customers.</span>
               </div>
-              {/* <div className="pt-1">
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={startAdd}
-                  disabled={isBusy}
-                  className="h-9 px-4 rounded-xl text-xs font-bold text-white bg-[var(--color-secondary-600)] hover:bg-[var(--color-secondary-700)] border border-[var(--color-secondary-700)]/60 shadow-xs active:scale-95 transition-all duration-150 cursor-pointer"
-                >
-                  <Plus className="w-4 h-4 mr-1.5 stroke-[2.5]" />
-                  <span>Add unit + price</span>
-                </Button>
-              </div> */}
             </div>
           )}
 
@@ -281,22 +318,23 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
                   <label className="block text-xs font-semibold text-neutral-800 mb-1.5">
                     Unit <span className="text-red-500">*</span>
                   </label>
-                  <select
+                  <Select
                     value={form.unitId}
-                    onChange={(e) => setForm((f) => ({ ...f, unitId: e.target.value }))}
+                    onValueChange={(val) => handleFieldChange("unitId", val)}
                     disabled={isBusy}
-                    className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-secondary-600/20 focus:border-secondary-600 disabled:opacity-60 disabled:bg-neutral-100"
-                  >
-                    <option value="">Select unit</option>
-                    {units.map((u: AdminUnitResponse) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name} ({u.code})
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-[11px] text-neutral-400 mt-1">
-                    What is it measured in — Grams, Kilograms, Millilitres, or just a count.
-                  </p>
+                    placeholder="Select unit"
+                    error={fieldErrors.unitId}
+                    options={units.map((u: AdminUnitResponse) => ({
+                      value: String(u.id),
+                      label: `${u.name} (${u.code})`,
+                    }))}
+                    className="h-10 rounded-xl"
+                  />
+                  {!fieldErrors.unitId && (
+                    <p className="text-[11px] text-neutral-400 mt-1">
+                      What is it measured in — Grams, Kilograms, Millilitres, or just a count.
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -307,15 +345,25 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
                     type="number"
                     step="any"
                     min="0"
+                    max="99999999.99"
+                    maxLength={10}
                     value={form.unitValue}
-                    onChange={(e) => setForm((f) => ({ ...f, unitValue: e.target.value }))}
+                    onChange={(e) => handleFieldChange("unitValue", e.target.value)}
                     disabled={isBusy}
                     placeholder="e.g. 500"
-                    className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-secondary-600/20 focus:border-secondary-600 disabled:opacity-60 disabled:bg-neutral-100"
+                    className={`w-full h-10 px-3 rounded-lg border text-sm bg-white focus:outline-none focus:ring-2 disabled:opacity-60 disabled:bg-neutral-100 ${
+                      fieldErrors.unitValue
+                        ? "border-red-500 ring-2 ring-red-500/10 focus:border-red-500 focus:ring-red-500/20"
+                        : "border-neutral-200 focus:ring-secondary-600/20 focus:border-secondary-600"
+                    }`}
                   />
-                  <p className="text-[11px] text-neutral-400 mt-1">
-                    How much is in one pack — e.g. 500 for a 500 Gram pack.
-                  </p>
+                  {fieldErrors.unitValue ? (
+                    <p className="text-xs text-red-500 font-medium mt-1">{fieldErrors.unitValue}</p>
+                  ) : (
+                    <p className="text-[11px] text-neutral-400 mt-1">
+                      How much is in one pack (max 10 digits, e.g. 500 for a 500 Gram pack).
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -326,15 +374,24 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
                   </label>
                   <input
                     type="text"
+                    maxLength={100}
                     value={form.sku}
-                    onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))}
+                    onChange={(e) => handleFieldChange("sku", e.target.value)}
                     disabled={isBusy}
                     placeholder="e.g. MIXTURE-500G"
-                    className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-sm font-mono bg-white focus:outline-none focus:ring-2 focus:ring-secondary-600/20 focus:border-secondary-600 disabled:opacity-60 disabled:bg-neutral-100"
+                    className={`w-full h-10 px-3 rounded-lg border text-sm font-mono bg-white focus:outline-none focus:ring-2 disabled:opacity-60 disabled:bg-neutral-100 ${
+                      fieldErrors.sku
+                        ? "border-red-500 ring-2 ring-red-500/10 focus:border-red-500 focus:ring-red-500/20"
+                        : "border-neutral-200 focus:ring-secondary-600/20 focus:border-secondary-600"
+                    }`}
                   />
-                  <p className="text-[11px] text-neutral-400 mt-1">
-                    A unique code just for this pack size.
-                  </p>
+                  {fieldErrors.sku ? (
+                    <p className="text-xs text-red-500 font-medium mt-1">{fieldErrors.sku}</p>
+                  ) : (
+                    <p className="text-[11px] text-neutral-400 mt-1">
+                      A unique code just for this pack size (max 100 characters).
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -345,15 +402,25 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
                     type="number"
                     step="any"
                     min="0"
+                    max="99999999.99"
+                    maxLength={10}
                     value={form.basePrice}
-                    onChange={(e) => setForm((f) => ({ ...f, basePrice: e.target.value }))}
+                    onChange={(e) => handleFieldChange("basePrice", e.target.value)}
                     disabled={isBusy}
                     placeholder="e.g. 260"
-                    className="w-full h-10 px-3 rounded-lg border border-neutral-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-secondary-600/20 focus:border-secondary-600 disabled:opacity-60 disabled:bg-neutral-100"
+                    className={`w-full h-10 px-3 rounded-lg border text-sm bg-white focus:outline-none focus:ring-2 disabled:opacity-60 disabled:bg-neutral-100 ${
+                      fieldErrors.basePrice
+                        ? "border-red-500 ring-2 ring-red-500/10 focus:border-red-500 focus:ring-red-500/20"
+                        : "border-neutral-200 focus:ring-secondary-600/20 focus:border-secondary-600"
+                    }`}
                   />
-                  <p className="text-[11px] text-neutral-400 mt-1">
-                    What customer pays for this pack.
-                  </p>
+                  {fieldErrors.basePrice ? (
+                    <p className="text-xs text-red-500 font-medium mt-1">{fieldErrors.basePrice}</p>
+                  ) : (
+                    <p className="text-[11px] text-neutral-400 mt-1">
+                      What customer pays for this pack (max 10 digits).
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -362,7 +429,7 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
                   <input
                     type="checkbox"
                     checked={form.isDefault}
-                    onChange={(e) => setForm((f) => ({ ...f, isDefault: e.target.checked }))}
+                    onChange={(e) => handleFieldChange("isDefault", e.target.checked)}
                     disabled={isBusy}
                     className="rounded border-neutral-300"
                   />
@@ -373,7 +440,7 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
                   <input
                     type="checkbox"
                     checked={form.isActive}
-                    onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
+                    onChange={(e) => handleFieldChange("isActive", e.target.checked)}
                     disabled={isBusy}
                     className="rounded border-neutral-300"
                   />

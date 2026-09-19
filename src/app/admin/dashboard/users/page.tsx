@@ -20,6 +20,7 @@ import { SearchInput } from "@/components/ui/search-input";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormModal } from "@/components/common/FormModal";
+import { Select } from "@/components/ui/select";
 import { Plus, Pencil, Trash2, KeyRound } from "lucide-react";
 import {
   createUserSchema,
@@ -55,6 +56,8 @@ export default function AdminUsersPage() {
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<CreateUserSchemaInput>({
     resolver: zodResolver(createUserSchema),
@@ -398,14 +401,18 @@ export default function AdminUsersPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Status
               </label>
-              <select
-                {...register("status")}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-              >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="banned">Banned</option>
-              </select>
+              <Select
+                value={watch("status")}
+                onValueChange={(val) =>
+                  setValue("status", val as "active" | "inactive" | "banned", { shouldValidate: true })
+                }
+                options={[
+                  { value: "active", label: "Active" },
+                  { value: "inactive", label: "Inactive" },
+                  { value: "banned", label: "Banned" },
+                ]}
+                error={!!errors.status}
+              />
               {errors.status && (
                 <p className="mt-1 text-xs text-red-500 font-medium">{errors.status.message}</p>
               )}

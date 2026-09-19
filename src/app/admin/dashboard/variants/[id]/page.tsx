@@ -757,27 +757,27 @@ export default function AdminVariantDetailsPage() {
             </div>
             <div className="p-6">
               {variant.shortDescription || variant.description ? (
-                <div className="space-y-4">
+                <div className="space-y-4 min-w-0">
                   {variant.shortDescription && (
-                    <div>
+                    <div className="min-w-0">
                       <div className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider mb-1">
                         Summary
                       </div>
-                      <p className="text-xs sm:text-sm text-neutral-700 leading-relaxed">
+                      <p className="text-xs sm:text-sm text-neutral-700 leading-relaxed break-words [overflow-wrap:anywhere]">
                         {variant.shortDescription}
                       </p>
                     </div>
                   )}
 
                   {variant.description && (
-                    <div>
+                    <div className="min-w-0">
                       <div className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider mb-1">
                         Full Description
                       </div>
                       <ExpandableRichText
                         html={variant.description}
-                        className="text-xs sm:text-sm text-neutral-600"
-                        toggleClassName="mt-1 text-xs font-bold text-secondary-600 hover:underline cursor-pointer"
+                        className="text-xs sm:text-sm text-neutral-600 break-words [overflow-wrap:anywhere]"
+                        toggleClassName="mt-1.5 text-xs font-bold text-secondary-600 hover:underline cursor-pointer inline-block"
                       />
                     </div>
                   )}

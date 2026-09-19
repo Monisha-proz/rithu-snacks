@@ -22,7 +22,7 @@ import {
   Minus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
+import { Select, type SelectOption } from "@/components/ui/select";
 import { SearchInput } from "@/components/ui/search-input";
 
 interface DataTableProps<TData, TValue> {
@@ -401,18 +401,19 @@ function DataTable<TData, TValue>({
             <span className="text-xs font-medium text-[var(--color-neutral-600)] whitespace-nowrap">
               Rows per page:
             </span>
-            <select
-              value={effectivePageSize}
-              onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-              aria-label="Rows per page"
-              className="h-8 rounded-lg border border-[var(--color-neutral-300)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--color-neutral-700)] shadow-xs transition-colors hover:border-[var(--color-neutral-400)] focus:border-secondary-600 focus:outline-hidden cursor-pointer"
-            >
-              {pageSizeOptions.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
+            <div className="w-20">
+              <Select
+                value={String(effectivePageSize)}
+                onValueChange={(val) => handlePageSizeChange(Number(val))}
+                options={pageSizeOptions.map((opt) => ({
+                  value: String(opt),
+                  label: String(opt),
+                }))}
+                size="sm"
+                placement="top"
+                className="h-8 rounded-lg font-semibold"
+              />
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2 self-end sm:self-auto">

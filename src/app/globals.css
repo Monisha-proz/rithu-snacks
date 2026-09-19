@@ -160,9 +160,9 @@
   --theme-surface-alt: #FCF7EE;           /* Card header warm background */
 
   --theme-text-primary: #2C2420;          /* Primary body / title text */
-  --theme-text-secondary: #3A302A;        /* Secondary headings */
-  --theme-text-muted: #9A8B79;            /* Muted / labels / captions */
-  --theme-text-subtle: #7A6A58;           /* Subtle text */
+  --theme-text-secondary: #382D26;        /* Secondary headings / vital data text */
+  --theme-text-muted: #6E5E4F;            /* Accessible muted / labels / captions / icons */
+  --theme-text-subtle: #4D4137;           /* Crisp subtle body text */
   --theme-text-gold: #D9B98F;             /* Header breadcrumb accent */
 
   --theme-border: #EBE0D0;                /* Card & section borders */
@@ -589,6 +589,8 @@ textarea:focus-visible {
 /* Rich Text Content (Tiptap editor output + storefront/admin description rendering) */
 .rich-text-content {
   line-height: 1.6;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 .rich-text-content p {
   margin: 0 0 0.75em;

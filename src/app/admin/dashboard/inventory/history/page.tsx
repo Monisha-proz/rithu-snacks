@@ -12,6 +12,7 @@ import {
 } from "@/components/admin/AdminPageHeader";
 import { DataTable } from "@/components/admin/data-table/DataTable";
 import { ClearFiltersButton } from "@/components/common/clear-filters-button";
+import { Select } from "@/components/ui/select";
 import { useInventoryTransactions } from "@/features/inventory/hooks";
 import { formatDate } from "@/lib/utils";
 import type { InventoryTransactionItem } from "@/features/inventory/types";
@@ -112,25 +113,27 @@ export default function InventoryHistoryPage() {
           </div>
           <div className="flex items-center gap-2">
             <label className="text-xs font-semibold text-neutral-600 whitespace-nowrap">Filter by type:</label>
-            <select
-              className="h-10 rounded-xl border border-neutral-300 bg-white px-3 text-xs text-neutral-700 focus:border-secondary-600 focus:outline-none cursor-pointer"
+            <Select
+              className="w-40"
+              size="sm"
               value={params.type ?? ""}
-              onChange={(e) =>
+              onValueChange={(val) =>
                 setParams((prev) => ({
                   ...prev,
-                  type: e.target.value || undefined,
+                  type: val || undefined,
                   page: 1,
                 }))
               }
-            >
-              <option value="">All Types</option>
-              <option value="PURCHASE">Purchase</option>
-              <option value="SALE">Sale</option>
-              <option value="RETURN">Return</option>
-              <option value="ADJUSTMENT">Adjustment</option>
-              <option value="DAMAGE">Damage</option>
-              <option value="TRANSFER">Transfer</option>
-            </select>
+              options={[
+                { value: "", label: "All Types" },
+                { value: "PURCHASE", label: "Purchase" },
+                { value: "SALE", label: "Sale" },
+                { value: "RETURN", label: "Return" },
+                { value: "ADJUSTMENT", label: "Adjustment" },
+                { value: "DAMAGE", label: "Damage" },
+                { value: "TRANSFER", label: "Transfer" },
+              ]}
+            />
           </div>
 
           {hasActiveFilters && <ClearFiltersButton onClick={handleClearFilters} />}

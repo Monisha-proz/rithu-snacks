@@ -16,6 +16,7 @@ import { useCustomerCartCount } from "@/features/customers/hooks/use-customer-ca
 import { useCustomerCategories } from "@/features/customers/hooks/use-customer-catalog";
 import { useCustomerProfile } from "@/features/customers/hooks/use-customer-profile";
 import { CategoryNavDropdown, resolveCategoryIcon } from "./CategoryNavDropdown";
+import { AdminProfileDropdown } from "./AdminProfileDropdown";
 import { GlobalSearchModal } from "@/features/customers/components/search/GlobalSearchModal";
 
 export function Header() {
@@ -87,10 +88,34 @@ export function Header() {
   const menuRef = React.useRef<HTMLDivElement>(null);
   const buttonRef = React.useRef<HTMLDivElement>(null);
 
+  // Admin dropdown state & refs
+  const userRole = (session?.user as { role?: string })?.role?.toUpperCase();
+  const isAdmin = userRole === "ADMIN" || userRole === "STAFF";
+  const [isAdminDropdownOpen, setIsAdminDropdownOpen] = React.useState(false);
+  const [isMobileAdminDropdownOpen, setIsMobileAdminDropdownOpen] = React.useState(false);
+  const adminDropdownRef = React.useRef<HTMLDivElement>(null);
+  const adminButtonRef = React.useRef<HTMLDivElement>(null);
+  const mobileAdminDropdownRef = React.useRef<HTMLDivElement>(null);
+  const mobileAdminButtonRef = React.useRef<HTMLDivElement>(null);
+
   useClickOutside([menuRef, buttonRef], () => {
     setIsOpen(false);
     setIsMobileCategoriesOpen(false);
   });
+
+  useClickOutside([adminDropdownRef, adminButtonRef], () => {
+    setIsAdminDropdownOpen(false);
+  });
+
+  useClickOutside([mobileAdminDropdownRef, mobileAdminButtonRef], () => {
+    setIsMobileAdminDropdownOpen(false);
+  });
+
+  // Automatically dismiss dropdowns upon route change
+  React.useEffect(() => {
+    setIsAdminDropdownOpen(false);
+    setIsMobileAdminDropdownOpen(false);
+  }, [pathname]);
 
   const resolvePath = React.useCallback(
     (item: { id: number; path?: string; alt?: string; text?: string }) => {
@@ -210,7 +235,8 @@ export function Header() {
                 return (
                   <div
                     key={item.id}
-                    className="flex min-w-[92px] justify-end"
+                    ref={adminButtonRef}
+                    className="relative flex min-w-[92px] justify-end"
                   >
                     {isAuthLoading ? (
                       <div
@@ -229,6 +255,31 @@ export function Header() {
                           strokeWidth={2}
                         />
                       </Link>
+                    ) : isAdmin ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setIsAdminDropdownOpen((prev) => !prev)}
+                          className="relative inline-flex items-center justify-center cursor-pointer hover:scale-110 active:scale-90 transition-transform duration-150 focus:outline-none"
+                          aria-label={userName ? `${userName}'s profile menu` : "Admin profile menu"}
+                          aria-expanded={isAdminDropdownOpen}
+                        >
+                          <div className="w-[26px] h-[26px] rounded-full bg-theme-primary text-theme-primary-fg text-[11px] font-bold flex items-center justify-center border-2 border-amber-400 shadow-2xs select-none leading-none">
+                            {userInitials}
+                          </div>
+                        </button>
+                        <div ref={adminDropdownRef}>
+                          <AdminProfileDropdown
+                            isOpen={isAdminDropdownOpen}
+                            onClose={() => setIsAdminDropdownOpen(false)}
+                            userName={userName}
+                            userEmail={session?.user?.email}
+                            userRole={userRole}
+                            userInitials={userInitials}
+                            variant="desktop"
+                          />
+                        </div>
+                      </>
                     ) : (
                       <IconButton
                         alt={userName ? `${userName}'s profile` : "Profile"}
@@ -483,7 +534,11 @@ export function Header() {
             // justify-around, so the swap would nudge all four items. Same fix
             // as the desktop row: pin the cell width, let it repaint inside.
             return (
-              <div key={item.id} className="flex w-16 justify-center">
+              <div
+                key={item.id}
+                ref={mobileAdminButtonRef}
+                className="relative flex w-16 justify-center"
+              >
                 {isAuthLoading ? (
                   <div
                     className="flex flex-col-reverse items-center gap-1"
@@ -505,6 +560,37 @@ export function Header() {
                     href="/login"
                     isActive={pathname === "/login"}
                   />
+                ) : isAdmin ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setIsMobileAdminDropdownOpen((prev) => !prev)
+                      }
+                      className={`
+                        relative flex flex-col-reverse items-center gap-1 text-xs font-medium hover:scale-105 cursor-pointer active:scale-95 transition-all
+                        ${isMobileAdminDropdownOpen ? "text-theme-primary font-semibold" : ""}
+                      `}
+                      aria-label="Account menu"
+                      aria-expanded={isMobileAdminDropdownOpen}
+                    >
+                      <span>Account</span>
+                      <div className="w-5 h-5 rounded-full bg-theme-primary text-theme-primary-fg text-[10px] font-bold flex items-center justify-center select-none leading-none border border-amber-400">
+                        {userInitials}
+                      </div>
+                    </button>
+                    <div ref={mobileAdminDropdownRef}>
+                      <AdminProfileDropdown
+                        isOpen={isMobileAdminDropdownOpen}
+                        onClose={() => setIsMobileAdminDropdownOpen(false)}
+                        userName={userName}
+                        userEmail={session?.user?.email}
+                        userRole={userRole}
+                        userInitials={userInitials}
+                        variant="mobile"
+                      />
+                    </div>
+                  </>
                 ) : (
                   <NavButton
                     variant="bottom"

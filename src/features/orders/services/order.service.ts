@@ -64,7 +64,43 @@ export const orderService = {
       throw ApiError.badRequest("Cart is empty or no active cart found");
     }
 
-    // 2. Validate every cart item's product and variant unit price
+    // 2. Separate valid active cart items from stale/deleted items
+    const staleItemIds: bigint[] = [];
+    const validItems: typeof cart.items = [];
+
+    for (const item of cart.items) {
+      const unitPriceRow = item.variant_unit_price;
+      const variant = unitPriceRow?.variant;
+
+      if (
+        !item.product ||
+        !item.product.isActive ||
+        item.product.deleted_at !== null ||
+        !unitPriceRow ||
+        !unitPriceRow.isActive ||
+        unitPriceRow.deleted_at !== null ||
+        !variant ||
+        !variant.isActive ||
+        variant.deleted_at !== null
+      ) {
+        staleItemIds.push(item.id);
+      } else {
+        validItems.push(item);
+      }
+    }
+
+    // Deactivate any stale/deleted items in DB so they don't linger in cart
+    if (staleItemIds.length > 0) {
+      await db.cartItem.updateMany({
+        where: { id: { in: staleItemIds } },
+        data: { is_active: false },
+      });
+    }
+
+    if (validItems.length === 0) {
+      throw ApiError.badRequest("All items in your cart are no longer available. Please choose other snacks.");
+    }
+
     const orderItemsData: Array<{
       productId: bigint;
       variantId: bigint;
@@ -82,25 +118,9 @@ export const orderService = {
 
     let subtotal = 0;
 
-    for (const item of cart.items) {
-      const unitPriceRow = item.variant_unit_price;
-      const variant = unitPriceRow?.variant;
-
-      if (
-        !item.product ||
-        !item.product.isActive ||
-        item.product.deleted_at !== null ||
-        !unitPriceRow ||
-        !unitPriceRow.isActive ||
-        unitPriceRow.deleted_at !== null ||
-        !variant ||
-        !variant.isActive ||
-        variant.deleted_at !== null
-      ) {
-        throw ApiError.badRequest(
-          `Product variant "${variant?.variant_name || item.product?.name || "item"}" is no longer available`
-        );
-      }
+    for (const item of validItems) {
+      const unitPriceRow = item.variant_unit_price!;
+      const variant = unitPriceRow.variant!;
 
       // The stored base price is the only price trusted here - never a value
       // that came in with the request. Offers are applied below, once every

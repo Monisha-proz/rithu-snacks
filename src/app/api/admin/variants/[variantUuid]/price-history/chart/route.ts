@@ -12,8 +12,12 @@ export const GET = createApiHandler(
         throw ApiError.badRequest("Invalid variant unit price UUID");
       }
 
-      const query = (context.query || {}) as Record<string, any>;
-      const period = query.period || "1y";
+      const period =
+        (typeof context.searchParams?.get === "function"
+          ? context.searchParams.get("period")
+          : null) ||
+        (context.query as Record<string, any>)?.period ||
+        "1y";
 
       const chartData = await variantUnitPriceService.getPriceHistoryChart(
         unitPriceUuid,

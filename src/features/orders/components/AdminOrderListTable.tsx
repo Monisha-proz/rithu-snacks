@@ -18,11 +18,12 @@ import { DataTable } from "@/components/admin/data-table/DataTable";
 import { LoadingState } from "@/components/ui/loading-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Button } from "@/components/ui/button";
+import { Select, type SelectOption } from "@/components/ui/select";
 import { FormModal } from "@/components/common/FormModal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { SearchInput } from "@/components/ui/search-input";
 import { ClearFiltersButton } from "@/components/common/clear-filters-button";
-import { formatDateTime, formatPrice } from "@/lib/utils";
+import { cn, formatDateTime, formatPrice } from "@/lib/utils";
 import { AssignStaffModal } from "@/features/orders/components/AssignStaffModal";
 import {
   useAdminOrders,
@@ -73,8 +74,11 @@ export function AdminOrderListTable({
     paymentStatus: (paymentFilter || undefined) as PaymentStatus | undefined,
   });
 
-  const { data: orderDetail, isLoading: detailLoading } =
-    useAdminOrder(viewOrderId);
+  const {
+    data: orderDetail,
+    isLoading: detailLoading,
+    refetch: refetchDetail,
+  } = useAdminOrder(viewOrderId);
 
   const confirmOrder = useConfirmAdminOrder();
   const processOrder = useProcessAdminOrder();
@@ -218,18 +222,35 @@ export function AdminOrderListTable({
         const initial = staff.name.charAt(0).toUpperCase();
 
         return (
-          <div className="flex items-center gap-2 max-w-[180px]">
-            <div className="grid h-7 w-7 place-items-center rounded-full bg-secondary-600 text-white text-xs font-bold shrink-0">
-              {initial}
-            </div>
-            <div className="min-w-0 leading-tight">
-              <div className="font-semibold text-xs text-neutral-900 truncate">
-                {staff.name}
+          <div className="flex items-center justify-between gap-2 max-w-[190px]">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="grid h-7 w-7 place-items-center rounded-full bg-secondary-600 text-white text-xs font-bold shrink-0">
+                {initial}
               </div>
-              <div className="text-[10.5px] text-neutral-500 font-mono truncate">
-                {staff.phone || staff.email || "Staff"}
+              <div className="min-w-0 leading-tight">
+                <div className="font-semibold text-xs text-neutral-900 truncate">
+                  {staff.name}
+                </div>
+                <div className="text-[10.5px] text-neutral-500 font-mono truncate">
+                  {staff.phone || staff.email || "Staff"}
+                </div>
               </div>
             </div>
+            {orderStatus === "packed" && (
+              <button
+                type="button"
+                onClick={() =>
+                  setAssignStaffOrder({
+                    id: row.original.id,
+                    orderNumber: row.original.orderNumber,
+                  })
+                }
+                title="Change / Reassign Delivery Staff"
+                className="text-[11px] font-semibold text-secondary-600 hover:underline cursor-pointer shrink-0"
+              >
+                Change
+              </button>
+            )}
           </div>
         );
       },
@@ -331,8 +352,17 @@ export function AdminOrderListTable({
                     orderNumber: row.original.orderNumber,
                   })
                 }
-                title="Assign Delivery Staff"
-                className="grid h-8 w-8 place-items-center rounded-lg border border-secondary-600 bg-secondary-600 text-xs font-semibold text-white hover:bg-secondary-700 transition-all cursor-pointer shadow-xs"
+                title={
+                  row.original.delivery?.isAssigned && row.original.delivery?.staff
+                    ? "Reassign Delivery Staff"
+                    : "Assign Delivery Staff"
+                }
+                className={cn(
+                  "grid h-8 w-8 place-items-center rounded-lg border text-xs font-semibold transition-all cursor-pointer shadow-xs",
+                  row.original.delivery?.isAssigned && row.original.delivery?.staff
+                    ? "border-amber-600 bg-amber-600 text-white hover:bg-amber-700"
+                    : "border-secondary-600 bg-secondary-600 text-white hover:bg-secondary-700"
+                )}
                 disabled={isTransitionPending}
               >
                 <Truck className="h-3.5 w-3.5" />
@@ -381,22 +411,24 @@ export function AdminOrderListTable({
         </div>
 
         <div className="flex items-center gap-2">
-          <select
-            value={paymentFilter}
-            onChange={(e) => {
-              setPaymentFilter(e.target.value);
-              setPage(1);
-            }}
-            aria-label="Filter by payment status"
-            className="h-10 rounded-xl border border-cream-border-subtle bg-white px-3 text-xs font-semibold text-neutral-700 hover:border-cream-border-hover focus:border-secondary-600 focus:outline-hidden cursor-pointer"
-          >
-            <option value="">All Payments</option>
-            {PAYMENT_STATUSES.map((ps) => (
-              <option key={ps} value={ps}>
-                {PAYMENT_STATUS_LABELS[ps] || ps}
-              </option>
-            ))}
-          </select>
+          <div className="w-40">
+            <Select
+              value={paymentFilter}
+              onValueChange={(val) => {
+                setPaymentFilter(val);
+                setPage(1);
+              }}
+              options={[
+                { value: "", label: "All Payments" },
+                ...PAYMENT_STATUSES.map((ps) => ({
+                  value: ps,
+                  label: PAYMENT_STATUS_LABELS[ps] || ps,
+                })),
+              ]}
+              size="sm"
+              className="h-10 rounded-xl font-semibold"
+            />
+          </div>
 
           {hasActiveFilters && <ClearFiltersButton onClick={handleClearFilters} />}
         </div>
@@ -547,7 +579,7 @@ export function AdminOrderListTable({
                 {currentDetailStatus === "packed" && (
                   <Button
                     size="sm"
-                    className="bg-secondary-600 hover:bg-secondary-700 text-white"
+                    className="bg-secondary-600 hover:bg-secondary-700 text-white cursor-pointer"
                     onClick={() => {
                       setAssignStaffOrder({
                         id: orderDetail.id,
@@ -557,7 +589,9 @@ export function AdminOrderListTable({
                     disabled={isTransitionPending}
                   >
                     <Truck className="mr-1.5 h-4 w-4" />
-                    Assign Delivery Staff
+                    {orderDetail.delivery?.isAssigned && orderDetail.delivery?.staff
+                      ? "Reassign Delivery Staff"
+                      : "Assign Delivery Staff"}
                   </Button>
                 )}
 
@@ -606,7 +640,7 @@ export function AdminOrderListTable({
         onSuccess={() => {
           refetch();
           if (viewOrderId) {
-            // refetch current detail if open
+            refetchDetail();
           }
         }}
       />

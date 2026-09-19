@@ -22,9 +22,22 @@ export const createProductSchema = z.object({
   categoryId: z.number().int().positive("Category is required"),
   brandId: z.number().int().positive().nullable().optional(),
   sku: z.string().min(1, "SKU is required").max(100),
-  price: z.number().positive("Price must be positive"),
-  comparePrice: z.number().positive().nullable().optional(),
-  costPrice: z.number().positive().nullable().optional(),
+  price: z
+    .number()
+    .positive("Price must be positive")
+    .max(99999999.99, "Price exceeds maximum allowed amount"),
+  comparePrice: z
+    .number()
+    .positive()
+    .max(99999999.99, "Compare price exceeds maximum allowed amount")
+    .nullable()
+    .optional(),
+  costPrice: z
+    .number()
+    .positive()
+    .max(99999999.99, "Cost price exceeds maximum allowed amount")
+    .nullable()
+    .optional(),
   taxRate: z.number().min(0).max(100).default(0),
   discountPercent: z.number().min(0).max(100).default(0),
   isActive: z.boolean().default(true),

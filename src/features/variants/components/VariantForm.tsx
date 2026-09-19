@@ -244,6 +244,16 @@ function VariantForm({
 
     const finalSlug = `${slugPrefix}${extraSlug.trim()}`;
 
+    if (finalSlug.length > 255) {
+      const msg = "Item code cannot exceed 255 characters";
+      setExtraSlugError(msg);
+      methods.setError("slug", {
+        type: "manual",
+        message: msg,
+      });
+      return;
+    }
+
     const submissionPayload: VariantFormValues = {
       ...data,
       slug: finalSlug,
@@ -273,6 +283,7 @@ function VariantForm({
               name="variantName"
               label="Item Name"
               placeholder="e.g. Classic Mixture, Butter Cookies"
+              maxLength={100}
               required
             />
           </div>
@@ -282,6 +293,7 @@ function VariantForm({
               name="variantName"
               label="Item Name"
               placeholder="e.g. Classic Mixture, Butter Cookies"
+              maxLength={100}
               required
             />
 
@@ -367,6 +379,7 @@ function VariantForm({
             <input
               type="text"
               value={extraSlug}
+              maxLength={255}
               onChange={(e) => handleExtraSlugChange(e.target.value)}
               placeholder="e.g. CLASSIC_MIX"
               className="flex-1 min-w-0 px-3 py-2 text-sm text-neutral-900 bg-transparent outline-none font-mono placeholder:text-neutral-400 placeholder:font-sans uppercase"
@@ -429,6 +442,7 @@ function VariantForm({
           name="shortDescription"
           label="Short Description"
           placeholder="Brief summary of the item (max 500 characters)"
+          maxLength={500}
           rows={2}
         />
 
@@ -469,6 +483,7 @@ function VariantForm({
           name="shelfLife"
           label="Best Before"
           placeholder="e.g. 6 months from packing"
+          maxLength={100}
         />
 
         <div className="flex justify-end pt-2">

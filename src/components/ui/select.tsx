@@ -15,13 +15,15 @@ export interface SelectProps
   extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "children" | "size"> {
   options: SelectOption[];
   placeholder?: string;
-  error?: string;
+  error?: string | boolean;
   onValueChange?: (value: string) => void;
   icon?: React.ReactNode;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   size?: "sm" | "md" | "lg";
   variant?: "default" | "warm" | "ghost";
+  placement?: "bottom" | "top" | "auto";
+  dropdownClassName?: string;
 }
 
 const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
@@ -43,11 +45,16 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
       rightIcon,
       size = "md",
       variant = "default",
+      placement = "auto",
+      dropdownClassName,
       ...props
     },
     ref
   ) => {
     const [isOpen, setIsOpen] = React.useState(false);
+    const [effectivePlacement, setEffectivePlacement] = React.useState<"bottom" | "top">(
+      placement === "top" ? "top" : "bottom"
+    );
     const [internalValue, setInternalValue] = React.useState<string>(
       (controlledValue !== undefined
         ? controlledValue
@@ -60,6 +67,28 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
     const containerRef = React.useRef<HTMLDivElement>(null);
     const searchInputRef = React.useRef<HTMLInputElement>(null);
     const hiddenSelectRef = React.useRef<HTMLSelectElement | null>(null);
+
+    // Calculate smart placement when opened
+    React.useEffect(() => {
+      if (isOpen) {
+        if (placement === "top") {
+          setEffectivePlacement("top");
+        } else if (placement === "bottom") {
+          setEffectivePlacement("bottom");
+        } else {
+          if (containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const spaceAbove = rect.top;
+            if (spaceBelow < 240 && spaceAbove > spaceBelow) {
+              setEffectivePlacement("top");
+            } else {
+              setEffectivePlacement("bottom");
+            }
+          }
+        }
+      }
+    }, [isOpen, placement]);
 
     // Sync controlled value if passed
     React.useEffect(() => {
@@ -246,7 +275,13 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         {/* Custom Dropdown List - Scrollable and Contained */}
         {isOpen && (
           <div
-            className="absolute left-0 right-0 top-full z-[60] mt-1.5 overflow-hidden rounded-xl border border-theme-border bg-theme-surface shadow-lg animate-in zoom-in-95 duration-150 min-w-[160px]"
+            className={cn(
+              "absolute left-0 z-[70] overflow-hidden rounded-xl border border-theme-border bg-theme-surface shadow-xl animate-in duration-150 min-w-full min-w-[100px]",
+              effectivePlacement === "top"
+                ? "bottom-full mb-1.5 origin-bottom zoom-in-95"
+                : "top-full mt-1.5 origin-top zoom-in-95",
+              dropdownClassName
+            )}
             role="listbox"
           >
             {/* Search Input for Long Lists (>= 7 options) */}
@@ -312,7 +347,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         )}
 
         {/* Error message */}
-        {error && <p className="mt-1 text-xs text-red-500 font-medium">{error}</p>}
+        {typeof error === "string" && <p className="mt-1 text-xs text-red-500 font-medium">{error}</p>}
       </div>
     );
   }

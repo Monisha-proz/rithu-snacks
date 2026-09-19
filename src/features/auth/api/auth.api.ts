@@ -106,7 +106,27 @@ export async function refreshTokenApi(tokenArg?: string) {
   return response;
 }
 
+import { signOut } from "next-auth/react";
+
 export async function logoutApi() {
   const response = await apiClient.post<null>("/api/auth/logout");
   return response;
+}
+
+export async function logoutUser(callbackUrl: string = "/login") {
+  try {
+    await logoutApi();
+  } catch (err) {
+    console.error("Logout request failed:", err);
+  }
+
+  try {
+    await signOut({ callbackUrl, redirect: false });
+  } catch (err) {
+    console.error("SignOut failed:", err);
+  }
+
+  if (typeof window !== "undefined") {
+    window.location.href = callbackUrl;
+  }
 }

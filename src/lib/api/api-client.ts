@@ -68,6 +68,7 @@ export async function performSilentRefresh(): Promise<boolean> {
 // Auth endpoints that should not trigger automatic 401 retry
 const AUTH_BYPASS_ENDPOINTS = [
   "/api/auth/login",
+  "/api/auth/logout",
   "/api/auth/refresh",
   "/api/auth/register",
   "/api/auth/forgot-password",
