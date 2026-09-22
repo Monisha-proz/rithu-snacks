@@ -15,20 +15,45 @@ export function SettingsTab() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const handleFieldChange = (
+    setter: React.Dispatch<React.SetStateAction<string>>,
+    field: string,
+    val: string
+  ) => {
+    setter(val);
+    if (fieldErrors[field]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+  };
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const errors: Record<string, string> = {};
 
-    if (!currentPassword) {
-      toast.error("Please enter your current password.");
-      return;
+    if (!currentPassword.trim()) {
+      errors.currentPassword = "Current password is required";
     }
-    if (newPassword.length < 6) {
-      toast.error("New password must be at least 6 characters long.");
-      return;
+    if (!newPassword.trim()) {
+      errors.newPassword = "New password is required";
+    } else if (newPassword.length < 6) {
+      errors.newPassword = "New password must be at least 6 characters long";
     }
-    if (newPassword !== confirmPassword) {
-      toast.error("Passwords do not match.");
+    if (!confirmPassword.trim()) {
+      errors.confirmPassword = "Confirm password is required";
+    } else if (newPassword && newPassword !== confirmPassword) {
+      errors.confirmPassword = "Passwords do not match";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      const firstError = Object.values(errors)[0];
+      toast.error(firstError);
       return;
     }
 
@@ -37,6 +62,7 @@ export function SettingsTab() {
     setCurrentPassword("");
     setNewPassword("");
     setConfirmPassword("");
+    setFieldErrors({});
   };
 
   const notificationOptions = [
@@ -113,24 +139,29 @@ export function SettingsTab() {
           </h2>
         </div>
 
-        <form onSubmit={handlePasswordSubmit} className="p-5 sm:p-6 space-y-4">
+        <form onSubmit={handlePasswordSubmit} noValidate className="p-5 sm:p-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex flex-col gap-2">
               <label
                 htmlFor="currentPassword"
                 className="text-[11px] font-semibold uppercase tracking-wider text-theme-text-muted"
               >
-                Current Password
+                Current Password <span className="text-red-500 font-bold ml-0.5">*</span>
               </label>
               <Input
                 id="currentPassword"
                 type="password"
                 required
                 value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
+                onChange={(e) => handleFieldChange(setCurrentPassword, "currentPassword", e.target.value)}
                 placeholder="Enter current password"
-                className="bg-theme-surface-warm min-h-[44px]"
+                className={`bg-theme-surface-warm min-h-[44px] ${
+                  fieldErrors.currentPassword ? "border-red-500 bg-red-50/20" : ""
+                }`}
               />
+              {fieldErrors.currentPassword && (
+                <span className="text-xs text-red-500 font-medium">{fieldErrors.currentPassword}</span>
+              )}
             </div>
 
             <div className="flex flex-col gap-2">
@@ -138,17 +169,22 @@ export function SettingsTab() {
                 htmlFor="newPassword"
                 className="text-[11px] font-semibold uppercase tracking-wider text-theme-text-muted"
               >
-                New Password
+                New Password <span className="text-red-500 font-bold ml-0.5">*</span>
               </label>
               <Input
                 id="newPassword"
                 type="password"
                 required
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
+                onChange={(e) => handleFieldChange(setNewPassword, "newPassword", e.target.value)}
                 placeholder="Enter new password"
-                className="bg-theme-surface-warm min-h-[44px]"
+                className={`bg-theme-surface-warm min-h-[44px] ${
+                  fieldErrors.newPassword ? "border-red-500 bg-red-50/20" : ""
+                }`}
               />
+              {fieldErrors.newPassword && (
+                <span className="text-xs text-red-500 font-medium">{fieldErrors.newPassword}</span>
+              )}
             </div>
 
             <div className="flex flex-col gap-2">
@@ -156,17 +192,22 @@ export function SettingsTab() {
                 htmlFor="confirmPassword"
                 className="text-[11px] font-semibold uppercase tracking-wider text-theme-text-muted"
               >
-                Confirm Password
+                Confirm Password <span className="text-red-500 font-bold ml-0.5">*</span>
               </label>
               <Input
                 id="confirmPassword"
                 type="password"
                 required
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={(e) => handleFieldChange(setConfirmPassword, "confirmPassword", e.target.value)}
                 placeholder="Re-enter new password"
-                className="bg-theme-surface-warm min-h-[44px]"
+                className={`bg-theme-surface-warm min-h-[44px] ${
+                  fieldErrors.confirmPassword ? "border-red-500 bg-red-50/20" : ""
+                }`}
               />
+              {fieldErrors.confirmPassword && (
+                <span className="text-xs text-red-500 font-medium">{fieldErrors.confirmPassword}</span>
+              )}
             </div>
           </div>
 

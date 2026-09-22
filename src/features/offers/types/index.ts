@@ -108,6 +108,10 @@ export interface SaveOfferInput {
   maxDiscountAmount?: number | null;
   priority?: number;
   terms?: string | null;
+  startDate?: string;
+  startTime?: string;
+  endDate?: string;
+  endTime?: string;
   startsAt: Date | string;
   endsAt: Date | string;
   isActive?: boolean;

@@ -9,6 +9,7 @@ const EMPTY_CART: CartResponse = {
   id: null,
   items: [],
   subtotal: 0,
+  originalSubtotal: 0,
   totalDiscount: 0,
   totalSavings: 0,
   total: 0,

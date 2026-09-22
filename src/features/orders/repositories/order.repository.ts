@@ -32,6 +32,18 @@ export const orderItemInclude = Prisma.validator<Prisma.OrderItemInclude>()({
       },
     },
   },
+  variant: {
+    select: {
+      id: true,
+      uuid: true,
+      variant_name: true,
+      product_variant_images: {
+        where: { is_active: true },
+        orderBy: [{ is_primary: "desc" }, { sort_order: "asc" }],
+        take: 1,
+      },
+    },
+  },
   variant_unit_price: {
     select: {
       id: true,
@@ -132,7 +144,7 @@ export function formatOrderItem(
   item: Prisma.OrderItemGetPayload<{ include: typeof orderItemInclude }>
 ): OrderItemResponse {
   const unitPrice = item.variant_unit_price;
-  const variant = unitPrice?.variant;
+  const variant = item.variant || unitPrice?.variant;
   const measurement = formatVariantMeasurement(
     unitPrice?.product_units,
     unitPrice?.unit_value ?? 0

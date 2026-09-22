@@ -34,6 +34,9 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { toast } from "@/components/ui/Toast";
+import { useQueryClient } from "@tanstack/react-query";
+import { variantKeys } from "@/lib/api/query-keys";
+import { updateAdminVariant } from "@/features/variants/api/get-variants";
 import { useAdminProduct, useProductImages } from "@/features/products/hooks";
 import {
   useVariants,
@@ -186,8 +189,13 @@ export default function AdminProductDetailsPage() {
     variant: AdminVariantResponse;
     rect: DOMRect;
   } | null>(null);
+  const queryClient = useQueryClient();
   const [isStatusUpdating, setIsStatusUpdating] = React.useState(false);
   const [isPriceEditOpen, setIsPriceEditOpen] = React.useState(false);
+  const [bulkStatusAction, setBulkStatusAction] = React.useState<{
+    targetActive: boolean;
+    count: number;
+  } | null>(null);
 
   // Close action dropdown menu when clicking outside, scrolling, or pressing Escape
   React.useEffect(() => {
@@ -381,19 +389,21 @@ export default function AdminProductDetailsPage() {
   // Bulk status update
   const handleBulkStatusChange = async (targetActive: boolean) => {
     if (!hasSelection || isStatusUpdating) return;
+    const targets = selectedObjs.filter((obj) => obj.isActive !== targetActive);
+    if (targets.length === 0) return;
+
     setIsStatusUpdating(true);
     try {
-      const targets = selectedObjs.filter((obj) => obj.isActive !== targetActive);
-      if (targets.length === 0) return;
       await Promise.all(
         targets.map((obj) =>
-          updateVariantMutation.mutateAsync({
-            productUuid: canonicalProductId,
-            variantUuid: obj.id,
-            data: { isActive: targetActive },
-          })
+          updateAdminVariant(canonicalProductId, obj.id, { isActive: targetActive })
         )
       );
+      queryClient.invalidateQueries({ queryKey: variantKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["admin", "variants"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "products"] });
+      queryClient.invalidateQueries({ queryKey: ["customer", "catalog"] });
+
       toast.success(
         targetActive ? "Items Activated" : "Items Deactivated",
         `${targets.length} item${targets.length > 1 ? "s" : ""} ${
@@ -776,7 +786,12 @@ export default function AdminProductDetailsPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleBulkStatusChange(true)}
+                  onClick={() => {
+                    const inactiveCount = selectedObjs.filter((v) => !v.isActive).length;
+                    if (inactiveCount > 0) {
+                      setBulkStatusAction({ targetActive: true, count: inactiveCount });
+                    }
+                  }}
                   disabled={isStatusUpdating || !hasInactiveSelected}
                   className={`px-2.5 py-1 rounded-md border font-semibold transition-all ${
                     hasInactiveSelected && !isStatusUpdating
@@ -788,7 +803,12 @@ export default function AdminProductDetailsPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleBulkStatusChange(false)}
+                  onClick={() => {
+                    const activeCount = selectedObjs.filter((v) => v.isActive).length;
+                    if (activeCount > 0) {
+                      setBulkStatusAction({ targetActive: false, count: activeCount });
+                    }
+                  }}
                   disabled={isStatusUpdating || !hasActiveSelected}
                   className={`px-2.5 py-1 rounded-md border font-semibold transition-all ${
                     hasActiveSelected && !isStatusUpdating
@@ -1464,6 +1484,42 @@ export default function AdminProductDetailsPage() {
         confirmText="Make Active"
         cancelText="Cancel"
         variant="default"
+        isLoading={isStatusUpdating}
+      />
+
+      {/* 8b. Bulk Status Confirmation Dialog */}
+      <ConfirmDialog
+        open={Boolean(bulkStatusAction)}
+        onClose={() => setBulkStatusAction(null)}
+        onConfirm={async () => {
+          if (!bulkStatusAction) return;
+          const { targetActive } = bulkStatusAction;
+          setBulkStatusAction(null);
+          await handleBulkStatusChange(targetActive);
+        }}
+        title={
+          bulkStatusAction
+            ? bulkStatusAction.targetActive
+              ? `Activate ${bulkStatusAction.count} Item${bulkStatusAction.count > 1 ? "s" : ""} ?`
+              : `Deactivate ${bulkStatusAction.count} Item${bulkStatusAction.count > 1 ? "s" : ""} ?`
+            : "Update Item Status?"
+        }
+        description={
+          bulkStatusAction
+            ? bulkStatusAction.targetActive
+              ? `Are you sure you want to activate ${bulkStatusAction.count} selected item${bulkStatusAction.count > 1 ? "s" : ""}? They will be marked as active and visible to customers.`
+              : `Are you sure you want to deactivate ${bulkStatusAction.count} selected item${bulkStatusAction.count > 1 ? "s" : ""}? They will be marked as inactive and hidden from customers.`
+            : "Are you sure you want to update the status of selected items?"
+        }
+        confirmText={
+          bulkStatusAction
+            ? bulkStatusAction.targetActive
+              ? `Activate (${bulkStatusAction.count})`
+              : `Deactivate (${bulkStatusAction.count})`
+            : "Confirm"
+        }
+        cancelText="Cancel"
+        variant={bulkStatusAction?.targetActive ? "default" : "destructive"}
         isLoading={isStatusUpdating}
       />
 

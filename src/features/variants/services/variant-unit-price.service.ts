@@ -115,8 +115,7 @@ export const variantUnitPriceService = {
       base_price: data.basePrice,
       is_default: data.isDefault ?? false,
       isActive: data.isActive !== undefined ? data.isActive : true,
-      created_by: adminId,
-      updated_by: adminId,
+      ...(adminId ? { created_by: adminId, updated_by: adminId } : {}),
     });
 
     if (data.stock !== undefined) {
@@ -127,12 +126,11 @@ export const variantUnitPriceService = {
           quantity_available: data.stock,
           quantity_reserved: 0,
           is_active: true,
-          created_by: adminId,
-          updated_by: adminId,
+          ...(adminId ? { created_by: adminId, updated_by: adminId } : {}),
         },
         update: {
           quantity_available: data.stock,
-          updated_by: adminId,
+          ...(adminId ? { updated_by: adminId } : {}),
         },
       });
     }

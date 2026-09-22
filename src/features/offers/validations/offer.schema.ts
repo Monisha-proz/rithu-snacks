@@ -229,8 +229,12 @@ const offerBaseSchema = z.object({
       return n;
     }),
   terms: optionalText(5000, "Terms & Conditions"),
-  startsAt: dateString,
-  endsAt: dateString,
+  startDate: z.string().trim().optional(),
+  startTime: z.string().trim().optional(),
+  endDate: z.string().trim().optional(),
+  endTime: z.string().trim().optional(),
+  startsAt: z.string().trim().optional(),
+  endsAt: z.string().trim().optional(),
   isActive: z.boolean().default(true),
   productIds: z.array(uuid).default([]),
   itemIds: z.array(uuid).default([]),
@@ -250,6 +254,10 @@ function applyOfferRules<T extends Partial<OfferBaseShape>>(
     level,
     type,
     value,
+    startDate,
+    startTime,
+    endDate,
+    endTime,
     startsAt,
     endsAt,
     minQuantity,
@@ -262,15 +270,59 @@ function applyOfferRules<T extends Partial<OfferBaseShape>>(
     itemIds,
   } = data;
 
-  // Date window
-  if (startsAt && endsAt) {
-    const start = new Date(startsAt);
-    const end = new Date(endsAt);
-    if (end.getTime() < start.getTime()) {
+  // Date & Time window
+  const effectiveStartsAt =
+    startDate
+      ? `${startDate}T${startTime ? (startTime.length === 5 ? `${startTime}:00` : startTime) : "00:00:00"}`
+      : startsAt;
+
+  const effectiveEndsAt =
+    endDate
+      ? `${endDate}T${endTime ? (endTime.length === 5 ? `${endTime}:59` : endTime) : "23:59:59"}`
+      : endsAt;
+
+  if (!effectiveStartsAt) {
+    ctx.addIssue({
+      code: "custom",
+      path: [startDate !== undefined ? "startDate" : "startsAt"],
+      message: "Start date is required",
+    });
+  }
+
+  if (!effectiveEndsAt) {
+    ctx.addIssue({
+      code: "custom",
+      path: [endDate !== undefined ? "endDate" : "endsAt"],
+      message: "End date is required",
+    });
+  }
+
+  if (effectiveStartsAt && effectiveEndsAt) {
+    const start = new Date(effectiveStartsAt);
+    const end = new Date(effectiveEndsAt);
+    if (Number.isNaN(start.getTime())) {
       ctx.addIssue({
         code: "custom",
-        path: ["endsAt"],
-        message: "End date cannot be before the start date",
+        path: [startDate !== undefined ? "startDate" : "startsAt"],
+        message: "Enter a valid start date & time",
+      });
+    }
+    if (Number.isNaN(end.getTime())) {
+      ctx.addIssue({
+        code: "custom",
+        path: [endDate !== undefined ? "endDate" : "endsAt"],
+        message: "Enter a valid end date & time",
+      });
+    }
+    if (
+      !Number.isNaN(start.getTime()) &&
+      !Number.isNaN(end.getTime()) &&
+      end.getTime() < start.getTime()
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: [endDate !== undefined ? "endDate" : "endsAt"],
+        message: "End date/time cannot be before start date/time",
       });
     }
   }
@@ -466,11 +518,44 @@ function applyOfferRules<T extends Partial<OfferBaseShape>>(
   }
 }
 
-export const createOfferSchema = offerBaseSchema.superRefine(applyOfferRules);
+export const createOfferSchema = offerBaseSchema
+  .transform((data) => {
+    const startsAt =
+      (data.startDate
+        ? `${data.startDate}T${data.startTime ? (data.startTime.length === 5 ? `${data.startTime}:00` : data.startTime) : "00:00:00"}`
+        : data.startsAt) || "";
+    const endsAt =
+      (data.endDate
+        ? `${data.endDate}T${data.endTime ? (data.endTime.length === 5 ? `${data.endTime}:59` : data.endTime) : "23:59:59"}`
+        : data.endsAt) || "";
+    return {
+      ...data,
+      startsAt,
+      endsAt,
+    };
+  })
+  .superRefine(applyOfferRules);
 export type CreateOfferSchemaInput = z.input<typeof createOfferSchema>;
 export type CreateOfferSchemaOutput = z.output<typeof createOfferSchema>;
 
-export const updateOfferSchema = offerBaseSchema.partial().superRefine(applyOfferRules);
+export const updateOfferSchema = offerBaseSchema
+  .partial()
+  .transform((data) => {
+    let startsAt = data.startsAt;
+    if (data.startDate) {
+      startsAt = `${data.startDate}T${data.startTime ? (data.startTime.length === 5 ? `${data.startTime}:00` : data.startTime) : "00:00:00"}`;
+    }
+    let endsAt = data.endsAt;
+    if (data.endDate) {
+      endsAt = `${data.endDate}T${data.endTime ? (data.endTime.length === 5 ? `${data.endTime}:59` : data.endTime) : "23:59:59"}`;
+    }
+    return {
+      ...data,
+      ...(startsAt !== undefined ? { startsAt } : {}),
+      ...(endsAt !== undefined ? { endsAt } : {}),
+    };
+  })
+  .superRefine(applyOfferRules);
 export type UpdateOfferSchemaInput = z.input<typeof updateOfferSchema>;
 export type UpdateOfferSchemaOutput = z.output<typeof updateOfferSchema>;
 

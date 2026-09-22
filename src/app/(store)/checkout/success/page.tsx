@@ -203,6 +203,14 @@ function SuccessContent() {
                   {formatPrice(order.subtotal)}
                 </span>
               </div>
+              {Number(order.discountAmount || 0) > 0 && (
+                <div className="flex justify-between text-emerald-600 font-medium">
+                  <span>Special Discount</span>
+                  <span className="font-semibold">
+                    -{formatPrice(order.discountAmount)}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between text-theme-text-subtle">
                 <span>Shipping & Delivery</span>
                 <span className="font-semibold text-theme-text-primary">

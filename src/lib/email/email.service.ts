@@ -7,6 +7,9 @@ import {
   getContactAcknowledgementEmailTemplate,
   getContactReplyEmailTemplate,
 } from "./templates/contact-email.template";
+import { getNewsletterWelcomeEmailTemplate } from "./templates/newsletter-email.template";
+
+let cachedTransporter: nodemailer.Transporter | null = null;
 
 export const emailService = {
   getFromAddress() {
@@ -19,7 +22,19 @@ export const emailService = {
       : `"Rithu Snacks" <${fromEmail}>`;
   },
 
+  getRawFromEmail() {
+    return (
+      process.env.EMAIL_FROM ||
+      process.env.EMAIL_USER ||
+      "noreply@rithusnacks.com"
+    );
+  },
+
   getTransporter() {
+    if (cachedTransporter) {
+      return cachedTransporter;
+    }
+
     const host = process.env.EMAIL_HOST;
     const portStr = process.env.EMAIL_PORT;
     const user = process.env.EMAIL_USER;
@@ -39,7 +54,7 @@ export const emailService = {
     const port = Number(portStr) || 587;
     const secure = port === 465; // false for 587 / Brevo
 
-    return nodemailer.createTransport({
+    cachedTransporter = nodemailer.createTransport({
       host,
       port,
       secure,
@@ -47,6 +62,8 @@ export const emailService = {
       connectionTimeout: 15000,
       socketTimeout: 15000,
     });
+
+    return cachedTransporter;
   },
 
   async sendOtpEmail(
@@ -160,5 +177,42 @@ export const emailService = {
       return false;
     }
   },
+
+  async sendNewsletterWelcomeEmail(to: string): Promise<boolean> {
+    const { subject, html, text } = getNewsletterWelcomeEmailTemplate({
+      email: to,
+    });
+
+    const from = this.getFromAddress();
+    const rawFromEmail = this.getRawFromEmail();
+
+    const transporter = this.getTransporter();
+
+    if (!transporter) {
+      console.warn(
+        "[EMAIL SERVICE] SMTP is not configured; newsletter welcome email was not sent."
+      );
+      return false;
+    }
+
+    try {
+      const info = await transporter.sendMail({
+        from,
+        replyTo: rawFromEmail,
+        to,
+        subject,
+        text,
+        html,
+      });
+      console.log(
+        `[EMAIL SERVICE] Newsletter welcome email sent to ${to} (MessageId: ${info.messageId})`
+      );
+      return true;
+    } catch (error) {
+      console.error("[EMAIL SERVICE] Error sending newsletter welcome email:", error);
+      return false;
+    }
+  },
 };
+
 

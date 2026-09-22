@@ -58,26 +58,57 @@ export function isApiError(error: unknown): error is ApiError {
 }
 
 export function handlePrismaError(error: unknown): ApiError {
-  const prismaError = error as { code?: string; meta?: Record<string, unknown> };
+  const prismaError = error as {
+    code?: string;
+    meta?: Record<string, unknown>;
+    message?: string;
+  };
 
   switch (prismaError.code) {
-    case "P2002":
+    case "P2002": {
+      const target = prismaError.meta?.target;
+      let fieldName = "";
+      if (Array.isArray(target)) {
+        fieldName = target.join(", ");
+      } else if (typeof target === "string") {
+        fieldName = target;
+      }
       return ApiError.conflict(
-        `A record with the same value already exists${
-          prismaError.meta?.target ? ` for field: ${String(prismaError.meta.target)}` : ""
-        }`
+        fieldName
+          ? `A record with the same ${fieldName} already exists.`
+          : "A record with this value already exists."
       );
+    }
     case "P2025":
-      return ApiError.notFound("The requested record was not found");
+      return ApiError.notFound("The requested record was not found.");
     case "P2003":
-      return ApiError.badRequest("Related record not found");
+      return ApiError.badRequest("The referenced record could not be found or has dependent data.");
     case "P2014":
-      return ApiError.badRequest("Required relation violation");
-    case "P2011":
-      return ApiError.badRequest("Null constraint violation");
-    case "P2012":
-      return ApiError.badRequest("Missing required value");
+      return ApiError.badRequest("The requested change cannot be completed because other records depend on it.");
+    case "P2011": {
+      const constraint = prismaError.meta?.constraint || prismaError.meta?.target;
+      const fieldStr = typeof constraint === "string" ? constraint.replace(/.*_/, "") : "";
+      return ApiError.badRequest(
+        fieldStr
+          ? `A required value for '${fieldStr}' was not provided.`
+          : "A required field is missing or cannot be empty."
+      );
+    }
+    case "P2012": {
+      const path = prismaError.meta?.path;
+      return ApiError.badRequest(
+        path
+          ? `Missing required field: ${String(path)}.`
+          : "A required field value is missing."
+      );
+    }
+    case "P2000":
+      return ApiError.badRequest("One of the provided values exceeds the maximum permitted length.");
+    case "P2005":
+    case "P2006":
+      return ApiError.badRequest("One of the provided values has an invalid format.");
     default:
-      return ApiError.internal("A database error occurred");
+      return ApiError.internal("A database error occurred. Please try again.");
   }
 }
+

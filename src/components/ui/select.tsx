@@ -182,8 +182,8 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
 
     const sizeClasses = {
       sm: "h-9 px-3 rounded-lg text-xs",
-      md: "h-11 px-3.5 rounded-xl text-xs sm:text-sm font-semibold",
-      lg: "h-12 px-4 rounded-xl text-sm font-semibold",
+      md: "h-11 px-4 rounded-xl text-sm font-normal",
+      lg: "h-12 px-4 rounded-xl text-base font-normal",
     };
 
     const effectiveRightIcon = rightIcon || icon;

@@ -13,6 +13,7 @@ import { FormRichText } from "@/components/forms/form-rich-text";
 import { FormSelect } from "@/components/forms/form-select";
 import { FormCheckbox } from "@/components/forms/form-checkbox";
 import { FormSubmitButton } from "@/components/forms/form-submit-button";
+import { Label } from "@/components/forms/label";
 
 const vegTypeOptions = [
   { label: "Vegetarian (Veg)", value: "veg" },
@@ -268,7 +269,7 @@ function VariantForm({
         onSubmit={methods.handleSubmit(handleFormSubmit)}
         className="space-y-6"
       >
-        {/* Row 1: Product & Item Name (or just Item Name if product is fixed) */}
+        {/* Row 1: Product & Item Name (or Item Name & Dietary Type if product is fixed) */}
         {!fixedProductId ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormSelect
@@ -308,11 +309,12 @@ function VariantForm({
         )}
 
         {/* Row 2: Item Code (Full Width) with Category + Product Code Prefix & Floating Info Pop-Up */}
-        <div className="pt-0 mb-3">
+        <div className="pt-0">
           <div className="flex items-center gap-1.5 mb-1.5">
-            <label className="block text-xs font-semibold text-[var(--color-neutral-800)]">
-              Item Code (fills in automatically) <span className="text-red-500">*</span>
-            </label>
+            <Label className="flex items-center gap-1">
+              Item Code (fills in automatically)
+              <span className="text-error-600 font-bold ml-1">*</span>
+            </Label>
             <div className="relative inline-flex items-center" ref={infoRef}>
               <button
                 type="button"
@@ -349,15 +351,15 @@ function VariantForm({
           </div>
 
           <div
-            className={`flex items-stretch rounded-lg border transition-all ${
+            className={`flex items-stretch h-11 rounded-xl border transition-all ${
               extraSlugError || methods.formState.errors.slug
-                ? "border-red-500 ring-2 ring-red-500/10"
-                : "border-neutral-200 focus-within:border-secondary-600 focus-within:ring-2 focus-within:ring-secondary-600/20"
-            } bg-white overflow-hidden`}
+                ? "border-theme-status-can-fg ring-2 ring-theme-status-can-fg/20"
+                : "border-theme-border focus-within:border-theme-primary focus-within:ring-2 focus-within:ring-theme-primary/20 hover:border-theme-border-accent"
+            } bg-theme-surface overflow-hidden`}
           >
             {/* Non-editable Category + Product Code prefix */}
             <div
-              className="flex items-center px-3 bg-neutral-100/90 border-r border-neutral-200 text-neutral-600 font-mono text-xs select-none max-w-[60%] shrink-0 truncate"
+              className="flex items-center px-4 bg-theme-surface-alt border-r border-theme-border text-theme-text-secondary font-mono text-xs font-semibold select-none max-w-[60%] shrink-0 truncate"
               title={
                 slugPrefix
                   ? `Product Prefix: ${slugPrefix}`
@@ -365,11 +367,11 @@ function VariantForm({
               }
             >
               {slugPrefix ? (
-                <span className="font-semibold text-neutral-800 tracking-wide truncate">
+                <span className="font-semibold text-theme-text-primary tracking-wide truncate">
                   {slugPrefix}
                 </span>
               ) : (
-                <span className="text-neutral-400 italic text-[11px]">
+                <span className="text-theme-text-muted italic text-[11px]">
                   [category_product_code]_
                 </span>
               )}
@@ -382,7 +384,7 @@ function VariantForm({
               maxLength={255}
               onChange={(e) => handleExtraSlugChange(e.target.value)}
               placeholder="e.g. CLASSIC_MIX"
-              className="flex-1 min-w-0 px-3 py-2 text-sm text-neutral-900 bg-transparent outline-none font-mono placeholder:text-neutral-400 placeholder:font-sans uppercase"
+              className="flex-1 min-w-0 px-4 py-2 text-sm text-theme-text-primary bg-transparent outline-none font-mono placeholder:text-theme-text-muted placeholder:font-sans uppercase"
             />
           </div>
 
@@ -393,17 +395,17 @@ function VariantForm({
                 {extraSlugError || methods.formState.errors.slug?.message}
               </p>
             ) : (
-              <p className="text-[11px] text-neutral-500 font-mono flex items-center gap-1 flex-wrap">
-                <span className="font-sans font-medium text-neutral-600">Full Code:</span>
+              <p className="text-[11px] text-theme-text-muted font-mono flex items-center gap-1.5 flex-wrap">
+                <span className="font-sans font-medium text-theme-text-secondary">Full Code:</span>
                 {slugPrefix || extraSlug ? (
-                  <span className="text-secondary-700 font-semibold bg-neutral-100 px-1.5 py-0.5 rounded border border-neutral-200">
+                  <span className="text-theme-primary font-semibold bg-theme-surface-alt px-2 py-0.5 rounded border border-theme-border">
                     {slugPrefix}
-                    <span className={extraSlug ? "text-secondary-800 font-bold" : "text-neutral-400 italic font-normal"}>
+                    <span className={extraSlug ? "text-theme-text-primary font-bold" : "text-theme-text-muted italic font-normal"}>
                       {extraSlug || "ENTER_ITEM_CODE"}
                     </span>
                   </span>
                 ) : (
-                  <span className="text-neutral-400 italic font-sans">
+                  <span className="text-theme-text-muted italic font-sans">
                     Select product to generate prefix
                   </span>
                 )}
@@ -412,9 +414,9 @@ function VariantForm({
           </div>
         </div>
 
-        {/* Dietary Type & Featured Item (Dietary Type already shown above when product is fixed) */}
+        {/* Row 3: Dietary Type & Best Before (or just Best Before if Dietary Type is in Row 1) */}
         {!fixedProductId ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormSelect
               name="vegType"
               label="Dietary Type"
@@ -423,52 +425,42 @@ function VariantForm({
               required
             />
 
+            <FormInput
+              name="shelfLife"
+              label="Best Before"
+              placeholder="e.g. 6 months from packing"
+              maxLength={100}
+            />
+          </div>
+        ) : (
+          <FormInput
+            name="shelfLife"
+            label="Best Before"
+            placeholder="e.g. 6 months from packing"
+            maxLength={100}
+          />
+        )}
+
+        {/* Row 4: Item Options (Featured Item & Ready to Mix side-by-side cards) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+          <div className="flex items-start p-3.5 rounded-xl border border-theme-border bg-theme-surface hover:border-theme-border-accent transition-colors">
             <FormCheckbox
               name="isFeatured"
               label="Featured Item"
               description="Display this item prominently in featured sections"
             />
           </div>
-        ) : (
-          <FormCheckbox
-            name="isFeatured"
-            label="Featured Item"
-            description="Display this item prominently in featured sections"
-          />
-        )}
 
-        {/* Short Description */}
-        <FormTextarea
-          name="shortDescription"
-          label="Short Description"
-          placeholder="Brief summary of the item (max 500 characters)"
-          maxLength={500}
-          rows={2}
-        />
+          <div className="flex items-start p-3.5 rounded-xl border border-theme-border bg-theme-surface hover:border-theme-border-accent transition-colors">
+            <FormCheckbox
+              name="isReadyToMix"
+              label="Ready to Mix"
+              description="Enable if this item needs to be mixed/prepared before eating"
+            />
+          </div>
+        </div>
 
-        {/* Description */}
-        <FormRichText
-          name="description"
-          label="Description"
-          placeholder="Detailed item information and description"
-        />
-
-        {/* Ingredients */}
-        <FormTextarea
-          name="ingredients"
-          label="Ingredients"
-          placeholder="e.g. Rice flour, Bengal gram, Groundnut oil, Salt, Spices"
-          rows={3}
-        />
-
-        {/* Ready to Mix */}
-        <FormCheckbox
-          name="isReadyToMix"
-          label="Ready to Mix"
-          description="Enable if this item needs to be mixed/prepared before eating (e.g. instant mixes)"
-        />
-
-        {/* Cooking Recipe - only relevant for Ready to Mix items */}
+        {/* Row 5: Cooking Recipe - only relevant for Ready to Mix items */}
         {watchedIsReadyToMix && (
           <FormTextarea
             name="cookingRecipe"
@@ -478,12 +470,28 @@ function VariantForm({
           />
         )}
 
-        {/* Best Before / Shelf Life */}
-        <FormInput
-          name="shelfLife"
-          label="Best Before"
-          placeholder="e.g. 6 months from packing"
-          maxLength={100}
+        {/* Row 6: Short Description */}
+        <FormTextarea
+          name="shortDescription"
+          label="Short Description"
+          placeholder="Brief summary of the item (max 500 characters)"
+          maxLength={500}
+          rows={2}
+        />
+
+        {/* Row 7: Description */}
+        <FormRichText
+          name="description"
+          label="Description"
+          placeholder="Detailed item information and description"
+        />
+
+        {/* Row 8: Ingredients */}
+        <FormTextarea
+          name="ingredients"
+          label="Ingredients"
+          placeholder="e.g. Rice flour, Bengal gram, Groundnut oil, Salt, Spices"
+          rows={3}
         />
 
         <div className="flex justify-end pt-2">

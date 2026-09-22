@@ -41,6 +41,7 @@ export function useCreateRole() {
 
   return useMutation({
     mutationFn: (data: Record<string, unknown>) => createRole(data),
+    meta: { skipToast: true },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: roleKeys.all });
     },
@@ -53,6 +54,7 @@ export function useUpdateRole() {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: Record<string, unknown> }) =>
       updateRole(id, data),
+    meta: { skipToast: true },
     onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({ queryKey: roleKeys.all });
       queryClient.invalidateQueries({ queryKey: roleKeys.detail(variables.id) });
@@ -65,6 +67,7 @@ export function useDeleteRole() {
 
   return useMutation({
     mutationFn: (id: number) => deleteRole(id),
+    meta: { skipToast: true },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: roleKeys.all });
     },
@@ -97,6 +100,7 @@ export function useCreatePermission() {
 
   return useMutation({
     mutationFn: (data: Record<string, unknown>) => createPermission(data),
+    meta: { skipToast: true },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: permissionKeys.all });
     },
@@ -109,6 +113,7 @@ export function useUpdatePermission() {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: Record<string, unknown> }) =>
       updatePermission(id, data),
+    meta: { skipToast: true },
     onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({ queryKey: permissionKeys.all });
       queryClient.invalidateQueries({ queryKey: permissionKeys.detail(variables.id) });
@@ -121,6 +126,7 @@ export function useDeletePermission() {
 
   return useMutation({
     mutationFn: (id: number) => deletePermission(id),
+    meta: { skipToast: true },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: permissionKeys.all });
     },

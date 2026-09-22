@@ -7,10 +7,10 @@ import {
   X,
   Star,
   Trash2,
-  CheckCircle2,
   AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/Toast";
 import { ImageCropperModal } from "@/components/common";
 import {
   useProductImages,
@@ -47,7 +47,6 @@ export function ProductImageUploader({
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Multi-image cropping queue state
   const [cropQueue, setCropQueue] = useState<File[]>([]);
@@ -67,7 +66,6 @@ export function ProductImageUploader({
   // Process incoming files through validation and queue for cropping
   const processFilesForCrop = (rawFiles: File[]) => {
     setErrorMessage(null);
-    setSuccessMessage(null);
     if (rawFiles.length === 0) return;
 
     const remainingSlots = maxAllowedImages - totalImageCount;
@@ -210,24 +208,31 @@ export function ProductImageUploader({
         isPrimary: p.isPrimary,
       }));
 
+      const totalAfterUpload = existingImages.length + pendingImages.length;
+
       await createImagesMutation.mutateAsync({
         productUuid,
         images: imagePayload,
       });
 
-      setSuccessMessage("Images uploaded and saved successfully!");
+      toast.success(
+        totalAfterUpload >= maxAllowedImages
+          ? `All ${maxAllowedImages} images added successfully!`
+          : "Images uploaded and saved successfully!"
+      );
       setPendingImages([]);
 
+      // Auto-close modal after successful upload
       if (onFinish) {
         setTimeout(() => {
           onFinish();
-        }, 600);
+        }, totalAfterUpload >= maxAllowedImages ? 450 : 600);
       }
     } catch (err: unknown) {
       console.error("Failed to upload product images:", err);
-      setErrorMessage(
-        err instanceof Error ? err.message : "Failed to upload images. Please try again."
-      );
+      const msg = err instanceof Error ? err.message : "Failed to upload images. Please try again.";
+      setErrorMessage(msg);
+      toast.error(msg);
     } finally {
       setIsUploading(false);
     }
@@ -240,12 +245,12 @@ export function ProductImageUploader({
         productUuid,
         imageId,
       });
-      setSuccessMessage("Primary image updated successfully.");
+      toast.success("Primary image updated successfully.");
     } catch (err: unknown) {
       console.error("Failed to set primary image:", err);
-      setErrorMessage(
-        err instanceof Error ? err.message : "Failed to update primary image."
-      );
+      const msg = err instanceof Error ? err.message : "Failed to update primary image.";
+      setErrorMessage(msg);
+      toast.error(msg);
     }
   };
 
@@ -256,12 +261,12 @@ export function ProductImageUploader({
         productUuid,
         imageId,
       });
-      setSuccessMessage("Image deleted successfully.");
+      toast.success("Image deleted successfully.");
     } catch (err: unknown) {
       console.error("Failed to delete image:", err);
-      setErrorMessage(
-        err instanceof Error ? err.message : "Failed to delete image."
-      );
+      const msg = err instanceof Error ? err.message : "Failed to delete image.";
+      setErrorMessage(msg);
+      toast.error(msg);
     }
   };
 
@@ -283,13 +288,6 @@ export function ProductImageUploader({
         <div className="flex items-center gap-2 rounded-xl bg-[var(--color-error-50)] p-3 text-sm text-[var(--color-error-700)] border border-[var(--color-error-200)]">
           <AlertCircle className="h-4 w-4 flex-shrink-0" />
           <span>{errorMessage}</span>
-        </div>
-      )}
-
-      {successMessage && (
-        <div className="flex items-center gap-2 rounded-xl bg-[var(--color-success-50)] p-3 text-sm text-[var(--color-success-700)] border border-[var(--color-success-200)]">
-          <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
-          <span>{successMessage}</span>
         </div>
       )}
 
@@ -442,16 +440,28 @@ export function ProductImageUploader({
       )}
 
       {/* Actions */}
-      <div className="flex items-center justify-end pt-4 border-t border-[var(--color-neutral-200)]">
+      <div className="flex items-center justify-end gap-3 pt-4 border-t border-[var(--color-neutral-200)]">
         <Button
           type="button"
-          onClick={handleUploadAndSave}
-          isLoading={isUploading}
-          disabled={pendingImages.length === 0}
-          className="h-11 rounded-xl bg-[var(--color-secondary-600)] px-6 text-sm font-semibold text-white hover:bg-[var(--color-secondary-700)]"
+          variant="outline"
+          onClick={() => {
+            if (onFinish) onFinish();
+          }}
+          className="h-11 rounded-xl border-[var(--color-neutral-300)] text-[var(--color-neutral-700)] hover:bg-[var(--color-neutral-100)] px-6 text-sm font-semibold cursor-pointer"
         >
-          Upload Images
+          {pendingImages.length > 0 ? "Cancel" : "Done"}
         </Button>
+
+        {pendingImages.length > 0 && (
+          <Button
+            type="button"
+            onClick={handleUploadAndSave}
+            isLoading={isUploading}
+            className="h-11 rounded-xl bg-[var(--color-secondary-600)] px-6 text-sm font-semibold text-white hover:bg-[var(--color-secondary-700)] cursor-pointer"
+          >
+            Upload &amp; Save
+          </Button>
+        )}
       </div>
 
       {/* Image Cropper Modal (Configured to 500x500 for Products) */}

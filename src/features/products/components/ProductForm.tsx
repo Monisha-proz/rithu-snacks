@@ -9,6 +9,7 @@ import { FormInput } from "@/components/forms/form-input";
 import { FormSelect } from "@/components/forms/form-select";
 import { FormImageUpload } from "@/components/forms/form-image-upload";
 import { FormSubmitButton } from "@/components/forms/form-submit-button";
+import { Label } from "@/components/forms/label";
 
 const productFormSchema = z.object({
   name: z
@@ -219,11 +220,11 @@ function ProductForm({
         </div>
 
         {/* Row 2: Product Code (full width) */}
-        <div className="pt-0 mb-3">
+        <div className="pt-0">
           <div className="flex items-center gap-1.5 mb-1.5">
-            <label className="block text-xs font-semibold text-[var(--color-neutral-800)]">
-              Product Code <span className="text-red-500">*</span>
-            </label>
+            <Label className="flex items-center gap-1">
+              Product Code <span className="text-error-600 font-bold ml-1">*</span>
+            </Label>
             <div className="relative inline-flex items-center" ref={infoRef}>
               <button
                 type="button"
@@ -258,15 +259,15 @@ function ProductForm({
           </div>
 
           <div
-            className={`flex items-stretch rounded-lg border transition-all ${
+            className={`flex items-stretch h-11 rounded-xl border transition-all ${
               extraSlugError || methods.formState.errors.slug
-                ? "border-red-500 ring-2 ring-red-500/10"
-                : "border-neutral-200 focus-within:border-secondary-600 focus-within:ring-2 focus-within:ring-secondary-600/20"
-            } bg-white overflow-hidden`}
+                ? "border-theme-status-can-fg ring-2 ring-theme-status-can-fg/20"
+                : "border-theme-border focus-within:border-theme-primary focus-within:ring-2 focus-within:ring-theme-primary/20 hover:border-theme-border-accent"
+            } bg-theme-surface overflow-hidden`}
           >
             {/* Non-editable Category Code prefix */}
             <div
-              className="flex items-center px-3 bg-neutral-100/90 border-r border-neutral-200 text-neutral-600 font-mono text-xs select-none max-w-[60%] shrink-0 truncate"
+              className="flex items-center px-3.5 bg-theme-surface-alt border-r border-theme-border text-theme-text-secondary font-mono text-xs font-semibold select-none max-w-[60%] shrink-0 truncate"
               title={
                 slugPrefix
                   ? `Category Prefix: ${slugPrefix}`
@@ -274,11 +275,11 @@ function ProductForm({
               }
             >
               {slugPrefix ? (
-                <span className="font-semibold text-neutral-800 tracking-wide truncate">
+                <span className="font-semibold text-theme-text-primary tracking-wide truncate">
                   {slugPrefix}
                 </span>
               ) : (
-                <span className="text-neutral-400 italic text-[11px]">
+                <span className="text-theme-text-muted italic text-[11px]">
                   [category_code]_
                 </span>
               )}
@@ -290,7 +291,7 @@ function ProductForm({
               value={extraSlug}
               onChange={(e) => handleExtraSlugChange(e.target.value)}
               placeholder="e.g. BANANA_CHIPS"
-              className="flex-1 min-w-0 px-3 py-2 text-sm text-neutral-900 bg-transparent outline-none font-mono placeholder:text-neutral-400 placeholder:font-sans uppercase"
+              className="flex-1 min-w-0 px-3.5 py-2 text-sm text-theme-text-primary bg-transparent outline-none font-mono placeholder:text-theme-text-muted placeholder:font-sans uppercase"
             />
           </div>
 
@@ -301,17 +302,17 @@ function ProductForm({
                 {extraSlugError || methods.formState.errors.slug?.message}
               </p>
             ) : (
-              <p className="text-[11px] text-neutral-500 font-mono flex items-center gap-1 flex-wrap">
-                <span className="font-sans font-medium text-neutral-600">Full Code:</span>
+              <p className="text-[11px] text-theme-text-muted font-mono flex items-center gap-1.5 flex-wrap">
+                <span className="font-sans font-medium text-theme-text-secondary">Full Code:</span>
                 {slugPrefix || extraSlug ? (
-                  <span className="text-secondary-700 font-semibold bg-neutral-100 px-1.5 py-0.5 rounded border border-neutral-200">
+                  <span className="text-theme-primary font-semibold bg-theme-surface-alt px-2 py-0.5 rounded border border-theme-border">
                     {slugPrefix}
-                    <span className={extraSlug ? "text-secondary-800 font-bold" : "text-neutral-400 italic font-normal"}>
+                    <span className={extraSlug ? "text-theme-text-primary font-bold" : "text-theme-text-muted italic font-normal"}>
                       {extraSlug || "ENTER_PRODUCT_CODE"}
                     </span>
                   </span>
                 ) : (
-                  <span className="text-neutral-400 italic font-sans">
+                  <span className="text-theme-text-muted italic font-sans">
                     Select category to generate prefix
                   </span>
                 )}

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus, Pencil, Trash2, Star, Loader2, Tag } from "lucide-react";
+import { Plus, Pencil, Trash2, Star, Loader2, Tag, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, type SelectOption } from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -124,6 +124,7 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
 
   const handleFieldChange = (name: keyof UnitPriceRowFormState, value: string | boolean) => {
     setForm((f) => ({ ...f, [name]: value }));
+    setFormError(null);
     if (fieldErrors[name as keyof typeof fieldErrors]) {
       const err = validateField(name, value);
       setFieldErrors((prev) => ({ ...prev, [name]: err }));
@@ -449,7 +450,10 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
               </div>
 
               {formError && (
-                <p className="text-xs text-red-500 font-medium">{formError}</p>
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs font-medium text-red-700 flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-red-500 mt-0.5" />
+                  <span className="leading-relaxed">{formError}</span>
+                </div>
               )}
 
               <div className="flex items-center justify-end gap-2 pt-1">
