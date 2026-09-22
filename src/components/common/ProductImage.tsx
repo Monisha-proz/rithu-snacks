@@ -32,23 +32,17 @@ export function SnackFallbackIllustration({
   return (
     <div
       className={cn(
-        "relative flex flex-col items-center justify-center overflow-hidden select-none bg-gradient-to-br from-[#FFF9F2] via-[#FFF1E5] to-[#FDE8D4] text-[#8B1D1D] p-4 text-center",
+        "relative flex flex-col items-center justify-center overflow-hidden select-none bg-gradient-to-br from-[#FFF9F2] via-[#FFF1E5] to-[#FDE8D4] text-[#8B1D1D] p-1.5 sm:p-2.5 text-center w-full h-full",
         className
       )}
       aria-label={title || "Authentic Snack"}
     >
       {/* Decorative background radial pattern */}
-      <div className="absolute inset-0 bg-[radial-gradient(#8B1D1D_0.75px,transparent_0.75px)] opacity-[0.07] [background-size:12px_12px]" />
-
-      {/* Decorative corner accents */}
-      <div className="absolute top-2 left-2 w-3 h-3 border-t-2 border-l-2 border-[#8B1D1D]/20 rounded-tl-sm pointer-events-none" />
-      <div className="absolute top-2 right-2 w-3 h-3 border-t-2 border-r-2 border-[#8B1D1D]/20 rounded-tr-sm pointer-events-none" />
-      <div className="absolute bottom-2 left-2 w-3 h-3 border-b-2 border-l-2 border-[#8B1D1D]/20 rounded-bl-sm pointer-events-none" />
-      <div className="absolute bottom-2 right-2 w-3 h-3 border-b-2 border-r-2 border-[#8B1D1D]/20 rounded-br-sm pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(#8B1D1D_0.75px,transparent_0.75px)] opacity-[0.06] [background-size:8px_8px]" />
 
       {/* Center Illustration */}
-      <div className="relative z-10 flex flex-col items-center justify-center max-w-[85%]">
-        <div className="w-16 h-16 md:w-20 md:h-20 mb-3 rounded-full bg-white/80 shadow-sm border border-[#8B1D1D]/15 flex items-center justify-center p-2.5 backdrop-blur-xs">
+      <div className="relative z-10 flex flex-col items-center justify-center max-w-full max-h-full">
+        <div className="w-7 h-7 sm:w-10 sm:h-10 md:w-14 md:h-14 rounded-full bg-white/90 shadow-2xs border border-[#8B1D1D]/15 flex items-center justify-center p-1 sm:p-2 backdrop-blur-xs flex-shrink-0">
           <svg
             viewBox="0 0 64 64"
             fill="none"
@@ -104,13 +98,15 @@ export function SnackFallbackIllustration({
           </svg>
         </div>
 
-        {/* Brand signature & label */}
-        <span className="font-serif font-bold text-sm md:text-base tracking-wide text-[#8B1D1D]">
-          Rithu&apos;s Snacks
+        {/* Brand signature & label (adaptive) */}
+        <span className="hidden sm:block font-serif font-bold text-[11px] md:text-sm tracking-wide text-[#8B1D1D] mt-1 line-clamp-1">
+          Rithu&apos;s
         </span>
-        <span className="text-[11px] md:text-xs text-[#8B1D1D]/70 font-medium mt-0.5 line-clamp-1">
-          {title || "Fresh & Handcrafted"}
-        </span>
+        {title && (
+          <span className="hidden md:block text-[10px] text-[#8B1D1D]/70 font-medium line-clamp-1">
+            {title}
+          </span>
+        )}
       </div>
     </div>
   );

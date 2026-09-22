@@ -36,6 +36,7 @@ const EMPTY_CART: CartResponse = {
   id: null,
   items: [],
   subtotal: 0,
+  originalSubtotal: 0,
   totalDiscount: 0,
   totalSavings: 0,
   total: 0,
@@ -126,7 +127,8 @@ async function formatCartResponse(
   return {
     id: cart.uuid || String(cart.id),
     items,
-    subtotal: pricing.subtotal,
+    subtotal: pricing.total,
+    originalSubtotal: pricing.subtotal,
     totalDiscount: pricing.totalDiscount,
     totalSavings: pricing.totalSavings,
     total: pricing.total,

@@ -9,6 +9,7 @@ export function useCreateBlog() {
 
   return useMutation({
     mutationFn: (data: Record<string, unknown>) => createBlog(data),
+    meta: { skipToast: true },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: blogKeys.all });
     },
@@ -21,6 +22,7 @@ export function useUpdateBlog() {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: Record<string, unknown> }) =>
       updateBlog(id, data),
+    meta: { skipToast: true },
     onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({ queryKey: blogKeys.all });
       queryClient.invalidateQueries({ queryKey: blogKeys.detail(variables.id) });
@@ -33,6 +35,7 @@ export function useDeleteBlog() {
 
   return useMutation({
     mutationFn: (id: number) => deleteBlog(id),
+    meta: { skipToast: true },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: blogKeys.all });
     },

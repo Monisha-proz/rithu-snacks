@@ -75,6 +75,7 @@ export function useCreateFaq() {
 
   return useMutation({
     mutationFn: (data: CreateFaqPayload) => faqApi.createFaq(data),
+    meta: { skipToast: true },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: FAQ_KEYS.all });
       toast.success("Success", result.message || "FAQ created successfully");
@@ -91,6 +92,7 @@ export function useUpdateFaq() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateFaqPayload }) =>
       faqApi.updateFaq(id, data),
+    meta: { skipToast: true },
     onSuccess: (result, variables) => {
       queryClient.invalidateQueries({ queryKey: FAQ_KEYS.all });
       queryClient.invalidateQueries({
@@ -109,6 +111,7 @@ export function useDeleteFaq() {
 
   return useMutation({
     mutationFn: (id: string) => faqApi.deleteFaq(id),
+    meta: { skipToast: true },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: FAQ_KEYS.all });
       toast.success("Success", result.message || "FAQ deleted successfully");
@@ -125,6 +128,7 @@ export function useUpdateFaqStatus() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateFaqStatusInput }) =>
       faqApi.updateFaqStatus(id, data),
+    meta: { skipToast: true },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: FAQ_KEYS.all });
       toast.success("Success", result.message || "FAQ status updated");
@@ -140,6 +144,7 @@ export function useUpdateFaqOrder() {
 
   return useMutation({
     mutationFn: (data: UpdateFaqOrderInput) => faqApi.updateFaqOrder(data),
+    meta: { skipToast: true },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: FAQ_KEYS.all });
       toast.success("Success", result.message || "FAQ order updated");

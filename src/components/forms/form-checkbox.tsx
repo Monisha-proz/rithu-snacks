@@ -7,28 +7,25 @@ interface FormCheckboxProps {
   name: string;
   label: string;
   description?: string;
+  className?: string;
 }
 
-function FormCheckbox({ name, label, description }: FormCheckboxProps) {
+function FormCheckbox({ name, label, description, className }: FormCheckboxProps) {
   const { control } = useFormContext();
 
   return (
     <Controller
       name={name}
       control={control}
-      render={({ field }) => (
-        <div className="space-y-1">
-          <Checkbox
-            label={label}
-            checked={field.value}
-            onChange={field.onChange}
-          />
-          {description && (
-            <p className="text-xs text-muted-foreground pl-6">
-              {description}
-            </p>
-          )}
-        </div>
+      render={({ field, fieldState }) => (
+        <Checkbox
+          label={label}
+          description={description}
+          checked={Boolean(field.value)}
+          onChange={field.onChange}
+          error={fieldState.error?.message}
+          className={className}
+        />
       )}
     />
   );

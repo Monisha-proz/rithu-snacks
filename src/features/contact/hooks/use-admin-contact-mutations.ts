@@ -23,6 +23,9 @@ export function useUpdateContactMessageStatus() {
     UpdateContactStatusVariables
   >({
     mutationFn: ({ uuid, status }) => updateContactMessageStatus(uuid, status),
+    meta: {
+      skipToast: true,
+    },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({
         queryKey: adminContactKeys.all,
@@ -65,6 +68,9 @@ export function useReplyContactMessage() {
     ReplyContactMessageVariables
   >({
     mutationFn: ({ uuid, message }) => replyContactMessage(uuid, message),
+    meta: {
+      skipToast: true,
+    },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({
         queryKey: adminContactKeys.all,

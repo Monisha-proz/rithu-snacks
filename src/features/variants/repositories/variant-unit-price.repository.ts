@@ -118,18 +118,21 @@ export const variantUnitPriceRepository = {
         data.base_price !== undefined && oldBasePrice !== newBasePrice;
 
       if (isBasePriceChanged) {
-        await tx.variant_price_history.create({
-          data: {
-            uuid: crypto.randomUUID(),
-            variant_unit_price_id: existing.id,
-            old_base_price: oldBasePrice,
-            new_base_price: newBasePrice,
-            changed_at: new Date(),
-            is_active: true,
-            created_by: adminId ?? null,
-            updated_by: adminId ?? null,
-          },
-        });
+        try {
+          await tx.variant_price_history.create({
+            data: {
+              uuid: crypto.randomUUID(),
+              variant_unit_price_id: existing.id,
+              old_base_price: oldBasePrice,
+              new_base_price: newBasePrice,
+              changed_at: new Date(),
+              is_active: true,
+              ...(adminId ? { created_by: adminId, updated_by: adminId } : {}),
+            },
+          });
+        } catch (historyErr) {
+          console.warn("Failed to create variant price history record:", historyErr);
+        }
       }
 
       const { stock, ...updateData } = data;
@@ -149,12 +152,11 @@ export const variantUnitPriceRepository = {
             quantity_available: stock,
             quantity_reserved: 0,
             is_active: true,
-            created_by: adminId ?? null,
-            updated_by: adminId ?? null,
+            ...(adminId ? { created_by: adminId, updated_by: adminId } : {}),
           },
           update: {
             quantity_available: stock,
-            updated_by: adminId ?? null,
+            ...(adminId ? { updated_by: adminId } : {}),
           },
         });
       }
@@ -200,18 +202,21 @@ export const variantUnitPriceRepository = {
           effectiveBasePrice !== undefined && oldBasePrice !== newBasePrice;
 
         if (isBasePriceChanged) {
-          await tx.variant_price_history.create({
-            data: {
-              uuid: crypto.randomUUID(),
-              variant_unit_price_id: existing.id,
-              old_base_price: oldBasePrice,
-              new_base_price: newBasePrice,
-              changed_at: new Date(),
-              is_active: true,
-              created_by: adminId ?? null,
-              updated_by: adminId ?? null,
-            },
-          });
+          try {
+            await tx.variant_price_history.create({
+              data: {
+                uuid: crypto.randomUUID(),
+                variant_unit_price_id: existing.id,
+                old_base_price: oldBasePrice,
+                new_base_price: newBasePrice,
+                changed_at: new Date(),
+                is_active: true,
+                ...(adminId ? { created_by: adminId, updated_by: adminId } : {}),
+              },
+            });
+          } catch (historyErr) {
+            console.warn("Failed to create variant price history record:", historyErr);
+          }
         }
 
         const updateData: Prisma.VariantUnitPriceUncheckedUpdateInput = {};
@@ -233,12 +238,11 @@ export const variantUnitPriceRepository = {
               quantity_available: item.stock,
               quantity_reserved: 0,
               is_active: true,
-              created_by: adminId ?? null,
-              updated_by: adminId ?? null,
+              ...(adminId ? { created_by: adminId, updated_by: adminId } : {}),
             },
             update: {
               quantity_available: item.stock,
-              updated_by: adminId ?? null,
+              ...(adminId ? { updated_by: adminId } : {}),
             },
           });
         }

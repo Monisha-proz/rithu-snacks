@@ -25,6 +25,7 @@ export function useUpdateCompany() {
 
   return useMutation({
     mutationFn: (data: UpdateCompanyInput) => companyApi.updateCompany(data),
+    meta: { skipToast: true },
     onSuccess: (updatedCompany) => {
       queryClient.setQueryData(companyKeys.all, updatedCompany);
       queryClient.invalidateQueries({ queryKey: companyKeys.all });
@@ -44,6 +45,7 @@ export function useUploadCompanyLogo() {
 
   return useMutation({
     mutationFn: (file: File) => companyApi.uploadLogo(file),
+    meta: { skipToast: true },
     onSuccess: (result) => {
       queryClient.setQueryData(companyKeys.all, result.company);
       queryClient.invalidateQueries({ queryKey: companyKeys.all });

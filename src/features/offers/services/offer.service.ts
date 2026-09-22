@@ -41,17 +41,9 @@ function parseEndsAt(value: Date | string): Date {
     date = new Date(`${value.trim()}T23:59:59.000Z`);
   } else {
     date = value instanceof Date ? new Date(value.getTime()) : new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      throw ApiError.badRequest("End date is not a valid date");
-    }
-    // Default same-day / midnight 00:00:00 end dates to end-of-day 23:59:59
-    if (
-      date.getUTCHours() === 0 &&
-      date.getUTCMinutes() === 0 &&
-      date.getUTCSeconds() === 0
-    ) {
-      date.setUTCHours(23, 59, 59, 0);
-    }
+  }
+  if (Number.isNaN(date.getTime())) {
+    throw ApiError.badRequest("End date is not a valid date");
   }
   return date;
 }

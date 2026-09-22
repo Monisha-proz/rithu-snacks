@@ -22,7 +22,7 @@ function CartSummary({
   onCheckout,
   isCheckingOut = false,
 }: CartSummaryProps) {
-  const freeShippingThreshold = 500;
+  const freeShippingThreshold = 499;
   const subtotal = Number(summary.subtotal || 0);
   const remainingForFreeShipping = Math.max(
     0,
@@ -69,21 +69,22 @@ function CartSummary({
         <div className="space-y-3 text-sm">
           <div className="flex justify-between">
             <span className="text-theme-text-subtle">
-              Subtotal ({summary.totalItems} items)
+              Subtotal ({summary.totalItems} {summary.totalItems === 1 ? "item" : "items"})
             </span>
             <span className="font-semibold text-theme-text-primary">
               {formatPrice(summary.subtotal)}
             </span>
           </div>
 
-          {summary.discount > 0 && (
-            <div className="flex justify-between text-theme-status-del-fg">
-              <span>Special Discount</span>
-              <span className="font-semibold">
-                -{formatPrice(summary.discount)}
+          {/* {summary.discount > 0 && (
+            <div className="flex items-center justify-between text-xs font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-2 rounded-xl border border-emerald-200 dark:border-emerald-800">
+              <span className="flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                <span>Total Savings</span>
               </span>
+              <span>You save {formatPrice(summary.discount)}</span>
             </div>
-          )}
+          )} */}
 
           {summary.tax > 0 && (
             <div className="flex justify-between text-theme-text-subtle">

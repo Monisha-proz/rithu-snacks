@@ -7,21 +7,22 @@ import { cn } from "@/lib/utils";
 export interface CheckboxProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> {
   label?: React.ReactNode;
+  description?: React.ReactNode;
   error?: string;
 }
 
 const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
-  ({ className, label, error, checked, onChange, id: customId, ...props }, ref) => {
+  ({ className, label, description, error, checked, onChange, id: customId, ...props }, ref) => {
     const generatedId = React.useId();
     const id = customId || generatedId;
 
     return (
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1 w-full">
         <label
           htmlFor={id}
-          className="inline-flex items-center gap-2.5 cursor-pointer select-none group"
+          className="inline-flex items-start gap-2.5 cursor-pointer select-none group w-full"
         >
-          <div className="relative flex items-center justify-center">
+          <div className="relative flex items-center justify-center mt-0.5 shrink-0">
             <input
               type="checkbox"
               id={id}
@@ -46,10 +47,19 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
             </div>
           </div>
 
-          {label && (
-            <span className="text-sm font-medium leading-none text-neutral-700 group-hover:text-neutral-900">
-              {label}
-            </span>
+          {(label || description) && (
+            <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+              {label && (
+                <span className="text-sm font-medium leading-tight text-neutral-800 group-hover:text-neutral-900">
+                  {label}
+                </span>
+              )}
+              {description && (
+                <p className="text-xs text-neutral-500 leading-normal">
+                  {description}
+                </p>
+              )}
+            </div>
           )}
         </label>
 

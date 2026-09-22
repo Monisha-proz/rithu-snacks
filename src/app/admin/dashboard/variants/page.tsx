@@ -1064,6 +1064,8 @@ export default function AdminVariantsPage() {
                 variantUuid={selectedVariant.id}
                 variantName={selectedVariant.variantName}
                 onFinish={() => {
+                  setIsEditOpen(false);
+                  setSelectedVariant(null);
                   refetch();
                 }}
               />

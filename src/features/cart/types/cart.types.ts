@@ -38,13 +38,15 @@ export interface CartItemResponse {
 export interface CartResponse {
   id: string | null; // Public Cart UUID
   items: CartItemResponse[];
-  /** Sum of the lines at catalog prices, before offers. */
+  /** Discounted subtotal of all items in cart (sum of line item totals) */
   subtotal: number;
+  /** Original sum of items at catalog base prices, before offers */
+  originalSubtotal?: number;
   /** Total offer discount across the cart. */
   totalDiscount: number;
   /** Same figure, named for the "you saved" line in the UI. */
   totalSavings: number;
-  /** Subtotal minus the discount; delivery and tax are added at checkout. */
+  /** Final items total after discounts (matches discounted subtotal). */
   total: number;
   totalItems: number;
 }
@@ -58,6 +60,7 @@ export interface CartCountResponse {
 
 export interface CartSummaryData {
   subtotal: number;
+  originalSubtotal?: number;
   discount: number;
   tax: number;
   shippingCharge: number;

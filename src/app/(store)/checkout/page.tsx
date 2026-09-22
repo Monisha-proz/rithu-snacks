@@ -257,7 +257,8 @@ export default function CheckoutPage() {
 
   // Pricing calculations
   const items = cart?.items || [];
-  const subtotal = Number(cart?.subtotal || 0);
+  const subtotal = Number(cart?.subtotal ?? cart?.total ?? 0);
+  const totalDiscount = Number(cart?.totalDiscount ?? cart?.totalSavings ?? 0);
   const isFreeDelivery = subtotal >= 499;
   const shippingCharge =
     deliveryMethod === "express" ? 99 : isFreeDelivery ? 0 : 49;
@@ -1069,6 +1070,18 @@ export default function CheckoutPage() {
                     {formatPrice(subtotal)}
                   </span>
                 </div>
+
+                {totalDiscount > 0 && (
+                  <div className="flex justify-between items-center text-xs font-medium text-emerald-600">
+                    <span className="flex items-center gap-1">
+                      <Sparkles className="h-3 w-3 text-emerald-500 shrink-0" />
+                      <span>Offer Savings</span>
+                    </span>
+                    <span className="font-semibold">
+                      -{formatPrice(totalDiscount)}
+                    </span>
+                  </div>
+                )}
 
                 <div className="flex justify-between text-theme-text-subtle items-center">
                   <span>Shipping & Handling</span>

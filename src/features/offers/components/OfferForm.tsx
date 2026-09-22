@@ -37,19 +37,40 @@ export interface OfferFormProps {
 }
 
 /** `<input type="date">` needs `yyyy-MM-dd`, not an ISO timestamp. */
-function toDateInputValue(value: string | null | undefined): string {
+function toDateInputValue(value: string | Date | null | undefined): string {
   if (!value) return "";
-  const date = new Date(value);
+  const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toISOString().slice(0, 10);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/** `<input type="time">` needs `HH:mm`. */
+function toTimeInputValue(
+  value: string | Date | null | undefined,
+  defaultTime = "00:00"
+): string {
+  if (!value) return defaultTime;
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return defaultTime;
+  const h = String(date.getHours()).padStart(2, "0");
+  const m = String(date.getMinutes()).padStart(2, "0");
+  return `${h}:${m}`;
 }
 
 function todayInputValue(): string {
-  return new Date().toISOString().slice(0, 10);
+  const date = new Date();
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
 function buildDefaults(offer?: OfferListItem | null): CreateOfferSchemaInput {
   if (!offer) {
+    const today = todayInputValue();
     return {
       name: "",
       code: "",
@@ -64,13 +85,20 @@ function buildDefaults(offer?: OfferListItem | null): CreateOfferSchemaInput {
       maxDiscountAmount: null,
       priority: "" as unknown as number,
       terms: "",
-      startsAt: todayInputValue(),
-      endsAt: todayInputValue(),
+      startDate: today,
+      startTime: "00:00",
+      endDate: today,
+      endTime: "23:59",
       isActive: true,
       productIds: [],
       itemIds: [],
     };
   }
+
+  const startDate = toDateInputValue(offer.startsAt) || todayInputValue();
+  const startTime = toTimeInputValue(offer.startsAt, "00:00");
+  const endDate = toDateInputValue(offer.endsAt) || todayInputValue();
+  const endTime = toTimeInputValue(offer.endsAt, "23:59");
 
   return {
     name: offer.name,
@@ -86,8 +114,10 @@ function buildDefaults(offer?: OfferListItem | null): CreateOfferSchemaInput {
     maxDiscountAmount: offer.maxDiscountAmount,
     priority: offer.priority,
     terms: offer.terms ?? "",
-    startsAt: toDateInputValue(offer.startsAt) || todayInputValue(),
-    endsAt: toDateInputValue(offer.endsAt) || todayInputValue(),
+    startDate,
+    startTime,
+    endDate,
+    endTime,
     isActive: offer.isActive,
     productIds: offer.products.map((p) => p.id),
     itemIds: offer.items.map((i) => i.id),
@@ -131,8 +161,23 @@ export function OfferForm({
   const maxDiscountAmount = useWatch({ control, name: "maxDiscountAmount" }) as number | null;
   const buyQuantity = useWatch({ control, name: "buyQuantity" }) as number | null;
   const getQuantity = useWatch({ control, name: "getQuantity" }) as number | null;
-  const startsAt = (useWatch({ control, name: "startsAt" }) ?? "") as string;
-  const endsAt = (useWatch({ control, name: "endsAt" }) ?? "") as string;
+  const startDate = (useWatch({ control, name: "startDate" }) ?? "") as string;
+  const startTime = (useWatch({ control, name: "startTime" }) ?? "") as string;
+  const endDate = (useWatch({ control, name: "endDate" }) ?? "") as string;
+  const endTime = (useWatch({ control, name: "endTime" }) ?? "") as string;
+
+  const previewStartsAt = React.useMemo(() => {
+    if (!startDate) return "";
+    const time = startTime || "00:00";
+    return `${startDate}T${time.length === 5 ? `${time}:00` : time}`;
+  }, [startDate, startTime]);
+
+  const previewEndsAt = React.useMemo(() => {
+    if (!endDate) return "";
+    const time = endTime || "23:59";
+    return `${endDate}T${time.length === 5 ? `${time}:59` : time}`;
+  }, [endDate, endTime]);
+
   const isActive = Boolean(useWatch({ control, name: "isActive" }));
 
   // The picker's own Category/Product dropdowns are navigation, not offer
@@ -192,10 +237,25 @@ export function OfferForm({
       ? (formState.errors.productIds?.message as string | undefined)
       : (formState.errors.itemIds?.message as string | undefined);
 
+  const handleFormSubmit = (data: CreateOfferSchemaInput) => {
+    const startsAt = data.startDate
+      ? `${data.startDate}T${data.startTime ? (data.startTime.length === 5 ? `${data.startTime}:00` : data.startTime) : "00:00:00"}`
+      : data.startsAt;
+    const endsAt = data.endDate
+      ? `${data.endDate}T${data.endTime ? (data.endTime.length === 5 ? `${data.endTime}:59` : data.endTime) : "23:59:59"}`
+      : data.endsAt;
+
+    return onSubmit({
+      ...data,
+      startsAt,
+      endsAt,
+    });
+  };
+
   return (
     <FormProvider {...methods}>
       <form
-        onSubmit={methods.handleSubmit(onSubmit)}
+        onSubmit={methods.handleSubmit(handleFormSubmit)}
         className="space-y-6"
         noValidate
       >
@@ -382,20 +442,53 @@ export function OfferForm({
         </section>
 
         {/* Schedule & priority ----------------------------------------- */}
-        <section className="grid gap-4 sm:grid-cols-3">
-          <FormInput name="startsAt" type="date" label="Start Date" required />
-          <FormInput name="endsAt" type="date" label="End Date" required />
-          <FormInput
-            name="priority"
-            type="number"
-            min={0}
-            max={1000}
-            step={1}
-            label="Priority"
-            placeholder="0"
-            required
-            description="Higher wins when two offers of the same level compete."
-          />
+        <section className="rounded-xl border border-neutral-200 bg-neutral-50/50 p-4 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+            <h3 className="text-sm font-semibold text-neutral-900">
+              Schedule &amp; Priority
+            </h3>
+            <span className="text-xs text-neutral-500">
+              Select date, start &amp; end time, and conflict priority
+            </span>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <FormInput
+              name="startDate"
+              type="date"
+              label="Start Date"
+              required
+            />
+            <FormInput
+              name="startTime"
+              type="time"
+              label="Start Time"
+              required
+            />
+            <FormInput
+              name="endDate"
+              type="date"
+              label="End Date"
+              required
+            />
+            <FormInput
+              name="endTime"
+              type="time"
+              label="End Time"
+              required
+            />
+            <FormInput
+              name="priority"
+              type="number"
+              min={0}
+              max={1000}
+              step={1}
+              label="Priority"
+              placeholder="0"
+              required
+              description="Higher wins on conflict."
+            />
+          </div>
         </section>
 
         {/* Terms & status ---------------------------------------------- */}
@@ -437,8 +530,8 @@ export function OfferForm({
           minQuantity={minQuantity}
           maxQuantity={maxQuantity}
           maxDiscountAmount={maxDiscountAmount}
-          startsAt={startsAt}
-          endsAt={endsAt}
+          startsAt={previewStartsAt}
+          endsAt={previewEndsAt}
           sampleItems={previewItems}
         />
 

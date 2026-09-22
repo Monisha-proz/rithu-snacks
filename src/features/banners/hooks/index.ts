@@ -75,6 +75,7 @@ export function useCreateBanner() {
 
   return useMutation({
     mutationFn: (data: CreateBannerPayload) => bannerApi.createBanner(data),
+    meta: { skipToast: true },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: BANNER_KEYS.all });
       toast.success("Success", result.message || "Banner created successfully");
@@ -91,6 +92,7 @@ export function useUpdateBanner() {
   return useMutation({
     mutationFn: ({ uuid, data }: { uuid: string; data: UpdateBannerPayload }) =>
       bannerApi.updateBanner(uuid, data),
+    meta: { skipToast: true },
     onSuccess: (result, variables) => {
       queryClient.invalidateQueries({ queryKey: BANNER_KEYS.all });
       queryClient.invalidateQueries({
@@ -109,6 +111,7 @@ export function useDeleteBanner() {
 
   return useMutation({
     mutationFn: (uuid: string) => bannerApi.deleteBanner(uuid),
+    meta: { skipToast: true },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: BANNER_KEYS.all });
       toast.success("Success", result.message || "Banner deleted successfully");

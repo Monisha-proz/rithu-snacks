@@ -88,36 +88,53 @@ export function offerValueFieldLabel(type: OfferType): string {
 }
 
 /**
- * Format a single offer date cleanly in UTC so date-only values (e.g. 2026-09-16)
- * do not shift into next day across timezones.
+ * Format a single offer date cleanly, including time when specified.
  */
-export function formatOfferDate(value: string | Date | null | undefined): string {
+export function formatOfferDate(
+  value: string | Date | null | undefined,
+  includeTime = true
+): string {
   if (!value) return "—";
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleDateString("en-IN", {
+
+  const formattedDate = date.toLocaleDateString("en-IN", {
     day: "numeric",
     month: "short",
     year: "numeric",
-    timeZone: "UTC",
   });
+
+  if (includeTime) {
+    const formattedTime = date.toLocaleTimeString("en-IN", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+    return `${formattedDate}, ${formattedTime}`;
+  }
+
+  return formattedDate;
 }
 
 /**
- * Formats offer validity range. If the offer is for a single day, shows only that date.
- * E.g., "16 Sept 2026" instead of "16 Sept 2026 — 16 Sept 2026".
- * If multiple days, shows "16 Sept 2026 — 20 Sept 2026".
+ * Formats offer validity range with start date, end date, and their times.
  */
 export function formatOfferValidity(
   startsAt: string | Date | null | undefined,
-  endsAt: string | Date | null | undefined
+  endsAt: string | Date | null | undefined,
+  includeTime = true
 ): string {
   if (!startsAt && !endsAt) return "—";
-  if (!startsAt) return `Until ${formatOfferDate(endsAt)}`;
-  if (!endsAt) return `From ${formatOfferDate(startsAt)}`;
+  if (!startsAt) return `Until ${formatOfferDate(endsAt, includeTime)}`;
+  if (!endsAt) return `From ${formatOfferDate(startsAt, includeTime)}`;
 
-  const startFormatted = formatOfferDate(startsAt);
-  const endFormatted = formatOfferDate(endsAt);
+  const startDate = startsAt instanceof Date ? startsAt : new Date(startsAt);
+  const endDate = endsAt instanceof Date ? endsAt : new Date(endsAt);
+
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return "—";
+
+  const startFormatted = formatOfferDate(startDate, includeTime);
+  const endFormatted = formatOfferDate(endDate, includeTime);
 
   if (startFormatted === endFormatted) {
     return startFormatted;

@@ -17,23 +17,56 @@ import { IconButton } from "@/components/storefront/buttons/IconButton";
 import { ContactFormModal } from "@/features/contact/components/ContactFormModal";
 import { useCustomerCompany } from "@/features/customers/hooks/use-customer-company";
 import { getImageUrl } from "@/lib/utils";
+import { toast } from "@/components/ui/Toast";
+import { Loader2 } from "lucide-react";
 
 export function Footer() {
   const router = useRouter();
   const [email, setEmail] = React.useState("");
   const [isSubscribed, setIsSubscribed] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = React.useState(false);
 
   const { data: company } = useCustomerCompany();
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email.trim()) {
+    const cleanEmail = email.trim();
+    if (!cleanEmail) return;
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      toast.error("Invalid Email", "Please enter a valid email address.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: cleanEmail }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Failed to subscribe. Please try again.");
+      }
+
       setIsSubscribed(true);
+      setEmail("");
+      toast.success("Subscription is done!");
+
       setTimeout(() => {
-        setEmail("");
         setIsSubscribed(false);
-      }, 3000);
+      }, 6000);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to subscribe. Please try again.";
+      toast.error("Subscription Error", msg);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -252,8 +285,8 @@ export function Footer() {
               </p>
 
               {isSubscribed ? (
-                <div className="mt-8 py-2 text-sm text-amber-300 font-medium header-font">
-                  ✓ Thank you for subscribing!
+                <div className="mt-8 py-2.5 px-3 bg-amber-400/10 border border-amber-300/30 rounded-lg text-xs sm:text-sm text-amber-300 font-medium header-font flex items-center gap-2 animate-in fade-in duration-200">
+                  <span>✓ Subscription is done! Thank you for subscribing.</span>
                 </div>
               ) : (
                 <form
@@ -264,16 +297,25 @@ export function Footer() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    disabled={isSubmitting}
                     placeholder="Enter Your Email"
-                    className="flex-1 bg-transparent outline-hidden text-white placeholder:text-gray-300 text-sm"
+                    className="flex-1 bg-transparent outline-hidden text-white placeholder:text-gray-300 text-sm disabled:opacity-60"
                   />
 
                   {email.trim() ? (
                     <button
                       type="submit"
-                      className="bg-[var(--brown-600)] text-white px-4 py-1 rounded-md text-sm transition-all duration-300 hover:bg-[var(--brown-500)] cursor-pointer"
+                      disabled={isSubmitting}
+                      className="bg-[var(--brown-600)] text-white px-4 py-1 rounded-md text-sm transition-all duration-300 hover:bg-[var(--brown-500)] cursor-pointer disabled:opacity-60 flex items-center gap-1.5 shrink-0"
                     >
-                      Submit
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Sending...</span>
+                        </>
+                      ) : (
+                        <span>Submit</span>
+                      )}
                     </button>
                   ) : (
                     <Image
@@ -362,7 +404,7 @@ export function Footer() {
               href="https://proz.in/"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:underline hover:text-white transition-colors cursor-pointer"
+              className="inline-block cursor-pointer select-none transition-all duration-200 hover:text-amber-300 hover:translate-x-1.5"
             >
               ProZ Solutions LLP
             </a>

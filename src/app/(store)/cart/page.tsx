@@ -142,21 +142,34 @@ export default function CartPage() {
 
   const subtotal = Number(
     cart?.subtotal ??
+      cart?.total ??
       items.reduce((sum: number, it: any) => {
         const qty = Math.max(1, Number(it.quantity || 1));
         const price = Number(
-          it.price ?? it.currentPrice ?? it.priceAtAdd ?? it.salePrice ?? 0
+          it.price ??
+            it.currentPrice ??
+            it.salePrice ??
+            (it.itemTotal ? Number(it.itemTotal) / qty : it.priceAtAdd ?? it.basePrice ?? 0)
         );
-        return sum + (it.itemTotal ? Number(it.itemTotal) : price * qty);
+        return sum + (it.itemTotal != null ? Number(it.itemTotal) : price * qty);
       }, 0)
   );
 
+  const totalDiscount = Number(cart?.totalDiscount ?? cart?.totalSavings ?? 0);
+  const originalSubtotal = Number(cart?.originalSubtotal ?? (subtotal + totalDiscount));
+
+  const freeDeliveryThreshold = 499;
+  const isFreeDelivery = subtotal >= freeDeliveryThreshold || subtotal === 0;
+  const shippingCharge = isFreeDelivery ? 0 : 49;
+  const grandTotal = subtotal + shippingCharge;
+
   const summary = {
     subtotal,
-    discount: 0,
+    originalSubtotal,
+    discount: totalDiscount,
     tax: 0,
-    shippingCharge: subtotal >= 500 || subtotal === 0 ? 0 : 40,
-    grandTotal: subtotal + (subtotal >= 500 || subtotal === 0 ? 0 : 40),
+    shippingCharge,
+    grandTotal,
     totalItems: totalItemsCount,
   };
 

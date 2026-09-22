@@ -2,8 +2,8 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Check, Package, X, Loader2 } from "lucide-react";
-import { formatPrice } from "@/lib/utils";
+import { Check, Package, X } from "lucide-react";
+import { formatPrice, getImageUrl } from "@/lib/utils";
 import type { OrderDetailResponse } from "@/features/orders/types";
 import { useCustomerOrders, useCancelCustomerOrder } from "../../hooks/use-customer-orders";
 import { useAddToCartMutation } from "../../hooks/use-customer-cart";
@@ -354,36 +354,45 @@ export function OrdersTab({
                 {/* Ordered Items List */}
                 <div className="px-5 py-4 flex flex-col divide-y divide-theme-border-subtle">
                   {order.items && order.items.length > 0 ? (
-                    order.items.map((it, idx) => (
-                      <div key={idx} className="flex items-center gap-3.5 py-2.5 first:pt-0 last:pb-0">
-                        <div className="w-12 h-12 rounded-lg flex-shrink-0 overflow-hidden border border-theme-border-subtle">
-                          <ProductImage
-                            src={(it as any).image || (it as any).productImage || null}
-                            alt={it.productName || "Snack"}
-                            fallbackText={it.productName || "Snack"}
-                            containerClassName="w-full h-full"
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs sm:text-sm font-semibold text-theme-text-primary truncate">
-                            {it.productName || "Snack Item"}
+                    order.items.map((it, idx) => {
+                      const itemImg =
+                        it.primaryImage ||
+                        (it as { image?: string; productImage?: string; imageUrl?: string }).image ||
+                        (it as { image?: string; productImage?: string; imageUrl?: string }).productImage ||
+                        (it as { image?: string; productImage?: string; imageUrl?: string }).imageUrl ||
+                        null;
+
+                      return (
+                        <div key={idx} className="flex items-center gap-3.5 py-3 first:pt-0 last:pb-0">
+                          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl flex-shrink-0 overflow-hidden border border-theme-border-subtle bg-theme-surface-alt shadow-2xs">
+                            <ProductImage
+                              src={itemImg ? getImageUrl(itemImg) : null}
+                              alt={it.productName || "Snack"}
+                              fallbackText={it.productName || "Snack"}
+                              containerClassName="w-full h-full"
+                              className="w-full h-full object-cover"
+                            />
                           </div>
-                          <div className="text-[11px] text-theme-text-muted mt-0.5 flex items-center gap-2">
-                            {it.quantity && <span>Qty: {it.quantity}</span>}
-                            {it.variantName && (
-                              <>
-                                <span className="w-1 h-1 rounded-full bg-theme-border inline-block" />
-                                <span>{it.variantName}</span>
-                              </>
-                            )}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs sm:text-sm font-semibold text-theme-text-primary truncate">
+                              {it.productName || "Snack Item"}
+                            </div>
+                            <div className="text-[11px] text-theme-text-muted mt-0.5 flex items-center gap-2">
+                              {it.quantity && <span>Qty: {it.quantity}</span>}
+                              {it.variantName && (
+                                <>
+                                  <span className="w-1 h-1 rounded-full bg-theme-border inline-block" />
+                                  <span>{it.variantName}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-xs sm:text-sm font-bold text-theme-primary flex-shrink-0">
+                            {formatPrice(it.totalPrice ?? it.unitPrice ?? 0)}
                           </div>
                         </div>
-                        <div className="text-xs sm:text-sm font-bold text-theme-primary flex-shrink-0">
-                          {formatPrice(it.totalPrice ?? it.unitPrice ?? 0)}
-                        </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <div className="text-xs text-theme-text-muted py-3">
                       Order details available in invoice.
@@ -510,12 +519,6 @@ export function OrdersTab({
                 : isCancelled
                 ? "Cancelled"
                 : "Delivered";
-
-              const finalStepStage = isReturned
-                ? "Store"
-                : isCancelled
-                ? "Order"
-                : "Staff";
 
               const finalStepDesc = isDelivered
                 ? "Delivered successfully"
@@ -645,25 +648,34 @@ export function OrdersTab({
                 Order Items ({trackingOrder.items?.length || 0})
               </div>
               <div className="max-h-44 overflow-y-auto space-y-1 pr-1">
-                {trackingOrder.items?.map((it, idx) => (
-                  <div key={idx} className="flex items-center gap-3 py-2 border-b border-theme-border-subtle last:border-0">
-                    <div className="w-9 h-9 rounded-lg overflow-hidden border border-theme-border-subtle flex-shrink-0">
-                      <ProductImage
-                        src={(it as any).image || (it as any).productImage || null}
-                        alt={it.productName || "Snack"}
-                        fallbackText={it.productName}
-                        containerClassName="w-full h-full"
-                        className="w-full h-full object-cover"
-                      />
+                {trackingOrder.items?.map((it, idx) => {
+                  const itemImg =
+                    it.primaryImage ||
+                    (it as { image?: string; productImage?: string; imageUrl?: string }).image ||
+                    (it as { image?: string; productImage?: string; imageUrl?: string }).productImage ||
+                    (it as { image?: string; productImage?: string; imageUrl?: string }).imageUrl ||
+                    null;
+
+                  return (
+                    <div key={idx} className="flex items-center gap-3 py-2 border-b border-theme-border-subtle last:border-0">
+                      <div className="w-12 h-12 rounded-xl overflow-hidden border border-theme-border-subtle bg-theme-surface-alt flex-shrink-0">
+                        <ProductImage
+                          src={itemImg ? getImageUrl(itemImg) : null}
+                          alt={it.productName || "Snack"}
+                          fallbackText={it.productName}
+                          containerClassName="w-full h-full"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <span className="text-xs text-theme-text-primary font-medium flex-1 truncate">
+                        {it.productName} {it.variantName ? `(${it.variantName})` : ""} × {it.quantity}
+                      </span>
+                      <span className="font-semibold text-xs text-theme-primary flex-shrink-0">
+                        {formatPrice(it.totalPrice ?? it.unitPrice ?? 0)}
+                      </span>
                     </div>
-                    <span className="text-xs text-theme-text-primary font-medium flex-1 truncate">
-                      {it.productName} {it.variantName ? `(${it.variantName})` : ""} × {it.quantity}
-                    </span>
-                    <span className="font-semibold text-xs text-theme-primary flex-shrink-0">
-                      {formatPrice(it.totalPrice ?? it.unitPrice ?? 0)}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
