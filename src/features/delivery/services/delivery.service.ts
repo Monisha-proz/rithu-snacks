@@ -8,6 +8,7 @@ import type {
   StaffDeliveryListInput,
   MarkDeliveredInput,
   MarkFailedInput,
+  RejectDeliveryInput,
 } from "../validations/delivery.schema";
 import type {
   AdminDeliveryOrderItem,
@@ -175,6 +176,12 @@ export const deliveryService = {
     let shipment;
 
     if (activeShipment) {
+      if (activeShipment.assignment_status === "accepted") {
+        throw ApiError.badRequest(
+          `Cannot reassign delivery staff. Order has already been accepted by ${activeShipment.delivery_staff?.name || "the assigned staff"}.`
+        );
+      }
+
       shipment = await deliveryRepository.reassignShipmentTransaction({
         shipmentId: activeShipment.id,
         staffId: staff.id,
@@ -402,6 +409,61 @@ export const deliveryService = {
       status: updated.status,
       assignmentStatus: updated.assignment_status || "accepted",
       acceptedAt: updated.accepted_at,
+    };
+  },
+
+  async rejectDelivery(
+    sessionUserId: string,
+    uuid: string,
+    input: RejectDeliveryInput
+  ) {
+    const staffUser = await userRepository.findById(sessionUserId);
+    if (!staffUser || !staffUser.internalId) {
+      throw ApiError.unauthorized("Staff member not found");
+    }
+
+    const shipment = await deliveryRepository.findStaffDeliveryByUuid(
+      uuid,
+      staffUser.internalId
+    );
+
+    if (!shipment) {
+      const anyShipment = await deliveryRepository.findShipmentByUuidOnly(uuid);
+      if (anyShipment) {
+        throw ApiError.forbidden("You do not have access to this delivery");
+      }
+      throw ApiError.notFound("Delivery not found");
+    }
+
+    if (shipment.assignment_status === "accepted" || shipment.status === "picked_up") {
+      throw ApiError.badRequest(
+        "Cannot reject a delivery assignment that has already been accepted"
+      );
+    }
+
+    if (shipment.assignment_status === "rejected") {
+      throw ApiError.badRequest("Delivery assignment has already been rejected");
+    }
+
+    if (shipment.assignment_status !== "pending") {
+      throw ApiError.badRequest(
+        `Delivery cannot be rejected in '${shipment.assignment_status}' assignment state`
+      );
+    }
+
+    const updated = await deliveryRepository.rejectDeliveryTransaction({
+      shipmentId: shipment.id,
+      orderId: shipment.orders.id,
+      staffInternalId: staffUser.internalId,
+      reason: input.reason,
+      note: input.note,
+    });
+
+    return {
+      id: updated.uuid || String(updated.id),
+      status: updated.status,
+      assignmentStatus: updated.assignment_status || "rejected",
+      reason: input.reason,
     };
   },
 

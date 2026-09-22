@@ -7,6 +7,7 @@ import {
   Truck,
   CheckCircle2,
   Check,
+  XCircle,
   Phone,
   MessageSquare,
   Clock,
@@ -32,6 +33,7 @@ import { DeliveryStatsCards } from "./DeliveryStatsCards";
 import { DeliveryStatusTabs } from "./DeliveryStatusTabs";
 import { StaffDeliveryDetailModal } from "./StaffDeliveryDetailModal";
 import { MarkDeliveredModal } from "./MarkDeliveredModal";
+import { RejectDeliveryModal } from "./RejectDeliveryModal";
 import type { StaffDeliveryListItem } from "../types/delivery.types";
 
 interface StaffDeliveryListTableProps {
@@ -48,6 +50,11 @@ export function StaffDeliveryListTable({
 
   const [viewShipmentId, setViewShipmentId] = useState<string | null>(null);
   const [deliverShipment, setDeliverShipment] = useState<{
+    id: string;
+    orderNumber: string;
+    customerName: string;
+  } | null>(null);
+  const [rejectShipment, setRejectShipment] = useState<{
     id: string;
     orderNumber: string;
     customerName: string;
@@ -238,16 +245,16 @@ export function StaffDeliveryListTable({
     {
       accessorKey: "status",
       header: "Delivery Status",
-      cell: ({ row }) => (
-        <div className="space-y-1">
-          <DeliveryStatusBadge status={row.original.status} />
-          {row.original.assignmentStatus === "pending" && (
-            <div>
-              <AssignmentStatusBadge status="pending" />
-            </div>
-          )}
-        </div>
-      ),
+      cell: ({ row }) => {
+        const assignmentStatus = (row.original.assignmentStatus || "").toLowerCase();
+        if (assignmentStatus === "pending") {
+          return <AssignmentStatusBadge status="pending" />;
+        }
+        if (assignmentStatus === "rejected") {
+          return <AssignmentStatusBadge status="rejected" />;
+        }
+        return <DeliveryStatusBadge status={row.original.status} />;
+      },
     },
     {
       id: "actions",
@@ -266,18 +273,36 @@ export function StaffDeliveryListTable({
 
         return (
           <div className="flex items-center justify-center gap-1.5">
-            {/* Quick 1-click Accept */}
+            {/* Quick 1-click Accept & Reject */}
             {isPending && (
-              <button
-                type="button"
-                onClick={() => handleAccept(row.original.id)}
-                disabled={isTransitionPending}
-                title="Accept Delivery"
-                className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg border border-amber-300 bg-amber-50 text-xs font-semibold text-amber-800 hover:bg-amber-100 transition-all cursor-pointer shadow-2xs"
-              >
-                <Check className="h-3.5 w-3.5" />
-                <span>Accept</span>
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleAccept(row.original.id)}
+                  disabled={isTransitionPending}
+                  title="Accept Delivery"
+                  className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg border border-amber-300 bg-amber-50 text-xs font-semibold text-amber-800 hover:bg-amber-100 transition-all cursor-pointer shadow-2xs"
+                >
+                  <Check className="h-3.5 w-3.5" />
+                  <span>Accept</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setRejectShipment({
+                      id: row.original.id,
+                      orderNumber: row.original.order?.orderNumber || "",
+                      customerName: row.original.customer?.name || "",
+                    })
+                  }
+                  disabled={isTransitionPending}
+                  title="Decline / Reject Delivery"
+                  className="inline-flex items-center gap-1 h-8 px-2 rounded-lg border border-rose-200 bg-rose-50 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition-all cursor-pointer shadow-2xs"
+                >
+                  <XCircle className="h-3.5 w-3.5" />
+                  <span>Reject</span>
+                </button>
+              </>
             )}
 
             {/* Quick 1-click Out for Delivery */}
@@ -441,6 +466,16 @@ export function StaffDeliveryListTable({
         shipmentId={deliverShipment?.id ?? null}
         orderNumber={deliverShipment?.orderNumber}
         customerName={deliverShipment?.customerName}
+        onSuccess={() => refetch()}
+      />
+
+      {/* Reject Delivery Modal */}
+      <RejectDeliveryModal
+        isOpen={Boolean(rejectShipment)}
+        onClose={() => setRejectShipment(null)}
+        shipmentId={rejectShipment?.id ?? null}
+        orderNumber={rejectShipment?.orderNumber}
+        customerName={rejectShipment?.customerName}
         onSuccess={() => refetch()}
       />
     </div>

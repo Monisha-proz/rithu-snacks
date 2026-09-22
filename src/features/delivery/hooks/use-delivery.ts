@@ -7,6 +7,7 @@ import {
   getStaffDeliveryByUuid,
   getStaffDeliveriesCount,
   acceptDelivery,
+  rejectDelivery,
   markOutForDelivery,
   markDelivered,
   markFailed,
@@ -18,6 +19,7 @@ import type {
   StaffDeliveryListInput,
   MarkDeliveredInput,
   MarkFailedInput,
+  RejectDeliveryInput,
   AdminDeliveryOrdersListInput,
   AdminDeliveryStaffListInput,
   AssignDeliveryInput,
@@ -92,6 +94,29 @@ export function useAcceptDelivery() {
     onSuccess: (_result, uuid) => {
       queryClient.invalidateQueries({ queryKey: deliveryKeys.all });
       queryClient.invalidateQueries({ queryKey: deliveryKeys.detail(uuid) });
+      queryClient.invalidateQueries({ queryKey: orderKeys.all });
+      queryClient.invalidateQueries({ queryKey: adminOrderKeys.all });
+    },
+  });
+}
+
+export function useRejectDelivery() {
+  const queryClient = useQueryClient();
+
+  return useMutation<{
+    id: string;
+    status: string;
+    assignmentStatus: string;
+    reason: string;
+  }, Error, { uuid: string; data: RejectDeliveryInput }>({
+    mutationFn: ({ uuid, data }) => rejectDelivery(uuid, data),
+    meta: {
+      successMessage: "Delivery assignment rejected.",
+      errorMessage: "Failed to reject delivery",
+    },
+    onSuccess: (_result, variables) => {
+      queryClient.invalidateQueries({ queryKey: deliveryKeys.all });
+      queryClient.invalidateQueries({ queryKey: deliveryKeys.detail(variables.uuid) });
       queryClient.invalidateQueries({ queryKey: orderKeys.all });
       queryClient.invalidateQueries({ queryKey: adminOrderKeys.all });
     },

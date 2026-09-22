@@ -141,16 +141,16 @@ export function StaffDeliveryDetailModal({
             </div>
 
             <div className="flex flex-col items-end gap-1.5">
-              <div className="flex items-center gap-1.5">
-                <DeliveryStatusBadge status={delivery?.status} />
-              </div>
-              <div className="text-[11px] text-neutral-300">
-                Assignment:{" "}
-                <AssignmentStatusBadge
-                  status={delivery?.assignmentStatus}
-                  className="ml-1"
-                />
-              </div>
+              {(() => {
+                const assignmentStatus = (delivery?.assignmentStatus || "").toLowerCase();
+                if (assignmentStatus === "pending") {
+                  return <AssignmentStatusBadge status="pending" />;
+                }
+                if (assignmentStatus === "rejected") {
+                  return <AssignmentStatusBadge status="rejected" />;
+                }
+                return <DeliveryStatusBadge status={delivery?.status} />;
+              })()}
             </div>
           </div>
         </div>

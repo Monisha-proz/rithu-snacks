@@ -12,6 +12,7 @@ import type {
   StaffDeliveryListInput,
   MarkDeliveredInput,
   MarkFailedInput,
+  RejectDeliveryInput,
   AdminDeliveryOrdersListInput,
   AdminDeliveryStaffListInput,
   AssignDeliveryInput,
@@ -121,6 +122,33 @@ export async function acceptDelivery(
 
   if (!response.data) {
     throw new Error(response.message || "Failed to accept delivery");
+  }
+
+  return response.data;
+}
+
+/**
+ * Reject delivery assignment by staff.
+ * Postman: POST /api/staff/deliveries/:uuid/reject
+ */
+export async function rejectDelivery(
+  uuid: string,
+  input: RejectDeliveryInput
+): Promise<{
+  id: string;
+  status: string;
+  assignmentStatus: string;
+  reason: string;
+}> {
+  const response = await apiClient.post<{
+    id: string;
+    status: string;
+    assignmentStatus: string;
+    reason: string;
+  }>(`/api/staff/deliveries/${encodeURIComponent(uuid)}/reject`, input);
+
+  if (!response.data) {
+    throw new Error(response.message || "Failed to reject delivery");
   }
 
   return response.data;

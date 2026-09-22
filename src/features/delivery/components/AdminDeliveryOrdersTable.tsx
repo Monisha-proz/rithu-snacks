@@ -164,16 +164,15 @@ export function AdminDeliveryOrdersTable() {
           );
         }
 
-        return (
-          <div className="space-y-1">
-            <DeliveryStatusBadge status={shipment.status} />
-            {shipment.assignmentStatus === "pending" && (
-              <div>
-                <AssignmentStatusBadge status="pending" />
-              </div>
-            )}
-          </div>
-        );
+        const assignmentStatus = (shipment.assignmentStatus || "").toLowerCase();
+        if (assignmentStatus === "pending") {
+          return <AssignmentStatusBadge status="pending" />;
+        }
+        if (assignmentStatus === "rejected") {
+          return <AssignmentStatusBadge status="rejected" />;
+        }
+
+        return <DeliveryStatusBadge status={shipment.status} />;
       },
     },
     {
@@ -181,11 +180,17 @@ export function AdminDeliveryOrdersTable() {
       header: "Actions",
       cell: ({ row }) => {
         const isPacked = row.original.orderStatus === "packed";
-        const hasActiveShipment = Boolean(row.original.shipment);
+        const shipment = row.original.shipment;
+        const assignmentStatus = (shipment?.assignmentStatus || "pending").toLowerCase();
+        const hasStaff = Boolean(shipment?.deliveryStaff);
+
+        const canAssign = isPacked && (!shipment || !hasStaff);
+        const canChange = isPacked && hasStaff && assignmentStatus === "pending";
+        const canReassign = isPacked && hasStaff && assignmentStatus === "rejected";
 
         return (
           <div className="flex items-center justify-center gap-1.5">
-            {isPacked && !hasActiveShipment && (
+            {canAssign && (
               <button
                 type="button"
                 onClick={() =>
@@ -199,6 +204,40 @@ export function AdminDeliveryOrdersTable() {
               >
                 <UserCheck className="h-3.5 w-3.5" />
                 <span>Assign</span>
+              </button>
+            )}
+
+            {canChange && (
+              <button
+                type="button"
+                onClick={() =>
+                  setAssignModalOrder({
+                    id: row.original.id,
+                    orderNumber: row.original.orderNumber,
+                  })
+                }
+                title="Change Delivery Staff (Before acceptance)"
+                className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg border border-amber-600 bg-amber-600 text-xs font-semibold text-white hover:bg-amber-700 transition-all cursor-pointer shadow-xs"
+              >
+                <UserCheck className="h-3.5 w-3.5" />
+                <span>Change</span>
+              </button>
+            )}
+
+            {canReassign && (
+              <button
+                type="button"
+                onClick={() =>
+                  setAssignModalOrder({
+                    id: row.original.id,
+                    orderNumber: row.original.orderNumber,
+                  })
+                }
+                title="Reassign Delivery Staff (Previous staff declined)"
+                className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg border border-rose-600 bg-rose-600 text-xs font-semibold text-white hover:bg-rose-700 transition-all cursor-pointer shadow-xs"
+              >
+                <UserCheck className="h-3.5 w-3.5" />
+                <span>Reassign</span>
               </button>
             )}
           </div>

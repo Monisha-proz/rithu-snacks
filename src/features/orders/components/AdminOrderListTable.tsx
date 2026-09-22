@@ -13,6 +13,9 @@ import {
   ArrowRight,
   Truck,
   Package,
+  Check,
+  Clock,
+  AlertCircle,
 } from "lucide-react";
 import { DataTable } from "@/components/admin/data-table/DataTable";
 import { LoadingState } from "@/components/ui/loading-state";
@@ -192,6 +195,7 @@ export function AdminOrderListTable({
         const staff = delivery?.staff;
         const isAssigned = delivery?.isAssigned && !!staff;
         const orderStatus = (row.original.status || "").toLowerCase();
+        const assignmentStatus = (delivery?.assignmentStatus || "pending").toLowerCase();
 
         if (!isAssigned || !staff) {
           return (
@@ -220,36 +224,99 @@ export function AdminOrderListTable({
         }
 
         const initial = staff.name.charAt(0).toUpperCase();
+        const isAccepted = assignmentStatus === "accepted";
+        const isRejected = assignmentStatus === "rejected";
+        const isPending = !isAccepted && !isRejected;
 
         return (
-          <div className="flex items-center justify-between gap-2 max-w-[190px]">
+          <div className="flex items-center justify-between gap-2 max-w-[210px]">
             <div className="flex items-center gap-2 min-w-0">
-              <div className="grid h-7 w-7 place-items-center rounded-full bg-secondary-600 text-white text-xs font-bold shrink-0">
+              <div
+                className={cn(
+                  "grid h-7 w-7 place-items-center rounded-full text-white text-xs font-bold shrink-0",
+                  isAccepted
+                    ? "bg-emerald-600"
+                    : isRejected
+                    ? "bg-rose-500"
+                    : "bg-secondary-600"
+                )}
+              >
                 {initial}
               </div>
               <div className="min-w-0 leading-tight">
-                <div className="font-semibold text-xs text-neutral-900 truncate">
-                  {staff.name}
+                <div className="flex items-center gap-1 truncate">
+                  <span
+                    className={cn(
+                      "font-semibold text-xs truncate",
+                      isRejected ? "text-neutral-500 line-through" : "text-neutral-900"
+                    )}
+                  >
+                    {staff.name}
+                  </span>
                 </div>
-                <div className="text-[10.5px] text-neutral-500 font-mono truncate">
-                  {staff.phone || staff.email || "Staff"}
+
+                <div className="flex items-center gap-1 mt-0.5">
+                  {isAccepted && (
+                    <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded">
+                      <Check className="h-2.5 w-2.5" />
+                      Accepted
+                    </span>
+                  )}
+                  {isPending && (
+                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded">
+                      <Clock className="h-2.5 w-2.5" />
+                      Pending
+                    </span>
+                  )}
+                  {isRejected && (
+                    <span
+                      className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.2 rounded"
+                      title={delivery?.deliveryNotes || "Rejected by staff"}
+                    >
+                      <AlertCircle className="h-2.5 w-2.5" />
+                      Rejected
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
+
             {orderStatus === "packed" && (
-              <button
-                type="button"
-                onClick={() =>
-                  setAssignStaffOrder({
-                    id: row.original.id,
-                    orderNumber: row.original.orderNumber,
-                  })
-                }
-                title="Change / Reassign Delivery Staff"
-                className="text-[11px] font-semibold text-secondary-600 hover:underline cursor-pointer shrink-0"
-              >
-                Change
-              </button>
+              <>
+                {/* Allowed to change only before staff acceptance */}
+                {isPending && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setAssignStaffOrder({
+                        id: row.original.id,
+                        orderNumber: row.original.orderNumber,
+                      })
+                    }
+                    title="Change / Reassign Delivery Staff"
+                    className="text-[11px] font-semibold text-secondary-600 hover:underline cursor-pointer shrink-0"
+                  >
+                    Change
+                  </button>
+                )}
+
+                {/* If rejected, allow reassigning new staff */}
+                {isRejected && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setAssignStaffOrder({
+                        id: row.original.id,
+                        orderNumber: row.original.orderNumber,
+                      })
+                    }
+                    title="Reassign a new Delivery Staff member"
+                    className="text-[11px] font-bold text-rose-700 hover:underline cursor-pointer shrink-0"
+                  >
+                    Reassign
+                  </button>
+                )}
+              </>
             )}
           </div>
         );
@@ -344,29 +411,38 @@ export function AdminOrderListTable({
             )}
 
             {orderStatus === "packed" && (
-              <button
-                type="button"
-                onClick={() =>
-                  setAssignStaffOrder({
-                    id: row.original.id,
-                    orderNumber: row.original.orderNumber,
-                  })
-                }
-                title={
-                  row.original.delivery?.isAssigned && row.original.delivery?.staff
-                    ? "Reassign Delivery Staff"
-                    : "Assign Delivery Staff"
-                }
-                className={cn(
-                  "grid h-8 w-8 place-items-center rounded-lg border text-xs font-semibold transition-all cursor-pointer shadow-xs",
-                  row.original.delivery?.isAssigned && row.original.delivery?.staff
-                    ? "border-amber-600 bg-amber-600 text-white hover:bg-amber-700"
-                    : "border-secondary-600 bg-secondary-600 text-white hover:bg-secondary-700"
+              <>
+                {/* If staff is already accepted, do not show assign/reassign quick button */}
+                {row.original.delivery?.assignmentStatus?.toLowerCase() !== "accepted" && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setAssignStaffOrder({
+                        id: row.original.id,
+                        orderNumber: row.original.orderNumber,
+                      })
+                    }
+                    title={
+                      row.original.delivery?.assignmentStatus?.toLowerCase() === "rejected"
+                        ? "Reassign Delivery Staff (Previous staff declined)"
+                        : row.original.delivery?.isAssigned && row.original.delivery?.staff
+                        ? "Change Delivery Staff"
+                        : "Assign Delivery Staff"
+                    }
+                    className={cn(
+                      "grid h-8 w-8 place-items-center rounded-lg border text-xs font-semibold transition-all cursor-pointer shadow-xs",
+                      row.original.delivery?.assignmentStatus?.toLowerCase() === "rejected"
+                        ? "border-rose-600 bg-rose-600 text-white hover:bg-rose-700"
+                        : row.original.delivery?.isAssigned && row.original.delivery?.staff
+                        ? "border-amber-600 bg-amber-600 text-white hover:bg-amber-700"
+                        : "border-secondary-600 bg-secondary-600 text-white hover:bg-secondary-700"
+                    )}
+                    disabled={isTransitionPending}
+                  >
+                    <Truck className="h-3.5 w-3.5" />
+                  </button>
                 )}
-                disabled={isTransitionPending}
-              >
-                <Truck className="h-3.5 w-3.5" />
-              </button>
+              </>
             )}
 
             <button

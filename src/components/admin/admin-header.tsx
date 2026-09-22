@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Bell, Menu, ShoppingBag, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { Dropdown, DropdownItem } from "@/components/common/dropdown";
 import { useSession } from "next-auth/react";
 import { logoutUser } from "@/features/auth/api/auth.api";
 import { getInitials } from "@/lib/utils";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface AdminHeaderProps {
   onMenuClick: () => void;
@@ -15,6 +17,7 @@ interface AdminHeaderProps {
 function AdminHeader({ onMenuClick }: AdminHeaderProps) {
   const { data: session } = useSession();
   const router = useRouter();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const handleLogout = async () => {
     await logoutUser("/admin/login");
@@ -61,7 +64,7 @@ function AdminHeader({ onMenuClick }: AdminHeaderProps) {
               Customer Account
             </span>
           </DropdownItem>
-          <DropdownItem onClick={handleLogout}>
+          <DropdownItem onClick={() => setShowLogoutConfirm(true)}>
             <span className="flex items-center gap-2 text-xs text-red-600">
               <LogOut className="w-3.5 h-3.5" />
               Logout
@@ -69,6 +72,17 @@ function AdminHeader({ onMenuClick }: AdminHeaderProps) {
           </DropdownItem>
         </Dropdown>
       </div>
+
+      {/* Logout Confirmation Dialog */}
+      <ConfirmDialog
+        open={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={handleLogout}
+        title="Log Out"
+        description="Are you sure you want to log out of the admin panel?"
+        confirmText="Log Out"
+        variant="destructive"
+      />
     </header>
   );
 }
