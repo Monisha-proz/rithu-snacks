@@ -1,17 +1,21 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db/prisma";
 import { loginSchema } from "@/lib/validations/auth";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  adapter: PrismaAdapter(db),
+  trustHost: true,
+  secret:
+    process.env.AUTH_SECRET ||
+    process.env.NEXTAUTH_SECRET ||
+    "rithu-snacks@2026",
   session: {
     strategy: "jwt",
   },
   pages: {
-    signIn: "/admin/login",
+    signIn: "/login",
+    error: "/login",
   },
   providers: [
     Credentials({
