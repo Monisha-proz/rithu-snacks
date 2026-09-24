@@ -198,9 +198,9 @@ export const deliveryRepository = {
     return db.shipments.findFirst({
       where: {
         order_id: orderId,
-        status: { in: ["pending", "picked_up", "in_transit", "out_for_delivery"] },
         is_active: true,
       },
+      orderBy: { id: "desc" },
       include: {
         delivery_staff: {
           select: {
@@ -279,7 +279,9 @@ export const deliveryRepository = {
         where: { id: data.shipmentId },
         data: {
           delivery_staff_id: data.staffId,
+          status: "pending",
           assignment_status: "pending",
+          accepted_at: null,
           delivery_notes: data.note || null,
           updated_at: now,
           updated_by: data.adminId,
@@ -553,17 +555,160 @@ export const deliveryRepository = {
           accepted_at: new Date(),
           updated_by: staffInternalId,
         },
+        include: {
+          orders: {
+            select: {
+              id: true,
+              orderNumber: true,
+              order_status: true,
+            },
+          },
+          delivery_staff: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
       });
+
+      const staffName = updatedShipment.delivery_staff?.name || "Delivery staff";
+      const orderNumber = updatedShipment.orders?.orderNumber || String(updatedShipment.order_id);
 
       await tx.shipment_tracking.create({
         data: {
           shipment_id: shipmentId,
           status: "accepted",
-          note: "Delivery accepted by staff",
+          note: `Delivery accepted by ${staffName}`,
           created_by: staffInternalId,
           updated_by: staffInternalId,
         },
       });
+
+      if (updatedShipment.orders) {
+        await tx.order_status_history.create({
+          data: {
+            order_id: updatedShipment.orders.id,
+            status: updatedShipment.orders.order_status,
+            note: `Delivery assignment accepted by staff ${staffName}`,
+            changed_by: staffInternalId,
+            created_by: staffInternalId,
+            updated_by: staffInternalId,
+          },
+        });
+      }
+
+      // Notify Admins
+      const adminUsers = await tx.user.findMany({
+        where: {
+          role: { slug: { in: ["admin", "super-admin"] } },
+          deleted_at: null,
+          is_active: true,
+        },
+        select: { id: true },
+      });
+
+      if (adminUsers.length > 0) {
+        await tx.notification.createMany({
+          data: adminUsers.map((admin) => ({
+            userId: admin.id,
+            title: "Delivery Assignment Accepted",
+            message: `Staff ${staffName} accepted order #${orderNumber}`,
+            type: "staff_order_accepted",
+            created_by: staffInternalId,
+            updated_by: staffInternalId,
+          })),
+        });
+      }
+
+      return updatedShipment;
+    });
+  },
+
+  async rejectDeliveryTransaction(params: {
+    shipmentId: bigint;
+    orderId: bigint;
+    staffInternalId: bigint;
+    reason: string;
+    note?: string;
+  }) {
+    return db.$transaction(async (tx) => {
+      const fullReason = [params.reason, params.note].filter(Boolean).join(" - ");
+
+      const updatedShipment = await tx.shipments.update({
+        where: { id: params.shipmentId },
+        data: {
+          assignment_status: "rejected",
+          status: "failed",
+          delivery_notes: fullReason,
+          updated_at: new Date(),
+          updated_by: params.staffInternalId,
+        },
+        include: {
+          orders: {
+            select: {
+              id: true,
+              orderNumber: true,
+              order_status: true,
+            },
+          },
+          delivery_staff: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      const staffName = updatedShipment.delivery_staff?.name || "Delivery staff";
+      const orderNumber = updatedShipment.orders?.orderNumber || String(params.orderId);
+
+      await tx.shipment_tracking.create({
+        data: {
+          shipment_id: params.shipmentId,
+          status: "rejected",
+          note: `Delivery rejected by ${staffName}: ${fullReason}`,
+          created_by: params.staffInternalId,
+          updated_by: params.staffInternalId,
+        },
+      });
+
+      if (updatedShipment.orders) {
+        await tx.order_status_history.create({
+          data: {
+            order_id: updatedShipment.orders.id,
+            status: updatedShipment.orders.order_status,
+            note: `Staff ${staffName} rejected delivery assignment: ${fullReason}`,
+            changed_by: params.staffInternalId,
+            created_by: params.staffInternalId,
+            updated_by: params.staffInternalId,
+          },
+        });
+      }
+
+      // Notify Admins
+      const adminUsers = await tx.user.findMany({
+        where: {
+          role: { slug: { in: ["admin", "super-admin"] } },
+          deleted_at: null,
+          is_active: true,
+        },
+        select: { id: true },
+      });
+
+      if (adminUsers.length > 0) {
+        await tx.notification.createMany({
+          data: adminUsers.map((admin) => ({
+            userId: admin.id,
+            title: "Delivery Assignment Rejected",
+            message: `Staff ${staffName} rejected order #${orderNumber}. Reason: ${params.reason}`,
+            type: "staff_order_rejected",
+            created_by: params.staffInternalId,
+            updated_by: params.staffInternalId,
+          })),
+        });
+      }
 
       return updatedShipment;
     });

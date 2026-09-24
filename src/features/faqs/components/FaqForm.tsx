@@ -162,7 +162,7 @@ export function FaqForm({
               label="Question"
               required
               maxLength={255}
-              placeholder="e.g. How long does delivery take across India?"
+              placeholder="Enter FAQ question"
             />
 
             <div>
@@ -197,7 +197,7 @@ export function FaqForm({
                 name="category"
                 label="Category"
                 maxLength={100}
-                placeholder="e.g. Orders & Shipping"
+                placeholder="Enter category name"
                 list={categoryListId}
                 description="Optional. Leave empty to list this FAQ without a group."
               />

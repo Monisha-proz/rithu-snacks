@@ -361,16 +361,7 @@ function CategoryProductsContent({
             </Link>
             <ChevronRight className="w-3.5 h-3.5" />
             {isSingleCategoryMode ? (
-              <>
-                <Link
-                  href="/categories/all"
-                  className="hover:text-[#7A2224] transition-colors"
-                >
-                  Categories
-                </Link>
-                <ChevronRight className="w-3.5 h-3.5" />
-                <span className="font-bold text-[#2D1810]">{categoryTitle}</span>
-              </>
+              <span className="font-bold text-[#2D1810]">{categoryTitle}</span>
             ) : (
               <span className="font-bold text-[#2D1810]">All Categories</span>
             )}

@@ -24,5 +24,5 @@ export default function DeliveryLayout({
     return <AdminTableSkeleton showStats />;
   }
 
-  return <div className="flex flex-1 min-h-0 flex-col">{children}</div>;
+  return <div className="flex flex-1 flex-col">{children}</div>;
 }

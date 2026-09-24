@@ -6,7 +6,7 @@ import { AdminReviewListTable } from "@/features/reviews/components/AdminReviewL
 
 export default function ReviewsPage() {
   return (
-    <div className="flex flex-1 min-h-0 flex-col">
+    <div className="flex flex-1 flex-col">
       <AdminBreadcrumb
         items={[
           { label: "Catalog", href: "/admin/dashboard/products" },
@@ -19,7 +19,7 @@ export default function ReviewsPage() {
         description="Monitor, approve, reject, and manage customer feedback and ratings"
       />
 
-      <AdminContent className="flex-1 min-h-0 overflow-hidden">
+      <AdminContent className="flex-1">
         <AdminReviewListTable />
       </AdminContent>
     </div>

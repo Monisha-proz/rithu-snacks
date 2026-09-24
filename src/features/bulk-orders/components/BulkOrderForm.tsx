@@ -143,7 +143,7 @@ export function BulkOrderForm() {
           <input
             {...register("productInterest")}
             className={getInputClass(!!errors.productInterest)}
-            placeholder="e.g. Butter Murukku"
+            placeholder="Enter product name"
           />
           <FieldError message={errors.productInterest?.message} />
         </div>
@@ -156,7 +156,7 @@ export function BulkOrderForm() {
             type="number"
             min={1}
             className={getInputClass(!!errors.quantity)}
-            placeholder="e.g. 50"
+            placeholder="Enter required quantity"
           />
           <FieldError message={errors.quantity?.message} />
         </div>

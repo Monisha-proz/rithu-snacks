@@ -80,7 +80,7 @@ export function BannerPositionForm({
         <FormInput
           name="name"
           label="Position Name"
-          placeholder="e.g. Home Hero Banner"
+          placeholder="Enter position name"
           required
         />
 
@@ -88,7 +88,7 @@ export function BannerPositionForm({
           name="slug"
           label="Slug"
           description="Unique key used by the storefront to fetch banners for this position (e.g. home-hero, home-offer, home-popup-offer)."
-          placeholder="e.g. home-hero"
+          placeholder="Enter position slug"
           isSlug={false}
           required
         />
@@ -96,7 +96,7 @@ export function BannerPositionForm({
         <FormInput
           name="page"
           label="Page (Optional)"
-          placeholder="e.g. home"
+          placeholder="Enter page / location (optional)"
         />
 
         <div className="flex items-center justify-between rounded-xl border border-[var(--color-neutral-200)] bg-[var(--color-neutral-50)] p-4">

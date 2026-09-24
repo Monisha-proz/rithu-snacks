@@ -8,12 +8,12 @@ import { StaffDeliveryListTable } from "@/features/delivery/components/StaffDeli
 
 export default function DeliveryPage() {
   return (
-    <div className="flex flex-1 min-h-0 flex-col">
+    <div className="flex flex-1 flex-col">
       <AdminPageHeader
         title="Deliveries"
         description="View and update your assigned delivery milestones"
       />
-      <AdminContent className="mt-3 flex-1 min-h-0 overflow-hidden">
+      <AdminContent className="mt-3 flex-1">
         <StaffDeliveryListTable />
       </AdminContent>
     </div>

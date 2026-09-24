@@ -265,14 +265,14 @@ export default function AdminFaqsPage() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex flex-1 flex-col">
       <AdminPageHeader
         title="FAQs"
         description="Manage the questions and answers shown on the storefront FAQ page."
       />
 
-      <AdminContent className="min-h-0 flex-1 overflow-hidden">
-        <div className="flex h-full flex-col overflow-hidden rounded-2xl bg-[var(--color-background)] py-1">
+      <AdminContent className="flex-1">
+        <div className="flex flex-1 flex-col rounded-2xl bg-[var(--color-background)] py-1">
           {/* Top Bar: Search, Filters, Add Button */}
           <div className="flex flex-shrink-0 flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
@@ -335,7 +335,7 @@ export default function AdminFaqsPage() {
           )}
 
           {/* Data Table */}
-          <div className="mt-6 flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="mt-6 flex flex-1 flex-col">
             <DataTable
               columns={columns}
               data={faqs}

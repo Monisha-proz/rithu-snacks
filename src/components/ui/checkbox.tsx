@@ -17,7 +17,7 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
     const id = customId || generatedId;
 
     return (
-      <div className="flex flex-col gap-1 w-full">
+      <div className="flex flex-col gap-1 w-full" data-checkbox-container="true">
         <label
           htmlFor={id}
           className="inline-flex items-start gap-2.5 cursor-pointer select-none group w-full"
@@ -43,7 +43,10 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
                 className
               )}
             >
-              <Check className="h-3.5 w-3.5 stroke-[3] text-white opacity-0 transition-opacity" />
+              <Check
+                data-checkbox-icon="true"
+                className="h-3.5 w-3.5 stroke-[3] text-white opacity-0 transition-opacity"
+              />
             </div>
           </div>
 

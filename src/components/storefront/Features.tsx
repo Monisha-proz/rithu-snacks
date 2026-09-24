@@ -8,7 +8,7 @@ import { InfoCard } from "./cards/InfoCard";
 export function Features() {
   return (
     <Section>
-      <div className="grid lg:grid-cols-5 grid-cols-2 gap-6">
+      <div className="grid lg:grid-cols-5 grid-cols-2 gap-6 cursor-default">
         {features.map((item, index) => (
           <InfoCard
             key={item.id}
@@ -23,6 +23,7 @@ export function Features() {
               flex-col
               items-center
               text-center
+              cursor-default
               ${
                 index === features.length - 1
                   ? "col-span-2 justify-self-center lg:col-span-1 lg:justify-self-auto"

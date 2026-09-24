@@ -142,3 +142,13 @@ export const markFailedSchema = z
   .strict();
 
 export type MarkFailedInput = z.infer<typeof markFailedSchema>;
+
+export const rejectDeliverySchema = z
+  .object({
+    reason: z.string().trim().min(1, "Rejection reason is required").max(255),
+    note: z.string().trim().max(500, "Note cannot exceed 500 characters").optional(),
+  })
+  .strict();
+
+export type RejectDeliveryInput = z.infer<typeof rejectDeliverySchema>;
+

@@ -63,6 +63,7 @@ export const faqRepository = {
     data: CreateFaqInput,
     userInternalId?: bigint
   ): Promise<FaqDto> {
+    const creatorId = userInternalId ? BigInt(userInternalId) : null;
     const created = await db.faq.create({
       data: {
         question: sanitizePlainText(data.question).trim(),
@@ -71,8 +72,8 @@ export const faqRepository = {
         icon: data.icon ?? null,
         sort_order: data.displayOrder,
         is_active: data.status === "ACTIVE",
-        created_by: userInternalId ?? null,
-        updated_by: userInternalId ?? null,
+        created_by: creatorId,
+        updated_by: creatorId,
       },
     });
 
@@ -113,11 +114,11 @@ export const faqRepository = {
     }
 
     if (userInternalId) {
-      updateData.updated_by = userInternalId;
+      updateData.updated_by = BigInt(userInternalId);
     }
 
     const updated = await db.faq.update({
-      where: { id },
+      where: { id: BigInt(id) },
       data: updateData,
     });
 
@@ -238,6 +239,7 @@ export const faqRepository = {
     userInternalId?: bigint
   ): Promise<void> {
     const now = new Date();
+    const updaterId = userInternalId ? BigInt(userInternalId) : undefined;
 
     await db.$transaction(
       items.map((item) =>
@@ -246,7 +248,7 @@ export const faqRepository = {
           data: {
             sort_order: item.displayOrder,
             updated_at: now,
-            ...(userInternalId ? { updated_by: userInternalId } : {}),
+            ...(updaterId ? { updated_by: updaterId } : {}),
           },
         })
       )

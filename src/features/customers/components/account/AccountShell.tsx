@@ -1,10 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { logoutUser } from "@/features/auth/api/auth.api";
 import { LayoutDashboard, ChevronRight, ShieldCheck } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DashboardTab } from "./DashboardTab";
 import { OrdersTab } from "./OrdersTab";
 import { ProfileDetailsTab } from "./ProfileDetailsTab";
@@ -53,7 +54,7 @@ export function AccountShell({ activeTab, onTabChange }: AccountShellProps) {
     { id: "profile", label: "Profile Details" },
     { id: "addresses", label: "Saved Addresses" },
     { id: "wishlist", label: "Wishlist", badge: wishlistCount > 0 ? String(wishlistCount) : undefined },
-    { id: "wallet", label: "Wallet & Rewards" },
+    // { id: "wallet", label: "Wallet & Rewards" },
     { id: "settings", label: "Settings & Password" },
     { id: "logout", label: "Logout" },
   ];
@@ -64,13 +65,15 @@ export function AccountShell({ activeTab, onTabChange }: AccountShellProps) {
     profile: "Profile Details",
     addresses: "Saved Addresses",
     wishlist: "Wishlist",
-    wallet: "Wallet & Rewards",
+    // wallet: "Wallet & Rewards",
     settings: "Settings",
   };
 
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
   const handleNavClick = async (id: string) => {
     if (id === "logout") {
-      await logoutUser("/login");
+      setShowLogoutConfirm(true);
       return;
     }
     onTabChange(id);
@@ -294,6 +297,20 @@ export function AccountShell({ activeTab, onTabChange }: AccountShellProps) {
           {activeTab === "settings" && <SettingsTab />}
         </main>
       </div>
+
+      {/* Logout Confirmation Dialog */}
+      <ConfirmDialog
+        open={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={async () => {
+          await logoutUser("/login");
+        }}
+        title="Sign Out"
+        description="Are you sure you want to sign out of your account?"
+        confirmText="Sign Out"
+        cancelText="Cancel"
+        variant="destructive"
+      />
     </div>
   );
 }

@@ -339,7 +339,7 @@ export function WriteReviewModal({
                   maxLength={150}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Perfectly crunchy with pure ghee aroma!"
+                  placeholder="Enter your review headline"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 bg-white text-sm text-[#2B1B17] placeholder:text-stone-400 focus:outline-hidden focus:border-[#7A2224] focus:ring-2 focus:ring-[#7A2224]/15 transition-all"
                 />
               </div>

@@ -35,13 +35,22 @@ const TABS = [
 ];
 
 export function WhatsAppNavTabs({
-  showCreateButton = true,
+  showCreateButton,
   active,
+  action,
 }: {
   showCreateButton?: boolean;
   active?: string;
+  action?: React.ReactNode;
 }) {
   const pathname = usePathname();
+
+  const isCampaignsPage =
+    pathname === "/admin/dashboard/whatsapp/campaigns" ||
+    (active === "campaigns" && pathname !== "/admin/dashboard/whatsapp/campaigns/create");
+
+  const shouldShowCampaignCreate =
+    showCreateButton !== undefined ? showCreateButton : isCampaignsPage;
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-neutral-200/80 pb-3 mb-6">
@@ -73,17 +82,19 @@ export function WhatsAppNavTabs({
         })}
       </div>
 
-      {showCreateButton && (
+      {action ? (
+        action
+      ) : shouldShowCampaignCreate ? (
         <Link href="/admin/dashboard/whatsapp/campaigns/create">
           <Button
             size="sm"
-            className="gap-2 bg-secondary-600 hover:bg-secondary-700 text-white font-semibold text-xs h-9 shadow-xs"
+            className="gap-2 bg-secondary-600 hover:bg-secondary-700 text-white font-semibold text-xs h-9 shadow-xs cursor-pointer"
           >
             <PlusCircle className="h-4 w-4" />
             Create Campaign
           </Button>
         </Link>
-      )}
+      ) : null}
     </div>
   );
 }

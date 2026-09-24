@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 function AdminDetailSkeleton() {
   return (
-    <div className="flex flex-1 min-h-0 flex-col gap-6 p-1">
+    <div className="flex flex-1 flex-col gap-6 p-1">
       <div className="flex items-center gap-4">
         <Skeleton className="h-16 w-16 rounded-full" />
         <div className="space-y-2">

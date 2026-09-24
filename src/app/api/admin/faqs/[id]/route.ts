@@ -54,6 +54,28 @@ export const PUT = createApiHandler(
   }
 );
 
+export const PATCH = createApiHandler(
+  {
+    PATCH: async (_request, context) => {
+      const id = parseFaqId(context.params?.id);
+      const body = context.body as UpdateFaqInput;
+      const result = await faqService.updateFaq(
+        id,
+        body,
+        context.session?.user?.id
+      );
+
+      return apiSuccess(result, "FAQ updated successfully", 200);
+    },
+  },
+  {
+    method: "PATCH",
+    requireAuth: true,
+    requiredRole: ["ADMIN", "STAFF"],
+    bodySchema: updateFaqSchema,
+  }
+);
+
 export const DELETE = createApiHandler(
   {
     DELETE: async (_request, context) => {

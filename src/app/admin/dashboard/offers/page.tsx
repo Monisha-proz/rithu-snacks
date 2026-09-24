@@ -379,14 +379,14 @@ export default function AdminOffersPage() {
   }
 
   return (
-    <div className="flex flex-1 min-h-0 flex-col">
+    <div className="flex flex-1 flex-col">
       <AdminPageHeader
         title="Offers"
         description="Create product-wise and item-wise offers, and control which one wins when several apply."
       />
 
-      <AdminContent className="flex-1 min-h-0 overflow-hidden">
-        <div className="flex h-full flex-col overflow-hidden bg-[var(--color-background)] py-1 rounded-2xl">
+      <AdminContent className="flex-1">
+        <div className="flex flex-1 flex-col bg-[var(--color-background)] py-1 rounded-2xl">
           {/* Top Search + Filter Controls + Add Button */}
           <div className="flex-shrink-0 space-y-3">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -508,7 +508,7 @@ export default function AdminOffersPage() {
           </div>
 
           {/* Table */}
-          <div className="mt-6 flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="mt-6 flex flex-1 flex-col">
             <DataTable
               columns={columns}
               data={offers}

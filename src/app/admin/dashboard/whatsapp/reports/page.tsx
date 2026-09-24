@@ -144,21 +144,24 @@ export default function WhatsAppReportsPage() {
           { label: "WhatsApp", href: "/admin/dashboard/whatsapp" },
           { label: "Reports" },
         ]}
-        actions={
+      />
+
+      {/* Tabs */}
+      <WhatsAppNavTabs
+        active="reports"
+        action={
           <Button
             onClick={() => loadData(true)}
+            disabled={isLoading}
             variant="outline"
             size="sm"
             className="gap-2 border-neutral-200 text-neutral-700 hover:bg-neutral-50 h-9 cursor-pointer"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
         }
       />
-
-      {/* Tabs */}
-      <WhatsAppNavTabs active="reports" />
 
       {/* Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

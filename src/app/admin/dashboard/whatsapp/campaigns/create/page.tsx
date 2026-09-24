@@ -430,7 +430,7 @@ function CreateCampaignContent() {
                   setName(e.target.value);
                   if (nameError) setNameError("");
                 }}
-                placeholder="e.g. Diwali Sweets & Mixture 20% Off"
+                placeholder="Enter campaign name"
               />
             </div>
 
@@ -453,7 +453,7 @@ function CreateCampaignContent() {
                 rows={2}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="e.g. Sent to customers who ordered during last month's sale."
+                placeholder="Enter internal description / notes (optional)..."
               />
             </div>
           </div>

@@ -20,6 +20,8 @@ import {
   Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/Toast";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface CampaignItem {
   id: string;
@@ -44,6 +46,7 @@ export default function WhatsAppCampaignsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [campaignToDelete, setCampaignToDelete] = useState<CampaignItem | null>(null);
 
   const loadCampaigns = React.useCallback(async (showSpinner = false) => {
     if (showSpinner) setIsLoading(true);
@@ -97,23 +100,23 @@ export default function WhatsAppCampaignsPage() {
       });
       const json = await res.json();
       if (json.success) {
+        toast.success("Campaign Updated", json.message || "Action completed successfully.");
         await loadCampaigns(false);
       } else {
-        alert(json.message || "Failed to perform action");
+        toast.error("Action Failed", json.message || "Failed to perform action");
       }
     } catch (err: unknown) {
-      alert((err as Error)?.message || "Action failed");
+      toast.error("Action Failed", (err as Error)?.message || "Action failed");
     } finally {
       setActionLoadingId(null);
     }
   };
 
-  // Delete Campaign
-  const handleDelete = async (campaignId: string) => {
-    if (!confirm("Are you sure you want to delete this campaign? This action cannot be undone.")) {
-      return;
-    }
+  // Confirm Delete Campaign
+  const confirmDelete = async () => {
+    if (!campaignToDelete) return;
 
+    const campaignId = campaignToDelete.id;
     setActionLoadingId(`${campaignId}-DELETE`);
     try {
       const res = await fetch(`/api/admin/whatsapp/campaigns/${campaignId}`, {
@@ -122,13 +125,15 @@ export default function WhatsAppCampaignsPage() {
       const json = await res.json();
       if (json.success) {
         setCampaigns((prev) => prev.filter((c) => c.id !== campaignId));
+        toast.success("Campaign Deleted", "The campaign has been removed.");
       } else {
-        alert(json.message || "Failed to delete campaign");
+        toast.error("Delete Failed", json.message || "Failed to delete campaign");
       }
     } catch (err: unknown) {
-      alert((err as Error)?.message || "Delete failed");
+      toast.error("Delete Failed", (err as Error)?.message || "Delete failed");
     } finally {
       setActionLoadingId(null);
+      setCampaignToDelete(null);
     }
   };
 
@@ -150,7 +155,7 @@ export default function WhatsAppCampaignsPage() {
         ]}
       />
 
-      <WhatsAppNavTabs />
+      <WhatsAppNavTabs active="campaigns" />
 
       {/* Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -434,9 +439,9 @@ export default function WhatsAppCampaignsPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleDelete(camp.id)}
+                      onClick={() => setCampaignToDelete(camp)}
                       disabled={actionLoadingId === `${camp.id}-DELETE`}
-                      className="h-8 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 p-2"
+                      className="h-8 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 p-2 cursor-pointer"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -447,6 +452,18 @@ export default function WhatsAppCampaignsPage() {
           })}
         </div>
       )}
+
+      {/* Delete Campaign Confirmation Modal */}
+      <ConfirmDialog
+        open={!!campaignToDelete}
+        onClose={() => setCampaignToDelete(null)}
+        onConfirm={confirmDelete}
+        title="Delete Campaign?"
+        description="Are you sure you want to delete this campaign? This action cannot be undone."
+        confirmText="Delete Campaign"
+        variant="destructive"
+        isLoading={actionLoadingId === `${campaignToDelete?.id}-DELETE`}
+      />
     </div>
   );
 }

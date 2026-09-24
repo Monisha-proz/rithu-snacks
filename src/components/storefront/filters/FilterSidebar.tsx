@@ -470,7 +470,7 @@ export function FilterSidebar({
             type="text"
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
-            placeholder="e.g. Murukku, Mixture..."
+            placeholder="Search snacks by name..."
             className="w-full bg-[#FAF6F0] border border-[#DCC7B7] rounded-xl pl-10 pr-9 py-2.5 text-sm text-[#2D1810] placeholder-[#A0887A] focus:outline-none focus:border-[#7A2224] focus:ring-1 focus:ring-[#7A2224] transition-all"
           />
           {localSearch && (

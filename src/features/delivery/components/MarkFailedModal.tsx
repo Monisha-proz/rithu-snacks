@@ -78,7 +78,7 @@ export function MarkFailedModal({
             rows={3}
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="e.g. Customer not available, address not found, etc."
+            placeholder="Enter reason for delivery failure"
             className="w-full rounded-xl border border-neutral-300 p-3 text-sm text-neutral-800 focus:border-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-600/10 transition-colors resize-none"
             maxLength={255}
             required

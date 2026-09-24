@@ -40,6 +40,7 @@ import { APP_NAME } from "@/lib/constants";
 import { useSession } from "next-auth/react";
 import { logoutUser } from "@/features/auth/api/auth.api";
 import { Drawer } from "@/components/common/drawer";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface SidebarItem {
   label: string;
@@ -72,7 +73,7 @@ const sidebarItems: SidebarItem[] = [
       { label: "Products", href: "/admin/dashboard/products", icon: Package },
       { label: "Items", href: "/admin/dashboard/variants", icon: Layers },
       { label: "Brands", href: "/admin/dashboard/brands", icon: Crown },
-      { label: "Attributes", href: "/admin/dashboard/attributes", icon: Tag },
+      // { label: "Attributes", href: "/admin/dashboard/attributes", icon: Tag },
       { label: "Units", href: "/admin/dashboard/units", icon: Ruler },
     ],
   },
@@ -113,8 +114,8 @@ const sidebarItems: SidebarItem[] = [
     children: [
       { label: "Staff", href: "/admin/dashboard/staff", icon: UserCheck },
       { label: "Users", href: "/admin/dashboard/users", icon: Users },
-      { label: "Roles", href: "/admin/dashboard/roles", icon: Shield },
-      { label: "Permissions", href: "/admin/dashboard/permissions", icon: Shield },
+      // { label: "Roles", href: "/admin/dashboard/roles", icon: Shield },
+      // { label: "Permissions", href: "/admin/dashboard/permissions", icon: Shield },
     ],
   },
   { label: "Reports", href: "/admin/dashboard/reports", icon: BarChart3 },
@@ -365,6 +366,7 @@ function SidebarNavigation({
 
 function SidebarFooter({ collapsed }: { collapsed?: boolean }) {
   const { data: session } = useSession();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const name = session?.user?.name || "Admin";
   const role = (session?.user as { role?: string })?.role;
   const roleLabel = role ? role.charAt(0) + role.slice(1).toLowerCase() : "Administrator";
@@ -404,7 +406,8 @@ function SidebarFooter({ collapsed }: { collapsed?: boolean }) {
         </Link>
       )}
       <button
-        onClick={handleLogout}
+        type="button"
+        onClick={() => setShowLogoutConfirm(true)}
         title={collapsed ? "Logout" : undefined}
         className={cn(
           "group flex w-full items-center gap-2.5 rounded-lg py-2 text-sm font-medium text-neutral-600 transition-all duration-200 cursor-pointer hover:bg-white/70 hover:text-secondary-600",
@@ -414,6 +417,17 @@ function SidebarFooter({ collapsed }: { collapsed?: boolean }) {
         <LogOut className="h-4 w-4 flex-shrink-0 transition-transform duration-200 group-hover:-translate-x-0.5" />
         {!collapsed && "Logout"}
       </button>
+
+      {/* Logout Confirmation Dialog */}
+      <ConfirmDialog
+        open={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={handleLogout}
+        title="Log Out"
+        description="Are you sure you want to log out of the admin panel?"
+        confirmText="Log Out"
+        variant="destructive"
+      />
     </div>
   );
 }

@@ -70,6 +70,7 @@ export interface OrderDeliveryDto {
   deliveryId: string | null;
   staff: OrderDeliveryStaffDto | null;
   assignedAt: Date | string | null;
+  deliveryNotes?: string | null;
 }
 
 export interface OrderListItemResponse {

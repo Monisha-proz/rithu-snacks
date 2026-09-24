@@ -3,20 +3,26 @@ import { z } from "zod";
 export const createContactSchema = z
   .object({
     name: z
-      .string({ message: "Name is required" })
+      .string({ message: "Full Name is required" })
       .trim()
-      .min(1, "Name cannot be empty")
-      .max(150, "Name cannot exceed 150 characters"),
+      .min(1, "Full Name is required")
+      .max(150, "Full Name cannot exceed 150 characters")
+      .regex(
+        /^[a-zA-Z\s'-]+$/,
+        "Full Name can only contain letters, spaces, hyphens, and apostrophes"
+      ),
     email: z
       .string({ message: "Email is required" })
       .trim()
       .email("Invalid email address")
       .max(150, "Email cannot exceed 150 characters"),
     phone: z
-      .string({ message: "Phone is required" })
+      .string({ message: "Phone number is required" })
       .trim()
-      .min(5, "Phone number must be at least 5 digits")
-      .max(20, "Phone number cannot exceed 20 characters"),
+      .regex(
+        /^[6-9]\d{9}$/,
+        "Phone number must be a valid 10-digit mobile number starting with 6, 7, 8, or 9"
+      ),
     subject: z
       .string({ message: "Subject is required" })
       .trim()

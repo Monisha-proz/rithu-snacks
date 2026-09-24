@@ -16,6 +16,8 @@ import type { CustomerAddressResponse } from "../../types/customer-address.types
 import { CustomDropdown } from "./CustomDropdown";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "@/components/ui/Toast";
+import { usePincodeLookup } from "@/lib/pincode";
+import { Loader2 } from "lucide-react";
 
 const LABEL_OPTIONS = [
   { value: "home", label: "Home" },
@@ -52,6 +54,13 @@ export function AddressesTab() {
   const [serverError, setServerError] = useState<string | null>(null);
   const [addressToDelete, setAddressToDelete] = useState<CustomerAddressResponse | null>(null);
 
+  const {
+    isLoading: isPincodeLoading,
+    cityOptions,
+    fetchPincode,
+    resetLookup,
+  } = usePincodeLookup();
+
   const [formData, setFormData] = useState<AddressFormData>({
     label: "home",
     fullName: "",
@@ -60,7 +69,7 @@ export function AddressesTab() {
     addressLine2: "",
     landmark: "",
     city: "",
-    state: "Tamil Nadu",
+    state: "",
     pincode: "",
     country: "India",
     addressType: "shipping",
@@ -122,7 +131,38 @@ export function AddressesTab() {
     if (field === "phone" && typeof rawValue === "string") {
       value = rawValue.replace(/\D/g, "").slice(0, 10);
     } else if (field === "pincode" && typeof rawValue === "string") {
-      value = rawValue.replace(/\D/g, "").slice(0, 6);
+      const cleanDigits = rawValue.replace(/\D/g, "").slice(0, 6);
+      value = cleanDigits;
+
+      if (cleanDigits.length === 6) {
+        fetchPincode(cleanDigits, (data) => {
+          setFormData((prev) => ({
+            ...prev,
+            state: data.state || prev.state,
+            city: data.cities.includes(prev.city)
+              ? prev.city
+              : data.defaultCity || prev.city,
+          }));
+
+          if (editingId) {
+            setDirtyFields((prev) => {
+              const next = new Set(prev);
+              if (data.state) next.add("state");
+              if (data.defaultCity) next.add("city");
+              next.add("pincode");
+              return next;
+            });
+          }
+
+          setFieldErrors((prev) => {
+            const next = { ...prev };
+            delete next.pincode;
+            delete next.state;
+            delete next.city;
+            return next;
+          });
+        });
+      }
     }
 
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -157,7 +197,7 @@ export function AddressesTab() {
       addressLine2: address.addressLine2 || "",
       landmark: address.landmark || "",
       city: address.city || "",
-      state: address.state || "Tamil Nadu",
+      state: address.state || "",
       pincode: address.pincode || "",
       country: address.country || "India",
       addressType: (address.addressType as "shipping" | "billing") || "shipping",
@@ -170,6 +210,12 @@ export function AddressesTab() {
     setFieldErrors({});
     setServerError(null);
     setIsAdding(true);
+
+    if (address.pincode && address.pincode.length === 6) {
+      fetchPincode(address.pincode);
+    } else {
+      resetLookup();
+    }
   };
 
   const handleCancel = () => {
@@ -178,6 +224,7 @@ export function AddressesTab() {
     setDirtyFields(new Set());
     setFieldErrors({});
     setServerError(null);
+    resetLookup();
     setFormData({
       label: "home",
       fullName: "",
@@ -186,7 +233,7 @@ export function AddressesTab() {
       addressLine2: "",
       landmark: "",
       city: "",
-      state: "Tamil Nadu",
+      state: "",
       pincode: "",
       country: "India",
       addressType: "shipping",
@@ -263,7 +310,7 @@ export function AddressesTab() {
         addressLine2: formData.addressLine2.trim() || undefined,
         landmark: formData.landmark.trim() || undefined,
         city: formData.city.trim(),
-        state: formData.state.trim() || "Tamil Nadu",
+        state: formData.state.trim(),
         pincode: formData.pincode.trim(),
         country: formData.country || "India",
         addressType: formData.addressType || "shipping",
@@ -442,7 +489,7 @@ export function AddressesTab() {
               <input
                 type="text"
                 disabled={isSubmitting}
-                placeholder="e.g. Ashok Kumar"
+                placeholder="Enter your full name"
                 value={formData.fullName}
                 onChange={(e) => handleFieldChange("fullName", e.target.value)}
                 className={`border rounded-lg px-3.5 py-2.5 text-xs text-theme-text-primary bg-theme-surface-warm focus:border-theme-primary transition-colors disabled:opacity-50 ${
@@ -464,7 +511,7 @@ export function AddressesTab() {
                 inputMode="numeric"
                 maxLength={10}
                 disabled={isSubmitting}
-                placeholder="e.g. 9876543210"
+                placeholder="Enter your phone number"
                 value={formData.phone}
                 onChange={(e) => handleFieldChange("phone", e.target.value)}
                 className={`border rounded-lg px-3.5 py-2.5 text-xs text-theme-text-primary bg-theme-surface-warm focus:border-theme-primary transition-colors disabled:opacity-50 ${
@@ -491,15 +538,22 @@ export function AddressesTab() {
 
             {/* PIN Code */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-theme-text-secondary">
-                PIN Code (6 digits) <span className="text-red-500 font-bold ml-0.5">*</span>
+              <label className="text-xs font-semibold text-theme-text-secondary flex items-center justify-between">
+                <span>
+                  PIN Code (6 digits) <span className="text-red-500 font-bold ml-0.5">*</span>
+                </span>
+                {isPincodeLoading && (
+                  <span className="text-[10px] text-theme-primary flex items-center gap-1 font-normal">
+                    <Loader2 className="w-3 h-3 animate-spin" /> Fetching area...
+                  </span>
+                )}
               </label>
               <input
                 type="text"
                 inputMode="numeric"
                 disabled={isSubmitting}
                 maxLength={6}
-                placeholder="e.g. 637001"
+                placeholder="Enter 6-digit PIN code"
                 value={formData.pincode}
                 onChange={(e) => handleFieldChange("pincode", e.target.value)}
                 className={`border rounded-lg px-3.5 py-2.5 text-xs text-theme-text-primary bg-theme-surface-warm focus:border-theme-primary transition-colors disabled:opacity-50 ${
@@ -519,7 +573,7 @@ export function AddressesTab() {
               <input
                 type="text"
                 disabled={isSubmitting}
-                placeholder="Door no., Building, Street"
+                placeholder="Enter house / flat no., building, street"
                 value={formData.addressLine1}
                 onChange={(e) => handleFieldChange("addressLine1", e.target.value)}
                 className={`border rounded-lg px-3.5 py-2.5 text-xs text-theme-text-primary bg-theme-surface-warm focus:border-theme-primary transition-colors disabled:opacity-50 ${
@@ -539,7 +593,7 @@ export function AddressesTab() {
               <input
                 type="text"
                 disabled={isSubmitting}
-                placeholder="Area, Colony, Sector (Optional)"
+                placeholder="Enter area, colony, sector (optional)"
                 value={formData.addressLine2}
                 onChange={(e) => handleFieldChange("addressLine2", e.target.value)}
                 className={`border rounded-lg px-3.5 py-2.5 text-xs text-theme-text-primary bg-theme-surface-warm focus:border-theme-primary transition-colors disabled:opacity-50 ${
@@ -559,7 +613,7 @@ export function AddressesTab() {
               <input
                 type="text"
                 disabled={isSubmitting}
-                placeholder="e.g. Near Bus Stand"
+                placeholder="Enter landmark (optional)"
                 value={formData.landmark}
                 onChange={(e) => handleFieldChange("landmark", e.target.value)}
                 className="border border-theme-border-input rounded-lg px-3.5 py-2.5 text-xs text-theme-text-primary bg-theme-surface-warm focus:border-theme-primary transition-colors disabled:opacity-50"
@@ -568,20 +622,42 @@ export function AddressesTab() {
 
             {/* City */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-theme-text-secondary">
-                City <span className="text-red-500 font-bold ml-0.5">*</span>
+              <label className="text-xs font-semibold text-theme-text-secondary flex items-center justify-between">
+                <span>
+                  City / Area <span className="text-red-500 font-bold ml-0.5">*</span>
+                </span>
+                {cityOptions.length > 0 && (
+                  <span className="text-[10px] text-theme-text-muted font-normal">
+                    ({cityOptions.length} areas found)
+                  </span>
+                )}
               </label>
-              <input
-                type="text"
-                disabled={isSubmitting}
-                placeholder="e.g. Salem"
-                value={formData.city}
-                onChange={(e) => handleFieldChange("city", e.target.value)}
-                className={`border rounded-lg px-3.5 py-2.5 text-xs text-theme-text-primary bg-theme-surface-warm focus:border-theme-primary transition-colors disabled:opacity-50 ${
-                  fieldErrors.city ? "border-red-500 bg-red-50/20" : "border-theme-border-input"
-                }`}
-              />
-              {fieldErrors.city && (
+              {cityOptions.length > 0 ? (
+                <CustomDropdown
+                  options={
+                    formData.city && !cityOptions.includes(formData.city)
+                      ? [{ value: formData.city, label: formData.city }, ...cityOptions.map((c) => ({ value: c, label: c }))]
+                      : cityOptions.map((c) => ({ value: c, label: c }))
+                  }
+                  value={formData.city}
+                  onChange={(val) => handleFieldChange("city", val)}
+                  placeholder="Select City / Area"
+                  disabled={isSubmitting}
+                  error={fieldErrors.city}
+                />
+              ) : (
+                <input
+                  type="text"
+                  disabled={isSubmitting}
+                  placeholder="Enter your city"
+                  value={formData.city}
+                  onChange={(e) => handleFieldChange("city", e.target.value)}
+                  className={`border rounded-lg px-3.5 py-2.5 text-xs text-theme-text-primary bg-theme-surface-warm focus:border-theme-primary transition-colors disabled:opacity-50 ${
+                    fieldErrors.city ? "border-red-500 bg-red-50/20" : "border-theme-border-input"
+                  }`}
+                />
+              )}
+              {fieldErrors.city && !cityOptions.length && (
                 <span className="text-xs text-red-500 font-medium">{fieldErrors.city}</span>
               )}
             </div>
@@ -594,7 +670,7 @@ export function AddressesTab() {
               <input
                 type="text"
                 disabled={isSubmitting}
-                placeholder="e.g. Tamil Nadu"
+                placeholder="Enter your state"
                 value={formData.state}
                 onChange={(e) => handleFieldChange("state", e.target.value)}
                 className={`border rounded-lg px-3.5 py-2.5 text-xs text-theme-text-primary bg-theme-surface-warm focus:border-theme-primary transition-colors disabled:opacity-50 ${

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -111,17 +111,58 @@ function ProductDetails({ product }: ProductDetailsProps) {
     !!selectedUnitPrice &&
     !!wishlist?.items.some((i) => i.variantUnitPriceId === selectedUnitPrice.id);
 
-  const galleryImages = selectedVariant?.primaryImage
-    ? [
-        {
-          id: selectedVariant.id,
-          url: getImageUrl(selectedVariant.primaryImage),
-          altText: selectedVariant.variantName || product.name,
-        },
-      ]
-    : product.image
-      ? [{ id: product.id, url: getImageUrl(product.image), altText: product.name }]
-      : [];
+  const galleryImages = useMemo(() => {
+    const list: Array<{ id: string; url: string; altText?: string | null }> = [];
+    const seen = new Set<string>();
+
+    const isValidUrl = (url?: string | null): boolean => {
+      if (!url) return false;
+      const trimmed = url.trim();
+      return (
+        trimmed !== "" &&
+        trimmed !== "null" &&
+        trimmed !== "undefined" &&
+        trimmed !== "/images/placeholder.png" &&
+        !(trimmed.startsWith("/logos/") && trimmed.endsWith(".png"))
+      );
+    };
+
+    const addImage = (id: string, url?: string | null, altText?: string | null) => {
+      if (!isValidUrl(url)) return;
+      const formatted = getImageUrl(url!);
+      if (formatted && isValidUrl(formatted) && !seen.has(formatted)) {
+        seen.add(formatted);
+        list.push({ id, url: formatted, altText });
+      }
+    };
+
+    // 1. If active variant has explicit multiple images, use them
+    const validVariantImages = (selectedVariant?.images || []).filter((img) => isValidUrl(img.imageUrl));
+    if (validVariantImages.length > 0) {
+      for (const img of validVariantImages) {
+        addImage(img.id, img.imageUrl, selectedVariant?.variantName || product.name);
+      }
+      return list.slice(0, 4);
+    }
+
+    // 2. Otherwise, if parent product has multiple images, use them
+    const validProductImages = (product.images || []).filter((img) => isValidUrl(img.imageUrl));
+    if (validProductImages.length > 0) {
+      for (const img of validProductImages) {
+        addImage(img.id, img.imageUrl, img.altText || product.name);
+      }
+      return list.slice(0, 4);
+    }
+
+    // 3. Fallback to single primary image
+    if (isValidUrl(selectedVariant?.primaryImage)) {
+      addImage(selectedVariant!.id, selectedVariant!.primaryImage, selectedVariant?.variantName || product.name);
+    } else if (isValidUrl(product.image)) {
+      addImage(product.id, product.image, product.name);
+    }
+
+    return list.slice(0, 4);
+  }, [selectedVariant, product]);
 
   const handleAddToCart = () => {
     if (!session) {

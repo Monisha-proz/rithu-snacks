@@ -148,7 +148,12 @@ export default function WhatsAppTemplatesPage() {
           { label: "WhatsApp", href: "/admin/dashboard/whatsapp" },
           { label: "Templates" },
         ]}
-        actions={
+      />
+
+      {/* Tabs */}
+      <WhatsAppNavTabs
+        active="templates"
+        action={
           <Button
             onClick={() => setIsModalOpen(true)}
             className="bg-secondary-600 hover:bg-secondary-700 text-white gap-2 font-semibold text-xs h-9 shadow-xs cursor-pointer"
@@ -159,9 +164,6 @@ export default function WhatsAppTemplatesPage() {
           </Button>
         }
       />
-
-      {/* Tabs */}
-      <WhatsAppNavTabs active="templates" />
 
       {/* Category Filter Pills */}
       <div className="flex flex-wrap items-center gap-2">
@@ -335,7 +337,7 @@ export default function WhatsAppTemplatesPage() {
                 setNewTmplName(e.target.value);
                 if (nameError) setNameError("");
               }}
-              placeholder="e.g. Diwali Sweets 20% Special"
+              placeholder="Enter template name"
             />
           </div>
 

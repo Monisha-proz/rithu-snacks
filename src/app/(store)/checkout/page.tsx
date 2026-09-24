@@ -26,6 +26,7 @@ import {
   Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
 import { formatPrice } from "@/lib/utils";
 import { formatMeasurementLabel } from "@/features/variants/utils/measurement.util";
 import { useCustomerCart } from "@/features/customers/hooks/use-customer-cart";
@@ -41,6 +42,7 @@ import {
 import { customerPaymentApi } from "@/features/customers/api/customer-payment.api";
 import { useCheckout } from "@/features/checkout/checkout-context";
 import type { CustomerAddressResponse } from "@/features/customers/types/customer-address.types";
+import { usePincodeLookup } from "@/lib/pincode";
 
 
 function CheckoutSkeleton() {
@@ -123,7 +125,7 @@ export default function CheckoutPage() {
     addressLine2: "",
     landmark: "",
     city: "",
-    state: "Tamil Nadu",
+    state: "",
     pincode: "",
     country: "India",
     addressType: "shipping" as const,
@@ -132,6 +134,21 @@ export default function CheckoutPage() {
   const [addressFieldErrors, setAddressFieldErrors] = useState<Record<string, string>>({});
   const [touchedAddressFields, setTouchedAddressFields] = useState<Record<string, boolean>>({});
   const [addressFormError, setAddressFormError] = useState<string | null>(null);
+
+  const {
+    isLoading: isPincodeLoading,
+    cityOptions,
+    fetchPincode,
+    resetLookup,
+  } = usePincodeLookup();
+
+  const checkoutCityOptions = useMemo(() => {
+    const opts = cityOptions.map((c) => ({ value: c, label: c }));
+    if (newAddressForm.city && !cityOptions.includes(newAddressForm.city)) {
+      return [{ value: newAddressForm.city, label: newAddressForm.city }, ...opts];
+    }
+    return opts;
+  }, [cityOptions, newAddressForm.city]);
 
   const validateAddressField = (field: string, value: string): string => {
     switch (field) {
@@ -184,7 +201,26 @@ export default function CheckoutPage() {
     if (field === "phone" && typeof rawValue === "string") {
       value = rawValue.replace(/\D/g, "").slice(0, 10);
     } else if (field === "pincode" && typeof rawValue === "string") {
-      value = rawValue.replace(/\D/g, "").slice(0, 6);
+      const cleanDigits = rawValue.replace(/\D/g, "").slice(0, 6);
+      value = cleanDigits;
+
+      if (cleanDigits.length === 6) {
+        fetchPincode(cleanDigits, (data) => {
+          setNewAddressForm((prev) => ({
+            ...prev,
+            state: data.state || prev.state,
+            city: data.cities.includes(prev.city)
+              ? prev.city
+              : data.defaultCity || prev.city,
+          }));
+          setAddressFieldErrors((prev) => {
+            const next = { ...prev };
+            delete next.pincode;
+            delete next.city;
+            return next;
+          });
+        });
+      }
     }
 
     setNewAddressForm((prev) => ({ ...prev, [field]: value }));
@@ -228,6 +264,7 @@ export default function CheckoutPage() {
     setAddressFieldErrors({});
     setTouchedAddressFields({});
     setAddressFormError(null);
+    resetLookup();
     setNewAddressForm({
       fullName: "",
       phone: "",
@@ -235,7 +272,7 @@ export default function CheckoutPage() {
       addressLine2: "",
       landmark: "",
       city: "",
-      state: "Tamil Nadu",
+      state: "",
       pincode: "",
       country: "India",
       addressType: "shipping",
@@ -370,7 +407,7 @@ export default function CheckoutPage() {
         addressLine2: newAddressForm.addressLine2.trim() || undefined,
         landmark: newAddressForm.landmark.trim() || undefined,
         city: newAddressForm.city.trim(),
-        state: newAddressForm.state.trim() || "Tamil Nadu",
+        state: newAddressForm.state.trim(),
         pincode: newAddressForm.pincode.trim(),
         country: "India",
         addressType: "shipping",
@@ -663,7 +700,7 @@ export default function CheckoutPage() {
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. Ramesh Kumar"
+                      placeholder="Enter recipient name"
                       value={newAddressForm.fullName}
                       onChange={(e) =>
                         handleAddressFieldChange("fullName", e.target.value)
@@ -690,7 +727,7 @@ export default function CheckoutPage() {
                       type="tel"
                       inputMode="numeric"
                       maxLength={10}
-                      placeholder="e.g. 9876543210"
+                      placeholder="Enter phone number"
                       value={newAddressForm.phone}
                       onChange={(e) =>
                         handleAddressFieldChange("phone", e.target.value)
@@ -715,7 +752,7 @@ export default function CheckoutPage() {
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. 42, Sri Krishna Nagar, Main Road"
+                      placeholder="Enter flat / house no., building, street"
                       value={newAddressForm.addressLine1}
                       onChange={(e) =>
                         handleAddressFieldChange("addressLine1", e.target.value)
@@ -736,38 +773,20 @@ export default function CheckoutPage() {
 
                   <div>
                     <label className="block text-xs font-semibold text-theme-text-secondary mb-1">
-                      City <span className="text-red-500 font-bold ml-0.5">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Salem"
-                      value={newAddressForm.city}
-                      onChange={(e) =>
-                        handleAddressFieldChange("city", e.target.value)
-                      }
-                      onBlur={() => handleAddressFieldBlur("city")}
-                      className={`w-full min-h-[44px] rounded-xl border bg-white px-3 text-xs text-theme-text-primary placeholder:text-theme-text-muted focus:outline-none transition-colors ${
-                        touchedAddressFields.city && addressFieldErrors.city
-                          ? "border-red-500 bg-red-50/20 focus:border-red-500"
-                          : "border-theme-border-input focus:border-theme-primary"
-                      }`}
-                    />
-                    {touchedAddressFields.city && addressFieldErrors.city && (
-                      <p className="mt-1 text-xs text-red-500 font-medium">
-                        {addressFieldErrors.city}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-theme-text-secondary mb-1">
-                      PIN Code (6 digits) <span className="text-red-500 font-bold ml-0.5">*</span>
+                      <span className="flex items-center justify-between">
+                        <span>PIN Code (6 digits) <span className="text-red-500 font-bold ml-0.5">*</span></span>
+                        {isPincodeLoading && (
+                          <span className="text-[10px] text-theme-primary font-normal flex items-center gap-1">
+                            <Loader2 className="w-3 h-3 animate-spin" /> Fetching area...
+                          </span>
+                        )}
+                      </span>
                     </label>
                     <input
                       type="text"
                       inputMode="numeric"
                       maxLength={6}
-                      placeholder="e.g. 636001"
+                      placeholder="Enter 6-digit PIN code"
                       value={newAddressForm.pincode}
                       onChange={(e) =>
                         handleAddressFieldChange("pincode", e.target.value)
@@ -782,6 +801,52 @@ export default function CheckoutPage() {
                     {touchedAddressFields.pincode && addressFieldErrors.pincode && (
                       <p className="mt-1 text-xs text-red-500 font-medium">
                         {addressFieldErrors.pincode}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-theme-text-secondary mb-1">
+                      <span className="flex items-center justify-between">
+                        <span>City / Area <span className="text-red-500 font-bold ml-0.5">*</span></span>
+                        {cityOptions.length > 0 && (
+                          <span className="text-[10px] text-theme-text-muted font-normal">
+                            ({cityOptions.length} areas found)
+                          </span>
+                        )}
+                      </span>
+                    </label>
+                    {cityOptions.length > 0 ? (
+                      <Select
+                        value={newAddressForm.city}
+                        onValueChange={(val) => {
+                          handleAddressFieldChange("city", val);
+                          handleAddressFieldBlur("city");
+                        }}
+                        options={checkoutCityOptions}
+                        placeholder="Select City / Area"
+                        error={touchedAddressFields.city ? addressFieldErrors.city : undefined}
+                        className="min-h-[44px] rounded-xl bg-white"
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        placeholder="Enter your city"
+                        value={newAddressForm.city}
+                        onChange={(e) =>
+                          handleAddressFieldChange("city", e.target.value)
+                        }
+                        onBlur={() => handleAddressFieldBlur("city")}
+                        className={`w-full min-h-[44px] rounded-xl border bg-white px-3 text-xs text-theme-text-primary placeholder:text-theme-text-muted focus:outline-none transition-colors ${
+                          touchedAddressFields.city && addressFieldErrors.city
+                            ? "border-red-500 bg-red-50/20 focus:border-red-500"
+                            : "border-theme-border-input focus:border-theme-primary"
+                        }`}
+                      />
+                    )}
+                    {touchedAddressFields.city && addressFieldErrors.city && !cityOptions.length && (
+                      <p className="mt-1 text-xs text-red-500 font-medium">
+                        {addressFieldErrors.city}
                       </p>
                     )}
                   </div>
@@ -1007,7 +1072,7 @@ export default function CheckoutPage() {
             <textarea
               rows={2}
               maxLength={300}
-              placeholder="e.g. Ring bell twice, leave with security, call before arrival..."
+              placeholder="Enter delivery instructions (optional)..."
               value={orderNotes}
               onChange={(e) => setOrderNotes(e.target.value)}
               className="w-full rounded-xl border border-theme-border-input bg-white p-3 text-xs text-theme-text-primary placeholder:text-theme-text-muted focus:border-theme-primary focus:outline-none"

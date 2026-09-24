@@ -313,12 +313,12 @@ export function OfferForm({
             label="Offer Name"
             required
             maxLength={150}
-            placeholder="e.g. Diwali Festival Offer"
+            placeholder="Enter offer name"
           />
           <FormInput
             name="code"
             label="Offer / Coupon Code"
-            placeholder="Optional, e.g. DIWALI15"
+            placeholder="Enter offer code (optional)"
             isSlug={false}
             maxLength={50}
             description="Leave blank for an automatic offer that needs no code."
@@ -382,7 +382,7 @@ export function OfferForm({
                 step={1}
                 label="Buy Quantity"
                 required
-                placeholder="e.g. 2"
+                placeholder="Enter buy quantity"
               />
               <FormInput
                 name="getQuantity"
@@ -392,7 +392,7 @@ export function OfferForm({
                 step={1}
                 label="Get Quantity (free)"
                 required
-                placeholder="e.g. 1"
+                placeholder="Enter free quantity"
               />
             </>
           )}

@@ -189,6 +189,7 @@ export function formatOrderDelivery(
     id: bigint;
     uuid: string | null;
     assignment_status: string | null;
+    delivery_notes?: string | null;
     created_at: Date;
     accepted_at: Date | null;
     delivered_at: Date | null;
@@ -208,6 +209,7 @@ export function formatOrderDelivery(
       deliveryId: null,
       staff: null,
       assignedAt: null,
+      deliveryNotes: null,
     };
   }
 
@@ -229,6 +231,7 @@ export function formatOrderDelivery(
         }
       : null,
     assignedAt: latest.created_at ? latest.created_at.toISOString() : null,
+    deliveryNotes: latest.delivery_notes ?? null,
   };
 }
 

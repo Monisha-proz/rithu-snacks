@@ -197,7 +197,7 @@ function OrdersContent() {
       <div className="mb-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
         <div className="flex-1">
           <SearchInput
-            placeholder="Search by order number (e.g. ORD-2026...)"
+            placeholder="Search by order number..."
             value={searchQuery}
             onSearch={(val) => {
               setSearchQuery(val);
