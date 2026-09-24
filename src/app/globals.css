@@ -679,18 +679,53 @@ div[class*="DataTable"] table thead th {
   border-bottom: 1px solid var(--color-secondary-700) !important;
 }
 
-main table thead th *,
-.admin-table thead th *,
-table.admin-table thead th *,
-div[class*="DataTable"] table thead th * {
+main table thead th *:not([data-checkbox-container]):not([data-checkbox-container] *):not([data-checkbox-icon]),
+.admin-table thead th *:not([data-checkbox-container]):not([data-checkbox-container] *):not([data-checkbox-icon]),
+table.admin-table thead th *:not([data-checkbox-container]):not([data-checkbox-container] *):not([data-checkbox-icon]),
+div[class*="DataTable"] table thead th *:not([data-checkbox-container]):not([data-checkbox-container] *):not([data-checkbox-icon]) {
   color: #ffffff !important;
 }
 
-main table thead th svg,
-.admin-table thead th svg,
-table.admin-table thead th svg,
-div[class*="DataTable"] table thead th svg {
+main table thead th svg:not([data-checkbox-icon]),
+.admin-table thead th svg:not([data-checkbox-icon]),
+table.admin-table thead th svg:not([data-checkbox-icon]),
+div[class*="DataTable"] table thead th svg:not([data-checkbox-icon]) {
   color: #ffffff !important;
   stroke: #ffffff !important;
 }
+
+/* Checkbox icons in table headers - dark maroon stroke on white checkbox box */
+main table thead th svg[data-checkbox-icon="true"],
+.admin-table thead th svg[data-checkbox-icon="true"],
+table.admin-table thead th svg[data-checkbox-icon="true"],
+div[class*="DataTable"] table thead th svg[data-checkbox-icon="true"] {
+  color: var(--color-secondary-700, #5a1911) !important;
+  stroke: var(--color-secondary-700, #5a1911) !important;
+}
+
+input[type="checkbox"] {
+  accent-color: var(--color-secondary-600, #7a2224);
+}
+
+/* Modern Thin Scrollbar for Data Tables and Scroll Areas */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(122, 34, 36, 0.25) transparent;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(122, 34, 36, 0.25);
+  border-radius: 9999px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(122, 34, 36, 0.45);
+}
+
+
 

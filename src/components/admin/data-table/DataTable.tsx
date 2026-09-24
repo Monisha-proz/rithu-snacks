@@ -53,7 +53,10 @@ function TableHeaderCheckbox({ table }: { table: any }) {
   const isSomeSelected = table.getIsSomePageRowsSelected();
 
   return (
-    <label className="inline-flex items-center justify-center cursor-pointer select-none">
+    <label
+      data-checkbox-container="true"
+      className="inline-flex items-center justify-center cursor-pointer select-none"
+    >
       <input
         type="checkbox"
         checked={isAllSelected}
@@ -65,14 +68,22 @@ function TableHeaderCheckbox({ table }: { table: any }) {
         className={cn(
           "h-4 w-4 rounded border transition-all flex items-center justify-center cursor-pointer",
           isAllSelected || isSomeSelected
-            ? "border-white bg-white text-secondary-700 shadow-xs"
-            : "border-white/60 bg-white/10 hover:border-white"
+            ? "border-white bg-white text-secondary-800 shadow-xs"
+            : "border-white/70 bg-white/15 hover:border-white hover:bg-white/25"
         )}
       >
         {isAllSelected ? (
-          <Check className="h-3 w-3 stroke-[3.5] text-secondary-700" />
+          <Check
+            data-checkbox-icon="true"
+            className="h-3 w-3 stroke-[3.5] text-secondary-800"
+            style={{ color: "#5a1911", stroke: "#5a1911" }}
+          />
         ) : isSomeSelected ? (
-          <Minus className="h-3 w-3 stroke-[3.5] text-secondary-700" />
+          <Minus
+            data-checkbox-icon="true"
+            className="h-3 w-3 stroke-[3.5] text-secondary-800"
+            style={{ color: "#5a1911", stroke: "#5a1911" }}
+          />
         ) : null}
       </div>
     </label>
@@ -83,7 +94,10 @@ function TableRowCheckbox({ row }: { row: any }) {
   const isSelected = row.getIsSelected();
 
   return (
-    <label className="inline-flex items-center justify-center cursor-pointer select-none">
+    <label
+      data-checkbox-container="true"
+      className="inline-flex items-center justify-center cursor-pointer select-none"
+    >
       <input
         type="checkbox"
         checked={isSelected}
@@ -101,7 +115,13 @@ function TableRowCheckbox({ row }: { row: any }) {
           !row.getCanSelect() && "opacity-50 cursor-not-allowed"
         )}
       >
-        {isSelected && <Check className="h-3 w-3 stroke-[3.5] text-white" />}
+        {isSelected && (
+          <Check
+            data-checkbox-icon="row"
+            className="h-3 w-3 stroke-[3.5] text-white"
+            style={{ color: "#ffffff", stroke: "#ffffff" }}
+          />
+        )}
       </div>
     </label>
   );
@@ -259,7 +279,7 @@ function DataTable<TData, TValue>({
   return (
     <div
       className={cn(
-        "w-full flex-1 flex flex-col justify-between rounded-2xl overflow-hidden min-h-[380px] border border-neutral-200",
+        "w-full flex-1 min-h-0 flex flex-col justify-between rounded-2xl overflow-hidden border border-neutral-200 bg-white shadow-xs",
         className
       )}
     >
@@ -274,10 +294,10 @@ function DataTable<TData, TValue>({
         </div>
       )}
 
-      <div className="min-h-[240px] flex-1 flex flex-col">
-        <div className="flex-1 overflow-x-auto overflow-y-auto overscroll-x-contain">
+      <div className="min-h-0 flex-1 flex flex-col overflow-hidden relative">
+        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto overscroll-contain scrollbar-thin">
           <table className="w-full min-w-[720px] table-auto caption-bottom text-sm border-separate border-spacing-0">
-            <thead>
+            <thead className="sticky top-0 z-30 shadow-xs">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id} className="transition-colors">
                   {headerGroup.headers.map((header) => {
@@ -291,11 +311,11 @@ function DataTable<TData, TValue>({
                       <th
                         key={header.id}
                         className={cn(
-                          "h-14 px-4 text-left align-middle text-xs font-bold tracking-wider whitespace-nowrap text-white uppercase sm:px-5 bg-[var(--color-secondary-600)] border-b border-[var(--color-secondary-700)] sticky top-0 z-10",
+                          "h-14 px-4 text-left align-middle text-xs font-bold tracking-wider whitespace-nowrap text-white uppercase sm:px-5 bg-[var(--color-secondary-600)] border-b border-[var(--color-secondary-700)] sticky top-0 z-30",
                           isSelect &&
-                            "w-12 px-3 sm:px-4 text-center sticky top-0 left-0 z-30 bg-[var(--color-secondary-600)] border-r border-[var(--color-secondary-700)] shadow-[2px_0_6px_-2px_rgba(0,0,0,0.12)]",
+                            "w-12 px-3 sm:px-4 text-center sticky top-0 left-0 z-40 bg-[var(--color-secondary-600)] border-r border-[var(--color-secondary-700)] shadow-[2px_0_6px_-2px_rgba(0,0,0,0.12)]",
                           isActions &&
-                            "text-center sticky top-0 right-0 z-30 shadow-[-6px_0_10px_-4px_rgba(0,0,0,0.15)] border-l border-[var(--color-secondary-700)] bg-[var(--color-secondary-600)] text-white",
+                            "text-center sticky top-0 right-0 z-40 shadow-[-6px_0_10px_-4px_rgba(0,0,0,0.15)] border-l border-[var(--color-secondary-700)] bg-[var(--color-secondary-600)] text-white",
                           header.column.getCanSort() &&
                             "cursor-pointer select-none hover:text-white/80"
                         )}
