@@ -77,7 +77,7 @@ export function MarkDeliveredModal({
             rows={3}
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="e.g. Handed over to recipient, OTP verified, etc."
+            placeholder="Enter delivery notes (optional)..."
             className="w-full rounded-xl border border-neutral-300 p-3 text-sm text-neutral-800 focus:border-secondary-600 focus:outline-none focus:ring-2 focus:ring-secondary-600/10 transition-colors resize-none"
             maxLength={255}
           />

@@ -289,7 +289,7 @@ export function BannerForm({
               name="title"
               label="Title"
               required
-              placeholder="e.g. Diwali Special Offer"
+              placeholder="Enter banner title"
               description="Shown in the admin list and as image alt text."
               maxLength={150}
             />

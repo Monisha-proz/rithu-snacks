@@ -4,9 +4,10 @@ import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { Building2, Upload, Loader2, Save, MapPin, FileText, Globe, Mail, Phone } from "lucide-react";
 import { useCompany, useUpdateCompany, useUploadCompanyLogo } from "../hooks/use-company";
-import { Button, Input, Card, Switch, Skeleton, Textarea } from "@/components/ui";
+import { Button, Input, Card, Switch, Skeleton, Textarea, Select } from "@/components/ui";
 import { getImageUrl } from "@/lib/utils";
 import type { UpdateCompanyInput } from "../types";
+import { usePincodeLookup } from "@/lib/pincode";
 
 export function CompanySettingsForm() {
   const { data: company, isLoading } = useCompany();
@@ -14,6 +15,12 @@ export function CompanySettingsForm() {
   const uploadLogoMutation = useUploadCompanyLogo();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const {
+    isLoading: isPincodeLoading,
+    cityOptions,
+    fetchPincode,
+  } = usePincodeLookup();
 
   const [formData, setFormData] = useState<UpdateCompanyInput>({
     companyName: "",
@@ -30,10 +37,20 @@ export function CompanySettingsForm() {
     isActive: true,
   });
 
+  const companyCityOptions = React.useMemo(() => {
+    const opts = cityOptions.map((c) => ({ value: c, label: c }));
+    if (formData.city && !cityOptions.includes(formData.city)) {
+      return [{ value: formData.city, label: formData.city }, ...opts];
+    }
+    return opts;
+  }, [cityOptions, formData.city]);
+
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const isInitializedRef = useRef(false);
 
   useEffect(() => {
-    if (company) {
+    if (company && !isInitializedRef.current) {
+      isInitializedRef.current = true;
       setFormData({
         companyName: company.companyName || "",
         email: company.email || "",
@@ -51,10 +68,32 @@ export function CompanySettingsForm() {
       if (company.logo) {
         setLogoPreview(getImageUrl(company.logo));
       }
+      if (company.pincode && company.pincode.length === 6) {
+        fetchPincode(company.pincode);
+      }
     }
-  }, [company]);
+  }, [company, fetchPincode]);
 
   const handleInputChange = (field: keyof UpdateCompanyInput, value: unknown) => {
+    if (field === "pincode" && typeof value === "string") {
+      const cleanDigits = value.replace(/\D/g, "").slice(0, 6);
+      setFormData((prev) => ({ ...prev, pincode: cleanDigits }));
+
+      if (cleanDigits.length === 6) {
+        fetchPincode(cleanDigits, (data) => {
+          setFormData((prev) => ({
+            ...prev,
+            state: data.state || prev.state,
+            country: data.country || prev.country,
+            city: data.cities.includes(prev.city || "")
+              ? prev.city
+              : data.defaultCity || prev.city,
+          }));
+        });
+      }
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -235,7 +274,7 @@ export function CompanySettingsForm() {
               required
               value={formData.companyName || ""}
               onChange={(e) => handleInputChange("companyName", e.target.value)}
-              placeholder="e.g. Rithanya Food Products and Exports"
+              placeholder="Enter your company name"
             />
           </div>
 
@@ -248,7 +287,7 @@ export function CompanySettingsForm() {
               type="email"
               value={formData.email || ""}
               onChange={(e) => handleInputChange("email", e.target.value)}
-              placeholder="e.g. contact@rithusnacks.com"
+              placeholder="Enter your email address"
             />
           </div>
 
@@ -260,7 +299,7 @@ export function CompanySettingsForm() {
             <Input
               value={formData.phone || ""}
               onChange={(e) => handleInputChange("phone", e.target.value)}
-              placeholder="e.g. +91 94861 50579"
+              placeholder="Enter your phone number"
             />
           </div>
 
@@ -273,7 +312,7 @@ export function CompanySettingsForm() {
               type="url"
               value={formData.website || ""}
               onChange={(e) => handleInputChange("website", e.target.value)}
-              placeholder="https://rithusnacks.com"
+              placeholder="Enter your website URL"
             />
           </div>
         </div>
@@ -300,17 +339,51 @@ export function CompanySettingsForm() {
               rows={2}
               value={formData.address || ""}
               onChange={(e) => handleInputChange("address", e.target.value)}
-              placeholder="6/1033, Thillai Nagar Trichy Road"
+              placeholder="Enter your street address"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-neutral-700">City</label>
+            <label className="text-sm font-medium text-neutral-700 flex items-center justify-between">
+              <span>PIN Code</span>
+              {isPincodeLoading && (
+                <span className="text-xs text-primary font-normal flex items-center gap-1">
+                  <Loader2 className="w-3 h-3 animate-spin" /> Fetching area...
+                </span>
+              )}
+            </label>
             <Input
-              value={formData.city || ""}
-              onChange={(e) => handleInputChange("city", e.target.value)}
-              placeholder="Namakkal"
+              value={formData.pincode || ""}
+              onChange={(e) => handleInputChange("pincode", e.target.value)}
+              placeholder="Enter your PIN code"
+              maxLength={6}
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-neutral-700 flex items-center justify-between">
+              <span>City / Area</span>
+              {cityOptions.length > 0 && (
+                <span className="text-xs text-neutral-500 font-normal">
+                  ({cityOptions.length} areas found)
+                </span>
+              )}
+            </label>
+            {cityOptions.length > 0 ? (
+              <Select
+                value={formData.city || ""}
+                onValueChange={(val) => handleInputChange("city", val)}
+                options={companyCityOptions}
+                placeholder="Select City / Area"
+                className="bg-white border-neutral-200"
+              />
+            ) : (
+              <Input
+                value={formData.city || ""}
+                onChange={(e) => handleInputChange("city", e.target.value)}
+                placeholder="Enter your city"
+              />
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -318,26 +391,16 @@ export function CompanySettingsForm() {
             <Input
               value={formData.state || ""}
               onChange={(e) => handleInputChange("state", e.target.value)}
-              placeholder="Tamil Nadu"
+              placeholder="Enter your state"
             />
           </div>
 
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-neutral-700">Country</label>
             <Input
-              value={formData.country || "India"}
+              value={formData.country ?? ""}
               onChange={(e) => handleInputChange("country", e.target.value)}
-              placeholder="India"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-neutral-700">PIN Code</label>
-            <Input
-              value={formData.pincode || ""}
-              onChange={(e) => handleInputChange("pincode", e.target.value)}
-              placeholder="637002"
-              maxLength={6}
+              placeholder="Enter your country"
             />
           </div>
         </div>
@@ -363,7 +426,7 @@ export function CompanySettingsForm() {
             <Input
               value={formData.gstNumber || ""}
               onChange={(e) => handleInputChange("gstNumber", e.target.value.toUpperCase())}
-              placeholder="33AAAAA0000A1Z5"
+              placeholder="Enter your GST number"
               maxLength={15}
             />
           </div>
@@ -373,7 +436,7 @@ export function CompanySettingsForm() {
             <Input
               value={formData.panNumber || ""}
               onChange={(e) => handleInputChange("panNumber", e.target.value.toUpperCase())}
-              placeholder="AAAAA0000A"
+              placeholder="Enter your PAN number"
               maxLength={10}
             />
           </div>

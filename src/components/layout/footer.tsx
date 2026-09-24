@@ -213,7 +213,7 @@ export function Footer() {
       router.push("/return-refund-policy");
       return;
     }
-    if (item === "FAQ's") {
+    if (item === "FAQ's" || item === "FAQs" || item === "FAQ" || item === "Faq") {
       router.push("/faq");
       return;
     }
@@ -354,8 +354,8 @@ export function Footer() {
             </div>
 
             {/* Column 4: Brand Logo & Address */}
-            <div className="mt-2 lg:mt-0">
-              <div className="flex justify-center">
+            <div className="mt-2 lg:mt-0 w-full lg:w-auto max-w-full sm:max-w-md lg:max-w-[320px] flex flex-col items-center">
+              <div className="flex justify-center w-full">
                 <Image
                   src={companyLogo}
                   alt={companyName}
@@ -365,22 +365,23 @@ export function Footer() {
                 />
               </div>
 
-              <h3 className="text-xl lg:text-2xl font-semibold mt-5 text-center">
+              <h3 className="text-xl lg:text-2xl font-semibold mt-4 text-center w-full">
                 {companyName}
               </h3>
 
-              <div className="flex gap-2 mt-4 justify-center lg:justify-start">
+              <div className="flex items-start justify-start gap-2.5 mt-4 text-left w-full">
                 <Image
                   src={ICONS.location}
                   alt="location_icon"
-                  width={25}
-                  height={25}
+                  width={22}
+                  height={22}
+                  className="shrink-0 mt-0.5 object-contain"
                 />
                 <a
                   href={mapsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="header-font text-sm hover:underline text-gray-200"
+                  className="header-font text-sm hover:underline text-gray-200 leading-relaxed break-words"
                 >
                   {formattedLocation}
                 </a>

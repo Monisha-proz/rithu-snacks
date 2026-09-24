@@ -151,7 +151,6 @@ export function ProductSection({ selectedCategoryId }: ProductSectionProps) {
               alt="view_all"
               width={16}
               height={16}
-              className="invert"
             />
             <span className="header-font">
               {showAll ? "Show Less" : "View All"}

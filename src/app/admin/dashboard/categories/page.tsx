@@ -194,14 +194,14 @@ export default function AdminCategoriesPage() {
       : null;
 
   return (
-    <div className="flex flex-1 min-h-0 flex-col">
+    <div className="flex flex-1 flex-col">
       {/* <AdminBreadcrumb items={[{ label: "Categories" }]} /> */}
       <AdminPageHeader
         title="Categories"
         description="Manage your product categories"
       />
-      <AdminContent className="flex-1 min-h-0 overflow-hidden">
-        <div className="flex h-full flex-col overflow-hidden bg-[var(--color-background)] py-1 rounded-2xl">
+      <AdminContent className="flex-1">
+        <div className="flex flex-1 flex-col bg-[var(--color-background)] py-1 rounded-2xl">
           {/* Stats Cards */}
           {/* <div className="flex-shrink-0 flex gap-4 overflow-x-auto overscroll-x-contain pb-2">
             <StatsCard
@@ -252,7 +252,7 @@ export default function AdminCategoriesPage() {
           </div>
 
           {/* Table Container */}
-          <div className="mt-6 flex-1 min-h-0 overflow-hidden flex flex-col">
+          <div className="mt-6 flex-1 flex flex-col">
             <BulkActionsBar
               selectedCount={selectedRows.length}
               entityName="category"

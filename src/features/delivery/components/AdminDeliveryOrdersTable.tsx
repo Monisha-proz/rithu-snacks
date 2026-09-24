@@ -260,7 +260,7 @@ export function AdminDeliveryOrdersTable() {
   }
 
   return (
-    <div className="flex flex-1 min-h-0 flex-col gap-3">
+    <div className="flex flex-1 flex-col gap-3">
       {/* Search & Filter Toolbar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-white p-3 rounded-xl border border-cream-border">
         <div className="flex flex-wrap items-center gap-2 flex-1">
@@ -328,7 +328,7 @@ export function AdminDeliveryOrdersTable() {
       </div>
 
       {/* Data Table */}
-      <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+      <div className="flex-1 flex flex-col">
         <DataTable
           columns={columns}
           data={orders}

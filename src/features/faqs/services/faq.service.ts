@@ -20,7 +20,10 @@ async function resolveInternalUserId(
 ): Promise<bigint | undefined> {
   if (!sessionUserId) return undefined;
   const user = await userRepository.findById(sessionUserId);
-  return user?.internalId;
+  if (!user || user.internalId === undefined || user.internalId === null) {
+    return undefined;
+  }
+  return BigInt(user.internalId);
 }
 
 async function requireFaq(id: number) {

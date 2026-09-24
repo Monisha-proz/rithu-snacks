@@ -31,6 +31,7 @@ export function Pledge() {
               flex
               flex-col
               items-center
+              cursor-default
             "
             imageClassName="
               w-[110px]
@@ -41,6 +42,7 @@ export function Pledge() {
               duration-300
               group-hover:scale-105
               group-hover:-translate-y-2
+              cursor-default
             "
             titleClassName="
               mt-1

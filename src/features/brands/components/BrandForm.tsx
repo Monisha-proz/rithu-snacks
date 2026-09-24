@@ -53,7 +53,7 @@ function BrandForm({
           <FormInput
             name="slug"
             label="Brand Code"
-            placeholder="e.g. RITHU_SNACKS"
+            placeholder="Enter brand code"
             infoMessage="Enter brand code (e.g. RITHU_SNACKS). Special characters are allowed."
             required
           />

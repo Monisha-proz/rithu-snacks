@@ -36,3 +36,32 @@ export const PATCH = createApiHandler(
     bodySchema: updateFaqStatusSchema,
   }
 );
+
+export const PUT = createApiHandler(
+  {
+    PUT: async (_request, context) => {
+      const parsedParam = faqIdParamSchema.safeParse({
+        id: context.params?.id,
+      });
+
+      if (!parsedParam.success) {
+        throw ApiError.badRequest("Invalid FAQ id");
+      }
+
+      const body = context.body as UpdateFaqStatusInput;
+      const result = await faqService.updateFaqStatus(
+        parsedParam.data.id,
+        body,
+        context.session?.user?.id
+      );
+
+      return apiSuccess(result, "FAQ status updated successfully", 200);
+    },
+  },
+  {
+    method: "PUT",
+    requireAuth: true,
+    requiredRole: ["ADMIN", "STAFF"],
+    bodySchema: updateFaqStatusSchema,
+  }
+);

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Sparkles, CheckCircle2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { ProductImage } from "@/components/common/ProductImage";
 
 export interface GalleryImage {
@@ -30,6 +30,11 @@ function ProductGallery({
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const validImages = (images || []).filter((img) => img && img.url && img.url.trim() !== "");
+
+  // Reset selected image when images array changes (e.g. variant change)
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [images]);
 
   if (validImages.length === 0) {
     return (
@@ -115,7 +120,7 @@ function ProductGallery({
               type="button"
               variant="secondary"
               size="icon"
-              className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-stone-700 shadow-md h-9 w-9 rounded-full border border-stone-200 transition-transform active:scale-95"
+              className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-stone-700 shadow-md h-9 w-9 rounded-full border border-stone-200 transition-transform active:scale-95 cursor-pointer z-20"
               onClick={() => setSelectedIndex((i) => (i > 0 ? i - 1 : validImages.length - 1))}
               aria-label="Previous image"
             >
@@ -125,7 +130,7 @@ function ProductGallery({
               type="button"
               variant="secondary"
               size="icon"
-              className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-stone-700 shadow-md h-9 w-9 rounded-full border border-stone-200 transition-transform active:scale-95"
+              className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-stone-700 shadow-md h-9 w-9 rounded-full border border-stone-200 transition-transform active:scale-95 cursor-pointer z-20"
               onClick={() => setSelectedIndex((i) => (i < validImages.length - 1 ? i + 1 : 0))}
               aria-label="Next image"
             >
@@ -136,27 +141,32 @@ function ProductGallery({
       </div>
 
       {validImages.length > 1 && (
-        <div className="flex gap-2.5 overflow-x-auto pb-1.5 scrollbar-thin">
-          {validImages.map((image, index) => (
-            <button
-              key={image.id || index}
-              type="button"
-              onClick={() => setSelectedIndex(index)}
-              className={cn(
-                "relative h-18 w-18 shrink-0 overflow-hidden rounded-xl border-2 transition-all p-0.5 bg-white",
-                selectedIndex === index
-                  ? "border-[#8B1D1D] ring-2 ring-[#8B1D1D]/20 shadow-xs scale-102"
-                  : "border-stone-200 hover:border-stone-400 opacity-70 hover:opacity-100"
-              )}
-            >
-              <ProductImage
-                src={image.url}
-                alt={image.altText || `${productName} ${index + 1}`}
-                containerClassName="w-full h-full rounded-lg"
-                className="w-full h-full object-cover"
-              />
-            </button>
-          ))}
+        <div className="space-y-2">
+          <div className="flex gap-2.5 overflow-x-auto pb-1.5 scrollbar-thin">
+            {validImages.map((image, index) => (
+              <button
+                key={image.id || index}
+                type="button"
+                onClick={() => setSelectedIndex(index)}
+                className={cn(
+                  "relative h-18 w-18 shrink-0 overflow-hidden rounded-xl border-2 transition-all p-0.5 bg-white cursor-pointer",
+                  selectedIndex === index
+                    ? "border-[#8B1D1D] ring-2 ring-[#8B1D1D]/20 shadow-xs scale-102"
+                    : "border-stone-200 hover:border-stone-400 opacity-70 hover:opacity-100"
+                )}
+              >
+                <ProductImage
+                  src={image.url}
+                  alt={image.altText || `${productName} ${index + 1}`}
+                  containerClassName="w-full h-full rounded-lg"
+                  className="w-full h-full object-cover"
+                />
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-stone-500 font-medium">
+            {selectedIndex + 1} of {validImages.length} media
+          </p>
         </div>
       )}
     </div>

@@ -19,6 +19,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/components/ui/Toast";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { WHATSAPP_TEMPLATES } from "@/lib/whatsapp/whatsapp-utils";
 
 interface WhatsAppStatusData {
@@ -42,6 +44,7 @@ export default function AdminWhatsAppPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [isDisconnectDialogOpen, setIsDisconnectDialogOpen] = useState(false);
 
   // Message Sender State
   const [recipientPhone, setRecipientPhone] = useState("");
@@ -108,12 +111,8 @@ export default function AdminWhatsAppPage() {
     }
   };
 
-  // Disconnect
-  const handleDisconnect = async () => {
-    if (!confirm("Are you sure you want to log out and disconnect your WhatsApp session?")) {
-      return;
-    }
-
+  // Disconnect Confirmation Handler
+  const confirmDisconnect = async () => {
     setIsDisconnecting(true);
     setSendResult(null);
     try {
@@ -128,11 +127,16 @@ export default function AdminWhatsAppPage() {
           user: null,
           errorMessage: null,
         });
+        toast.success("Disconnected", "WhatsApp session has been disconnected.");
+      } else {
+        toast.error("Disconnection Failed", json.message || "Failed to disconnect WhatsApp.");
       }
     } catch (err) {
       console.error("Failed to disconnect WhatsApp:", err);
+      toast.error("Disconnection Failed", "Failed to disconnect WhatsApp.");
     } finally {
       setIsDisconnecting(false);
+      setIsDisconnectDialogOpen(false);
     }
   };
 
@@ -234,7 +238,7 @@ export default function AdminWhatsAppPage() {
         }
       />
 
-      <WhatsAppNavTabs />
+      <WhatsAppNavTabs active="overview" />
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -294,9 +298,9 @@ export default function AdminWhatsAppPage() {
                 <Button
                   variant="destructive"
                   size="md"
-                  onClick={handleDisconnect}
+                  onClick={() => setIsDisconnectDialogOpen(true)}
                   disabled={isDisconnecting}
-                  className="w-full gap-2 text-xs font-semibold"
+                  className="w-full gap-2 text-xs font-semibold cursor-pointer"
                 >
                   <LogOut className="h-4 w-4" />
                   {isDisconnecting ? "Disconnecting..." : "Disconnect / Log Out"}
@@ -369,9 +373,9 @@ export default function AdminWhatsAppPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={handleDisconnect}
+                    onClick={confirmDisconnect}
                     disabled={isDisconnecting}
-                    className="text-xs text-red-600 hover:text-red-700"
+                    className="text-xs text-red-600 hover:text-red-700 cursor-pointer"
                   >
                     Cancel Pairing
                   </Button>
@@ -410,7 +414,7 @@ export default function AdminWhatsAppPage() {
           </div>
 
           {/* Card 2: Anti-Ban & Performance Highlights */}
-          <div className="bg-white rounded-2xl border border-neutral-200/80 shadow-xs p-5 space-y-3">
+          {/* <div className="bg-white rounded-2xl border border-neutral-200/80 shadow-xs p-5 space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400">
               Anti-Ban & Engine Safeguards
             </h3>
@@ -437,7 +441,7 @@ export default function AdminWhatsAppPage() {
                 </span>
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Right Column: Message Sender & Templates */}
@@ -490,7 +494,7 @@ export default function AdminWhatsAppPage() {
                 <div className="relative">
                   <Input
                     type="tel"
-                    placeholder="e.g. 9876543210 or +919876543210"
+                    placeholder="Enter recipient phone number"
                     value={recipientPhone}
                     onChange={(e) => setRecipientPhone(e.target.value)}
                     className="font-mono text-sm h-11"
@@ -576,6 +580,18 @@ export default function AdminWhatsAppPage() {
           </div>
         </div>
       </div>
+
+      {/* Disconnect WhatsApp Confirmation Dialog */}
+      <ConfirmDialog
+        open={isDisconnectDialogOpen}
+        onClose={() => setIsDisconnectDialogOpen(false)}
+        onConfirm={confirmDisconnect}
+        title="Disconnect WhatsApp?"
+        description="Are you sure you want to log out and disconnect your WhatsApp session?"
+        confirmText="Disconnect"
+        variant="destructive"
+        isLoading={isDisconnecting}
+      />
     </div>
   );
 }

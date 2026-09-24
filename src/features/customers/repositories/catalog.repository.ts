@@ -18,6 +18,7 @@ import type {
   CustomerCategoryDto,
   CustomerProductListItemDto,
   CustomerProductDetailDto,
+  CustomerProductImageDto,
   CustomerVariantListItemDto,
   CustomerVariantDetailDto,
   CustomerVariantImageDto,
@@ -85,7 +86,13 @@ function toVariantListItemDto(
     cooking_recipe?: string | null;
     shelf_life?: string | null;
     variant_unit_prices?: VariantUnitPriceForDto[] | null;
-    product_variant_images?: Array<{ image_url: string }> | null;
+    product_variant_images?: Array<{
+      id?: bigint;
+      uuid?: string | null;
+      image_url: string;
+      sort_order?: number;
+      is_primary?: boolean;
+    }> | null;
   },
   productUuid: string,
   productName: string,
@@ -125,6 +132,12 @@ function toVariantListItemDto(
       ? computeSellingPrice(Number(defaultUnitPrice.base_price))
       : 0,
     primaryImage: variant.product_variant_images?.[0]?.image_url ?? fallbackImageUrl ?? null,
+    images: (variant.product_variant_images || []).map((img, idx) => ({
+      id: img.uuid || String((img as { id?: bigint }).id ?? idx),
+      imageUrl: img.image_url,
+      sortOrder: (img as { sort_order?: number }).sort_order ?? idx,
+      isPrimary: Boolean((img as { is_primary?: boolean }).is_primary ?? (idx === 0)),
+    })),
     outOfStock: Boolean(variant.out_of_stock),
     ingredients: variant.ingredients ?? null,
     isReadyToMix: Boolean(variant.is_ready_to_mix),
@@ -580,6 +593,14 @@ export const catalogRepository = {
     const primaryVariant =
       product.variants.find((v) => v.is_default) ?? product.variants[0] ?? null;
 
+    const productImages: CustomerProductImageDto[] = (product.images || []).map((img) => ({
+      id: String(img.id),
+      imageUrl: img.image_url,
+      altText: img.altText ?? null,
+      sortOrder: img.sortOrder ?? 0,
+      isPrimary: Boolean(img.isPrimary),
+    }));
+
     return {
       id: productUuid,
       name: product.name,
@@ -593,6 +614,7 @@ export const catalogRepository = {
         : null,
       category: categoryDto,
       image: imgUrl,
+      images: productImages,
       variants: variantsDto,
     };
   },

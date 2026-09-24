@@ -175,7 +175,7 @@ export function FaqSection() {
               type="search"
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
-              placeholder="Search by keyword (e.g. shelf life, shipping, bulk discounts)"
+              placeholder="Search FAQs by keyword..."
               aria-label="Search FAQs"
               className="min-w-0 flex-1 bg-transparent py-2 text-sm text-[var(--neutral-800)] outline-none placeholder:text-[var(--neutral-400)]"
             />

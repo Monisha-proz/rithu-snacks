@@ -52,8 +52,6 @@ export function SettingsTab() {
 
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
-      const firstError = Object.values(errors)[0];
-      toast.error(firstError);
       return;
     }
 

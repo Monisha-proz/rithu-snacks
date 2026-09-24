@@ -283,7 +283,7 @@ function VariantForm({
             <FormInput
               name="variantName"
               label="Item Name"
-              placeholder="e.g. Classic Mixture, Butter Cookies"
+              placeholder="Enter item name"
               maxLength={100}
               required
             />
@@ -293,7 +293,7 @@ function VariantForm({
             <FormInput
               name="variantName"
               label="Item Name"
-              placeholder="e.g. Classic Mixture, Butter Cookies"
+              placeholder="Enter item name"
               maxLength={100}
               required
             />
@@ -383,7 +383,7 @@ function VariantForm({
               value={extraSlug}
               maxLength={255}
               onChange={(e) => handleExtraSlugChange(e.target.value)}
-              placeholder="e.g. CLASSIC_MIX"
+              placeholder="Enter item code"
               className="flex-1 min-w-0 px-4 py-2 text-sm text-theme-text-primary bg-transparent outline-none font-mono placeholder:text-theme-text-muted placeholder:font-sans uppercase"
             />
           </div>
@@ -428,7 +428,7 @@ function VariantForm({
             <FormInput
               name="shelfLife"
               label="Best Before"
-              placeholder="e.g. 6 months from packing"
+              placeholder="Enter best before / shelf life"
               maxLength={100}
             />
           </div>
@@ -436,7 +436,7 @@ function VariantForm({
           <FormInput
             name="shelfLife"
             label="Best Before"
-            placeholder="e.g. 6 months from packing"
+            placeholder="Enter best before / shelf life"
             maxLength={100}
           />
         )}
@@ -465,7 +465,7 @@ function VariantForm({
           <FormTextarea
             name="cookingRecipe"
             label="Cooking Recipe"
-            placeholder="Preparation / cooking instructions for this item (e.g. mix ingredients before serving)"
+            placeholder="Enter preparation or cooking instructions"
             rows={4}
           />
         )}
@@ -490,7 +490,7 @@ function VariantForm({
         <FormTextarea
           name="ingredients"
           label="Ingredients"
-          placeholder="e.g. Rice flour, Bengal gram, Groundnut oil, Salt, Spices"
+          placeholder="Enter ingredients (separated by commas)"
           rows={3}
         />
 

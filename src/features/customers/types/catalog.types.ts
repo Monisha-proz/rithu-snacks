@@ -70,6 +70,7 @@ export interface CustomerVariantListItemDto {
   /** Default pack size's price after offers; mirrors `unitPrices`. */
   salePrice: number;
   primaryImage: string | null;
+  images?: CustomerVariantImageDto[];
   outOfStock?: boolean;
   ingredients: string | null;
   isReadyToMix: boolean;
@@ -85,6 +86,14 @@ export interface CustomerVariantListItemDto {
 export interface CustomerVariantImageDto {
   id: string;
   imageUrl: string;
+  sortOrder: number;
+  isPrimary: boolean;
+}
+
+export interface CustomerProductImageDto {
+  id: string;
+  imageUrl: string;
+  altText?: string | null;
   sortOrder: number;
   isPrimary: boolean;
 }
@@ -106,6 +115,7 @@ export interface CustomerProductDetailDto {
     name: string;
   } | null;
   image: string | null;
+  images?: CustomerProductImageDto[];
   variants: CustomerVariantListItemDto[];
 }
 

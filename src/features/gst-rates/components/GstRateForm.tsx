@@ -208,7 +208,7 @@ export function GstRateForm({
               onChange={handleTotalGstInputChange}
               onKeyDown={handleKeyDown}
               onPaste={handlePaste}
-              placeholder="e.g. 18 or 0"
+              placeholder="Enter GST rate percentage"
               className="w-full h-11 px-4 pr-10 rounded-xl border border-theme-border-input bg-white text-base font-bold text-theme-text-primary placeholder:text-theme-text-muted/60 focus:border-theme-primary focus:ring-2 focus:ring-theme-primary/15 focus:outline-none transition-all"
             />
             <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-theme-text-muted pointer-events-none">

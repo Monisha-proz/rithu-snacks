@@ -274,7 +274,7 @@ function DataTable<TData, TValue>({
         </div>
       )}
 
-      <div className="min-h-[240px] flex-1 overflow-hidden flex flex-col">
+      <div className="min-h-[240px] flex-1 flex flex-col">
         <div className="flex-1 overflow-x-auto overflow-y-auto overscroll-x-contain">
           <table className="w-full min-w-[720px] table-auto caption-bottom text-sm border-separate border-spacing-0">
             <thead>

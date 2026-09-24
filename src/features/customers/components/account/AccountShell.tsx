@@ -54,7 +54,7 @@ export function AccountShell({ activeTab, onTabChange }: AccountShellProps) {
     { id: "profile", label: "Profile Details" },
     { id: "addresses", label: "Saved Addresses" },
     { id: "wishlist", label: "Wishlist", badge: wishlistCount > 0 ? String(wishlistCount) : undefined },
-    { id: "wallet", label: "Wallet & Rewards" },
+    // { id: "wallet", label: "Wallet & Rewards" },
     { id: "settings", label: "Settings & Password" },
     { id: "logout", label: "Logout" },
   ];
@@ -65,7 +65,7 @@ export function AccountShell({ activeTab, onTabChange }: AccountShellProps) {
     profile: "Profile Details",
     addresses: "Saved Addresses",
     wishlist: "Wishlist",
-    wallet: "Wallet & Rewards",
+    // wallet: "Wallet & Rewards",
     settings: "Settings",
   };
 

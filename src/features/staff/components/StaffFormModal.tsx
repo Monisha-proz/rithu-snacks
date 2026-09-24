@@ -207,7 +207,7 @@ export function StaffFormModal({
           </Label>
           <Input
             id="staff-name"
-            placeholder="e.g. Ramesh Kumar"
+            placeholder="Enter staff full name"
             leftIcon={<User className="h-4 w-4" />}
             {...register("name")}
             error={errors.name?.message}
@@ -223,7 +223,7 @@ export function StaffFormModal({
           <Input
             id="staff-email"
             type="email"
-            placeholder="e.g. ramesh@example.com"
+            placeholder="Enter staff email address"
             leftIcon={<Mail className="h-4 w-4" />}
             {...register("email")}
             error={errors.email?.message}

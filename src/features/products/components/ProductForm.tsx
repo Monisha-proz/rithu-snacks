@@ -206,7 +206,7 @@ function ProductForm({
           <FormInput
             name="name"
             label="Product Name"
-            placeholder="e.g. Banana Chips"
+            placeholder="Enter product name"
             required
           />
 
@@ -290,7 +290,7 @@ function ProductForm({
               type="text"
               value={extraSlug}
               onChange={(e) => handleExtraSlugChange(e.target.value)}
-              placeholder="e.g. BANANA_CHIPS"
+              placeholder="Enter product code"
               className="flex-1 min-w-0 px-3.5 py-2 text-sm text-theme-text-primary bg-transparent outline-none font-mono placeholder:text-theme-text-muted placeholder:font-sans uppercase"
             />
           </div>

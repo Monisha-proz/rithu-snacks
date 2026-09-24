@@ -100,7 +100,7 @@ function AdminLoginForm() {
             name="email"
             label="Email Address"
             type="email"
-            placeholder="admin@rithusnacks.com"
+            placeholder="Enter your email"
             autoComplete="email"
             leftIcon={<Mail size={18} />}
             required

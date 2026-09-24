@@ -69,7 +69,7 @@ function CategoryForm({
           <FormInput
             name="slug"
             label="Category Code"
-            placeholder="e.g. SWEETS_SNACKS"
+            placeholder="Enter category code"
             infoMessage="Use letters, numbers, and underscores only (e.g. SWEETS_SNACKS). No spaces or other special characters allowed."
             required
           />

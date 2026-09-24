@@ -88,7 +88,7 @@ export default function InventoryHistoryPage() {
   const transactionData = data?.data?.data ?? [];
 
   return (
-    <div className="flex flex-1 min-h-0 flex-col">
+    <div className="flex flex-1 flex-col">
       <AdminBreadcrumb
         items={[
           { label: "Dashboard", href: "/admin/dashboard" },
@@ -100,7 +100,7 @@ export default function InventoryHistoryPage() {
         title="Inventory History"
         description="View all inventory transactions"
       />
-      <AdminContent className="flex-1 min-h-0 overflow-hidden">
+      <AdminContent className="flex-1">
         <div className="flex-shrink-0 mb-4 flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="flex-1 max-w-md">
             <input
@@ -139,7 +139,7 @@ export default function InventoryHistoryPage() {
           {hasActiveFilters && <ClearFiltersButton onClick={handleClearFilters} />}
         </div>
 
-        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+        <div className="flex-1 flex flex-col">
           <DataTable
             columns={columns}
             data={transactionData}

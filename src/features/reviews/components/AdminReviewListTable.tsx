@@ -338,7 +338,7 @@ export function AdminReviewListTable({
   ];
 
   return (
-    <div className="flex flex-1 h-full min-h-0 flex-col overflow-hidden bg-[var(--color-background)] rounded-2xl">
+    <div className="flex flex-1 flex-col bg-[var(--color-background)] rounded-2xl">
       {/* Top Filter and Controls Bar */}
       <div className="flex-shrink-0 mb-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         {/* Left Side: Search, Rating Filter & Sort */}
@@ -405,7 +405,7 @@ export function AdminReviewListTable({
       </div>
 
       {/* Main Table Container */}
-      <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+      <div className="flex-1 flex flex-col">
         {isLoading ? (
           <div className="flex-1 flex items-center justify-center rounded-2xl border border-cream-border bg-white p-12">
             <LoadingState text="Loading reviews..." />

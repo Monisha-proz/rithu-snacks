@@ -32,7 +32,7 @@ export function InfoCard({
   imageHeight = 140,
 }: InfoCardProps) {
   return (
-    <div className={`group cursor-pointer ${cardClassName}`}>
+    <div className={`group cursor-default ${cardClassName}`}>
       <div className={imageWrapperClassName}>
         <Image
           src={getImageUrl(image)}

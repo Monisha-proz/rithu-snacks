@@ -10,6 +10,7 @@ import { useAddToCartMutation } from "../../hooks/use-customer-cart";
 import { CustomDropdown, type DropdownOption } from "./CustomDropdown";
 import { SearchInput } from "@/components/common/search-input";
 import { ProductImage } from "@/components/common/ProductImage";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 const STATUS_OPTIONS: DropdownOption[] = [
   { value: "all", label: "All Orders" },
@@ -42,6 +43,7 @@ export function OrdersTab({
   const [trackingOrder, setTrackingOrder] = useState<OrderDetailResponse | null>(null);
   const [reorderingId, setReorderingId] = useState<string | null>(null);
   const [reorderSuccessId, setReorderSuccessId] = useState<string | null>(null);
+  const [orderToCancel, setOrderToCancel] = useState<OrderDetailResponse | null>(null);
 
   const cancelMutation = useCancelCustomerOrder();
   const addToCartMutation = useAddToCartMutation();
@@ -456,14 +458,7 @@ export function OrdersTab({
                     <button
                       type="button"
                       disabled={cancelMutation.isPending}
-                      onClick={() => {
-                        if (window.confirm("Are you sure you want to cancel this order?")) {
-                          cancelMutation.mutate({
-                            uuid: order.id,
-                            payload: { note: "Cancelled by customer" },
-                          });
-                        }
-                      }}
+                      onClick={() => setOrderToCancel(order)}
                       className="border border-red-200 hover:bg-red-50 text-red-600 text-xs font-semibold uppercase tracking-wider py-2.5 px-4 rounded-lg transition-colors cursor-pointer min-h-[40px] disabled:opacity-50 ml-auto"
                     >
                       {cancelMutation.isPending ? "Cancelling..." : "Cancel Order"}
@@ -692,6 +687,26 @@ export function OrdersTab({
           </div>
         </div>
       )}
+
+      {/* Cancel Order Confirmation Dialog */}
+      <ConfirmDialog
+        open={!!orderToCancel}
+        onClose={() => setOrderToCancel(null)}
+        onConfirm={() => {
+          if (orderToCancel) {
+            cancelMutation.mutate({
+              uuid: orderToCancel.id,
+              payload: { note: "Cancelled by customer" },
+            });
+            setOrderToCancel(null);
+          }
+        }}
+        title="Cancel Order?"
+        description="Are you sure you want to cancel this order? This action cannot be undone."
+        confirmText="Cancel Order"
+        variant="destructive"
+        isLoading={cancelMutation.isPending}
+      />
     </div>
   );
 }

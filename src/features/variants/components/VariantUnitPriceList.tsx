@@ -351,7 +351,7 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
                     value={form.unitValue}
                     onChange={(e) => handleFieldChange("unitValue", e.target.value)}
                     disabled={isBusy}
-                    placeholder="e.g. 500"
+                    placeholder="Enter measurement value"
                     className={`w-full h-10 px-3 rounded-lg border text-sm bg-white focus:outline-none focus:ring-2 disabled:opacity-60 disabled:bg-neutral-100 ${
                       fieldErrors.unitValue
                         ? "border-red-500 ring-2 ring-red-500/10 focus:border-red-500 focus:ring-red-500/20"
@@ -379,7 +379,7 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
                     value={form.sku}
                     onChange={(e) => handleFieldChange("sku", e.target.value)}
                     disabled={isBusy}
-                    placeholder="e.g. MIXTURE-500G"
+                    placeholder="Enter SKU code"
                     className={`w-full h-10 px-3 rounded-lg border text-sm font-mono bg-white focus:outline-none focus:ring-2 disabled:opacity-60 disabled:bg-neutral-100 ${
                       fieldErrors.sku
                         ? "border-red-500 ring-2 ring-red-500/10 focus:border-red-500 focus:ring-red-500/20"
@@ -408,7 +408,7 @@ function VariantUnitPriceList({ productUuid, variantUuid }: VariantUnitPriceList
                     value={form.basePrice}
                     onChange={(e) => handleFieldChange("basePrice", e.target.value)}
                     disabled={isBusy}
-                    placeholder="e.g. 260"
+                    placeholder="Enter price per pack"
                     className={`w-full h-10 px-3 rounded-lg border text-sm bg-white focus:outline-none focus:ring-2 disabled:opacity-60 disabled:bg-neutral-100 ${
                       fieldErrors.basePrice
                         ? "border-red-500 ring-2 ring-red-500/10 focus:border-red-500 focus:ring-red-500/20"

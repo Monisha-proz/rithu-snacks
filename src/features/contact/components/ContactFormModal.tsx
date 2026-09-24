@@ -102,7 +102,13 @@ export function ContactFormModal({ open, onClose }: ContactFormModalProps) {
     field: keyof CreateContactInput,
     value: string
   ) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    let sanitizedValue = value;
+    if (field === "phone") {
+      // Allow only numbers and restrict to 10 digits
+      sanitizedValue = value.replace(/\D/g, "").slice(0, 10);
+    }
+
+    setFormData((prev) => ({ ...prev, [field]: sanitizedValue }));
     // Clear specific field error on typing
     if (fieldErrors[field]) {
       setFieldErrors((prev) => {
@@ -291,7 +297,7 @@ export function ContactFormModal({ open, onClose }: ContactFormModalProps) {
                     <input
                       id="contact-name"
                       type="text"
-                      placeholder="e.g. John Doe"
+                      placeholder="Enter your full name"
                       value={formData.name}
                       onChange={(e) => handleChange("name", e.target.value)}
                       disabled={submitContactMutation.isPending}
@@ -326,7 +332,7 @@ export function ContactFormModal({ open, onClose }: ContactFormModalProps) {
                     <input
                       id="contact-email"
                       type="email"
-                      placeholder="e.g. name@example.com"
+                      placeholder="Enter your email address"
                       value={formData.email}
                       onChange={(e) => handleChange("email", e.target.value)}
                       disabled={submitContactMutation.isPending}
@@ -364,7 +370,9 @@ export function ContactFormModal({ open, onClose }: ContactFormModalProps) {
                     <input
                       id="contact-phone"
                       type="tel"
-                      placeholder="e.g. 9876543210"
+                      inputMode="numeric"
+                      maxLength={10}
+                      placeholder="Enter your phone number"
                       value={formData.phone}
                       onChange={(e) => handleChange("phone", e.target.value)}
                       disabled={submitContactMutation.isPending}
@@ -399,7 +407,7 @@ export function ContactFormModal({ open, onClose }: ContactFormModalProps) {
                     <input
                       id="contact-subject"
                       type="text"
-                      placeholder="e.g. Order Inquiry / Bulk Snacks"
+                      placeholder="Enter message subject"
                       value={formData.subject}
                       onChange={(e) => handleChange("subject", e.target.value)}
                       disabled={submitContactMutation.isPending}

@@ -17,18 +17,26 @@ const answerSchema = z
   .max(5000, "Answer cannot exceed 5000 characters");
 
 const categorySchema = z
-  .string()
-  .trim()
-  .max(100, "Category cannot exceed 100 characters")
-  .nullable()
-  .optional();
+  .preprocess(
+    (val) => (val === "" ? null : val),
+    z
+      .string()
+      .trim()
+      .max(100, "Category cannot exceed 100 characters")
+      .nullable()
+      .optional()
+  );
 
 const iconSchema = z
-  .enum(FAQ_ICON_KEYS, { message: "Please choose a valid icon" })
-  .nullable()
-  .optional();
+  .preprocess(
+    (val) => (val === "" ? null : val),
+    z
+      .enum(FAQ_ICON_KEYS, { message: "Please choose a valid icon" })
+      .nullable()
+      .optional()
+  );
 
-const displayOrderSchema = z
+const displayOrderSchema = z.coerce
   .number()
   .int("Display order must be a whole number")
   .min(0, "Display order cannot be negative")
@@ -68,7 +76,8 @@ export type UpdateFaqPayload = z.input<typeof updateFaqSchema>;
 export const faqListQuerySchema = z
   .object({
     page: z.coerce.number().int().min(1).default(1),
-    limit: z.coerce.number().int().min(1).max(100).default(10),
+    limit: z.coerce.number().int().min(1).max(100).optional(),
+    pageSize: z.coerce.number().int().min(1).max(100).optional(),
     search: z.string().trim().max(255).optional(),
     category: z.string().trim().max(100).optional(),
     status: z
@@ -82,7 +91,11 @@ export const faqListQuerySchema = z
       .default("displayOrder"),
     sortOrder: z.enum(["asc", "desc"]).default("asc"),
   })
-  .strict();
+  .strict()
+  .transform((data) => ({
+    ...data,
+    limit: data.limit ?? data.pageSize ?? 10,
+  }));
 
 export type FaqListQueryInput = z.infer<typeof faqListQuerySchema>;
 
