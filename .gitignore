@@ -48,3 +48,11 @@ next-env.d.ts
 
 # whatsapp session credentials
 /auth_baileys
+
+# agents & AI configuration files
+.agents/
+.claude/
+.kiro/
+.windsurf/
+*.md
+*.log
