@@ -1,5 +1,5 @@
 import "dotenv/config";
-import crypto from "crypto";
+import * as crypto from "crypto";
 import { PrismaClient } from "../src/generated/prisma/client.js";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 
@@ -105,12 +105,22 @@ async function main() {
       const sampleVariant = variants[i % variants.length];
       const secondVariant = variants[(i + 1) % variants.length];
 
-      const price1 = Number(sampleVariant.sale_price || sampleVariant.base_price || 120);
+      const price1 = Number(
+        sampleVariant.variant_unit_prices?.[0]?.base_price ??
+        sampleVariant.product?.base_price ??
+        120
+      );
       const qty1 = (i % 3) + 1;
       const total1 = price1 * qty1;
 
       const hasSecond = i % 2 === 0;
-      const price2 = hasSecond ? Number(secondVariant.sale_price || secondVariant.base_price || 150) : 0;
+      const price2 = hasSecond
+        ? Number(
+            secondVariant.variant_unit_prices?.[0]?.base_price ??
+            secondVariant.product?.base_price ??
+            150
+          )
+        : 0;
       const qty2 = hasSecond ? 1 : 0;
       const total2 = price2 * qty2;
 
@@ -149,13 +159,13 @@ async function main() {
             uuid: crypto.randomUUID(),
             orderId: order.id,
             type: "shipping",
-            full_name: address.full_name,
-            phone: address.phone,
+            full_name: address.full_name || user.name || "Valued Customer",
+            phone: address.phone || user.phone || "9876543210",
             address_line1: address.address_line1,
             address_line2: address.address_line2,
-            city: address.city,
-            state: address.state,
-            pincode: address.pincode,
+            city: address.city || "Madurai",
+            state: address.state || "Tamil Nadu",
+            pincode: address.pincode || "625001",
             country: address.country || "India",
             is_active: true,
             created_by: user.id,
@@ -165,13 +175,13 @@ async function main() {
             uuid: crypto.randomUUID(),
             orderId: order.id,
             type: "billing",
-            full_name: address.full_name,
-            phone: address.phone,
+            full_name: address.full_name || user.name || "Valued Customer",
+            phone: address.phone || user.phone || "9876543210",
             address_line1: address.address_line1,
             address_line2: address.address_line2,
-            city: address.city,
-            state: address.state,
-            pincode: address.pincode,
+            city: address.city || "Madurai",
+            state: address.state || "Tamil Nadu",
+            pincode: address.pincode || "625001",
             country: address.country || "India",
             is_active: true,
             created_by: user.id,
