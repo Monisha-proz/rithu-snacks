@@ -6,7 +6,7 @@ import { AdminPageHeader, AdminContent } from "@/components/admin/AdminPageHeade
 
 export default function InventoryReportPage() {
   return (
-    <div>
+    <div className="flex flex-1 min-h-0 min-w-0 flex-col space-y-6">
       <AdminPageHeader
         title="Inventory Report"
         description="Monitor stock levels, movement, and alerts."

@@ -510,7 +510,7 @@ export default function AdminCustomersPage() {
       </div>
 
       {/* Data Table Container */}
-      <div className="flex-1 flex flex-col min-h-[420px] w-full rounded-2xl overflow-hidden bg-white shadow-xs">
+      <div className="flex-1 min-h-0 min-w-0 flex flex-col w-full">
         <DataTable
           columns={columns}
           data={customers}
@@ -527,7 +527,7 @@ export default function AdminCustomersPage() {
             setPageSize(newSize);
             setPage(1);
           }}
-          className="bg-white border-0"
+          className="bg-white"
           emptyMessage="No customers found matching your criteria."
         />
       </div>

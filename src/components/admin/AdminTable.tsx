@@ -39,7 +39,7 @@ function AdminTable<TData, TValue>({
   };
 
   return (
-    <div className="flex flex-1 flex-col space-y-4">
+    <div className="flex flex-1 min-h-0 min-w-0 flex-col space-y-4">
       {hasSelection && bulkActions && (
         <div className="flex-shrink-0 flex items-center justify-between rounded-lg border border-primary/20 bg-primary/5 px-4 py-3">
           <div className="flex items-center gap-3">
@@ -73,7 +73,7 @@ function AdminTable<TData, TValue>({
         </div>
       )}
 
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 min-h-0 min-w-0 flex flex-col">
         <DataTable
           key={tableKey}
           columns={columns}

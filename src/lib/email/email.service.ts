@@ -8,6 +8,7 @@ import {
   getContactReplyEmailTemplate,
 } from "./templates/contact-email.template";
 import { getNewsletterWelcomeEmailTemplate } from "./templates/newsletter-email.template";
+import { getBulkOrderAcknowledgementEmailTemplate } from "./templates/bulk-order-email.template";
 
 let cachedTransporter: nodemailer.Transporter | null = null;
 
@@ -210,6 +211,50 @@ export const emailService = {
       return true;
     } catch (error) {
       console.error("[EMAIL SERVICE] Error sending newsletter welcome email:", error);
+      return false;
+    }
+  },
+
+  async sendBulkOrderAcknowledgementEmail(params: {
+    to: string;
+    name: string;
+    phone: string;
+    quantity: number;
+    productInterest?: string | null;
+    companyName?: string | null;
+    message?: string | null;
+  }): Promise<boolean> {
+    const { subject, html, text } = getBulkOrderAcknowledgementEmailTemplate(params);
+
+    const from = this.getFromAddress();
+    const rawFromEmail = this.getRawFromEmail();
+    const transporter = this.getTransporter();
+
+    if (!transporter) {
+      console.warn(
+        "[EMAIL SERVICE] SMTP is not configured; bulk order acknowledgement email was not sent."
+      );
+      return false;
+    }
+
+    try {
+      const info = await transporter.sendMail({
+        from,
+        replyTo: rawFromEmail,
+        to: params.to,
+        subject,
+        text,
+        html,
+      });
+      console.log(
+        `[EMAIL SERVICE] Bulk order acknowledgement email sent to ${params.to} (MessageId: ${info.messageId})`
+      );
+      return true;
+    } catch (error) {
+      console.error(
+        "[EMAIL SERVICE] Error sending bulk order acknowledgement email:",
+        error
+      );
       return false;
     }
   },

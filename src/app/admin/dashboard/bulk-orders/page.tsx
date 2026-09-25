@@ -23,7 +23,9 @@ import {
   CheckCircle2,
   Phone,
   Eye,
+  RefreshCw,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { ColumnDef } from "@tanstack/react-table";
 
 export default function AdminBulkOrdersPage() {
@@ -61,9 +63,9 @@ export default function AdminBulkOrdersPage() {
     return params;
   }, [page, pageSize, search, statusFilter]);
 
-  const { data, isLoading, error, refetch } = useAdminBulkOrders(queryParams);
+  const { data, isLoading, isFetching, error, refetch } = useAdminBulkOrders(queryParams);
 
-  const { data: allEnquiriesData } = useAdminBulkOrders({
+  const { data: allEnquiriesData, refetch: refetchAll } = useAdminBulkOrders({
     page: 1,
     pageSize: 100,
   });
@@ -246,6 +248,30 @@ export default function AdminBulkOrdersPage() {
       <AdminPageHeader
         title="Bulk Order Enquiries"
         description="Review bulk order enquiries submitted via the storefront and track follow-up status"
+        actions={
+          <div className="flex items-center gap-2">
+            <div className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-medium text-emerald-700">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              Live Auto-Sync
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                refetch();
+                refetchAll();
+              }}
+              disabled={isFetching}
+              className="h-9 gap-1.5 text-xs font-semibold cursor-pointer"
+            >
+              <RefreshCw
+                className={cn("h-3.5 w-3.5", isFetching && "animate-spin text-secondary-600")}
+              />
+              <span>{isFetching ? "Syncing..." : "Refresh"}</span>
+            </Button>
+          </div>
+        }
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 flex-shrink-0">
@@ -313,7 +339,7 @@ export default function AdminBulkOrdersPage() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col min-h-[420px] w-full rounded-2xl overflow-hidden bg-white shadow-xs">
+      <div className="flex-1 min-h-0 min-w-0 flex flex-col w-full">
         <DataTable
           columns={columns}
           data={enquiries}
@@ -330,7 +356,7 @@ export default function AdminBulkOrdersPage() {
             setPageSize(newSize);
             setPage(1);
           }}
-          className="bg-white border-0"
+          className="bg-white"
           emptyMessage="No bulk order enquiries found matching your criteria."
         />
       </div>

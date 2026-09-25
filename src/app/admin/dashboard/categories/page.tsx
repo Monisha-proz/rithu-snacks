@@ -194,14 +194,14 @@ export default function AdminCategoriesPage() {
       : null;
 
   return (
-    <div className="flex flex-1 min-h-0 flex-col">
+    <div className="flex flex-1 min-h-0 min-w-0 flex-col">
       {/* <AdminBreadcrumb items={[{ label: "Categories" }]} /> */}
       <AdminPageHeader
         title="Categories"
         description="Manage your product categories"
       />
-      <AdminContent className="flex-1 min-h-0">
-        <div className="flex flex-1 min-h-0 flex-col bg-[var(--color-background)] rounded-2xl">
+      <AdminContent className="flex-1 min-h-0 min-w-0">
+        <div className="flex flex-1 min-h-0 min-w-0 flex-col bg-[var(--color-background)] rounded-2xl">
           {/* Search + Filter */}
           <div className="flex-shrink-0 mt-3 sm:mt-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <SearchInput
@@ -225,7 +225,7 @@ export default function AdminCategoriesPage() {
           </div>
 
           {/* Table Container */}
-          <div className="mt-3 sm:mt-5 flex-1 min-h-0 flex flex-col">
+          <div className="mt-3 sm:mt-5 flex-1 min-h-0 min-w-0 flex flex-col">
             <BulkActionsBar
               selectedCount={selectedRows.length}
               entityName="category"

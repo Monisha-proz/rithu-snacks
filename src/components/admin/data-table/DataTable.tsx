@@ -279,7 +279,7 @@ function DataTable<TData, TValue>({
   return (
     <div
       className={cn(
-        "w-full flex-1 min-h-0 flex flex-col justify-between rounded-2xl overflow-hidden border border-neutral-200 bg-white shadow-xs",
+        "w-full flex-1 min-h-[300px] flex flex-col justify-between rounded-2xl overflow-hidden border border-neutral-200 bg-white shadow-xs relative",
         className
       )}
     >
@@ -294,10 +294,10 @@ function DataTable<TData, TValue>({
         </div>
       )}
 
-      <div className="min-h-0 flex-1 flex flex-col overflow-hidden relative">
-        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto overscroll-contain scrollbar-thin">
+      <div className="min-h-0 flex-1 flex flex-col relative">
+        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto overscroll-auto scrollbar-thin">
           <table className="w-full min-w-[720px] table-auto caption-bottom text-sm border-separate border-spacing-0">
-            <thead className="sticky top-0 z-30 shadow-xs">
+            <thead className="sticky top-0 z-30 shadow-xs bg-[var(--color-secondary-600)]">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id} className="transition-colors">
                   {headerGroup.headers.map((header) => {
@@ -311,7 +311,7 @@ function DataTable<TData, TValue>({
                       <th
                         key={header.id}
                         className={cn(
-                          "h-14 px-4 text-left align-middle text-xs font-bold tracking-wider whitespace-nowrap text-white uppercase sm:px-5 bg-[var(--color-secondary-600)] border-b border-[var(--color-secondary-700)] sticky top-0 z-30",
+                          "h-12 sm:h-14 px-4 text-left align-middle text-xs font-bold tracking-wider whitespace-nowrap text-white uppercase sm:px-5 bg-[var(--color-secondary-600)] border-b border-[var(--color-secondary-700)] sticky top-0 z-30",
                           isSelect &&
                             "w-12 px-3 sm:px-4 text-center sticky top-0 left-0 z-40 bg-[var(--color-secondary-600)] border-r border-[var(--color-secondary-700)] shadow-[2px_0_6px_-2px_rgba(0,0,0,0.12)]",
                           isActions &&
@@ -373,7 +373,7 @@ function DataTable<TData, TValue>({
                         <td
                           key={cell.id}
                           className={cn(
-                            "px-4 py-4 align-middle whitespace-nowrap sm:px-5 bg-white group-hover:bg-[var(--color-neutral-50)] transition-colors border-b border-gray-200",
+                            "px-4 py-3.5 align-middle whitespace-nowrap sm:px-5 bg-white group-hover:bg-[var(--color-neutral-50)] transition-colors border-b border-gray-200",
                             row.getIsSelected() &&
                               "bg-secondary-50/40 group-hover:bg-secondary-50/60",
                             isSelect &&
@@ -401,7 +401,7 @@ function DataTable<TData, TValue>({
                 <tr>
                   <td
                     colSpan={effectiveColumns.length}
-                    className="h-24 text-center text-gray-500 bg-white border-b border-gray-200"
+                    className="h-28 text-center text-gray-500 bg-white border-b border-gray-200 text-sm"
                   >
                     {emptyMessage}
                   </td>
@@ -412,9 +412,9 @@ function DataTable<TData, TValue>({
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-5 py-2.5 flex-shrink-0 border-t border-neutral-200/80 bg-white">
-        <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-sm text-[var(--color-neutral-500)]">
-          <p>
+      <div className="sticky bottom-0 z-20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-5 py-3 flex-shrink-0 border-t border-neutral-200/80 bg-white shadow-[0_-2px_6px_rgba(0,0,0,0.03)]">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm text-[var(--color-neutral-600)]">
+          <p className="font-medium">
             Showing {startEntry}–{endEntry} of {computedTotalItems} entries
           </p>
           <div className="flex items-center gap-2">
@@ -431,33 +431,33 @@ function DataTable<TData, TValue>({
                 }))}
                 size="sm"
                 placement="top"
-                className="h-8 rounded-lg font-semibold"
+                className="h-8 rounded-lg font-semibold text-xs"
               />
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2 self-end sm:self-auto">
+        <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
           <button
             onClick={() => handlePageChange(effectivePage - 1)}
             disabled={effectivePage <= 1}
             className={cn(
-              "inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-neutral-300)]",
-              "bg-white text-[var(--color-neutral-700)] transition-colors hover:bg-[var(--color-neutral-50)]",
+              "inline-flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg border border-[var(--color-neutral-300)]",
+              "bg-white text-[var(--color-neutral-700)] transition-colors hover:bg-[var(--color-neutral-50)] cursor-pointer",
               "disabled:cursor-not-allowed disabled:opacity-50"
             )}
             aria-label="Previous page"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
-          <span className="text-sm font-medium text-[var(--color-neutral-700)] px-1">
+          <span className="text-xs sm:text-sm font-semibold text-[var(--color-neutral-700)] px-1.5 min-w-[3.5rem] text-center">
             {effectivePage} / {computedTotalPages}
           </span>
           <button
             onClick={() => handlePageChange(effectivePage + 1)}
             disabled={effectivePage >= computedTotalPages}
             className={cn(
-              "inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-neutral-300)]",
-              "bg-white text-[var(--color-neutral-700)] transition-colors hover:bg-[var(--color-neutral-50)]",
+              "inline-flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg border border-[var(--color-neutral-300)]",
+              "bg-white text-[var(--color-neutral-700)] transition-colors hover:bg-[var(--color-neutral-50)] cursor-pointer",
               "disabled:cursor-not-allowed disabled:opacity-50"
             )}
             aria-label="Next page"

@@ -145,15 +145,15 @@ export default function AdminBrandsPage() {
   if (error) return <ErrorState message="Failed to load brands" onRetry={() => refetch()} />;
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex flex-1 min-h-0 min-w-0 flex-col">
       {/* <AdminBreadcrumb items={[{ label: "Brands" }]} /> */}
       <AdminPageHeader
         title="Brand Management"
         description="Manage product brands and their associated catalogs."
       />
       
-      <AdminContent className="flex-1">
-        <div className="flex flex-1 flex-col bg-[var(--color-background)] py-1 rounded-2xl">
+      <AdminContent className="flex-1 min-h-0 min-w-0">
+        <div className="flex flex-1 min-h-0 min-w-0 flex-col bg-[var(--color-background)] py-1 rounded-2xl">
 
           {/* Search + Filter */}
           <div className="flex-shrink-0 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -177,7 +177,7 @@ export default function AdminBrandsPage() {
           </div>
 
           {/* Table */}
-          <div className="mt-6 flex-1 flex flex-col">
+          <div className="mt-4 sm:mt-6 flex-1 min-h-0 min-w-0 flex flex-col">
             <DataTable
               columns={columns}
               data={brands}

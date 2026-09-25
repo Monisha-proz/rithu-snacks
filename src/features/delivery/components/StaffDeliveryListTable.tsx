@@ -367,7 +367,7 @@ export function StaffDeliveryListTable({
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-3">
+    <div className="flex-1 min-h-0 min-w-0 flex flex-col gap-3">
       {/* Stats Cards */}
       <DeliveryStatsCards
         items={displayedDeliveries}
@@ -382,7 +382,7 @@ export function StaffDeliveryListTable({
       />
 
       {/* Tabs & Filter Toolbar */}
-      <div className="mt-1 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="mt-1 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between flex-shrink-0">
         <div className="flex flex-1 items-center gap-2">
           <SearchInput
             placeholder="Search by order #, customer, phone, city..."
@@ -407,8 +407,6 @@ export function StaffDeliveryListTable({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          
-
           {/* Status Tabs */}
           <div className="flex items-center gap-2 overflow-x-auto">
             <DeliveryStatusTabs
@@ -421,7 +419,7 @@ export function StaffDeliveryListTable({
       </div>
 
       {/* Data Table */}
-      <div className="flex-1 flex flex-col mt-1">
+      <div className="flex-1 min-h-0 min-w-0 flex flex-col mt-1">
         <DataTable
           columns={columns}
           data={displayedDeliveries}

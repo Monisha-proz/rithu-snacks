@@ -418,7 +418,7 @@ export default function WhatsAppReportsPage() {
             </div>
 
             {/* Recipient Logs Table */}
-            <div className="border border-neutral-200/80 rounded-xl overflow-hidden max-h-[380px] overflow-y-auto">
+            <div className="border border-neutral-200/80 rounded-xl overflow-auto max-h-[380px]">
               <table className="w-full text-left text-xs">
                 <thead className="bg-neutral-50 text-neutral-600 uppercase tracking-wider sticky top-0 border-b border-neutral-200 font-semibold">
                   <tr>

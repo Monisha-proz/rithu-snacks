@@ -204,7 +204,7 @@ export default function AdminStaffPage() {
   );
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex-1 min-h-0 min-w-0 flex flex-col">
 
       <AdminPageHeader
         title="Staff Management"
@@ -280,8 +280,8 @@ export default function AdminStaffPage() {
       </div>
 
       {/* Main Content */}
-      <AdminContent className="flex-1 mt-4">
-        <div className="flex-1 flex flex-col rounded-2xl border border-neutral-200 bg-white shadow-xs">
+      <AdminContent className="flex-1 min-h-0 min-w-0 mt-4">
+        <div className="flex-1 min-h-0 min-w-0 flex flex-col rounded-2xl border border-neutral-200 bg-white shadow-xs">
           {isLoading && !data ? (
             <div className="flex-1 flex items-center justify-center p-12">
               <AdminTableSkeleton />

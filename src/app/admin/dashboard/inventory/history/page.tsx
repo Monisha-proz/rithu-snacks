@@ -88,7 +88,7 @@ export default function InventoryHistoryPage() {
   const transactionData = data?.data?.data ?? [];
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex-1 min-h-0 min-w-0 flex flex-col">
       <AdminBreadcrumb
         items={[
           { label: "Dashboard", href: "/admin/dashboard" },
@@ -139,7 +139,7 @@ export default function InventoryHistoryPage() {
           {hasActiveFilters && <ClearFiltersButton onClick={handleClearFilters} />}
         </div>
 
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 min-h-0 min-w-0 flex flex-col">
           <DataTable
             columns={columns}
             data={transactionData}
