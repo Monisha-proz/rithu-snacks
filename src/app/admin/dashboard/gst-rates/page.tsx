@@ -136,14 +136,14 @@ export default function AdminGstRatesPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex-1 min-h-0 min-w-0 flex flex-col">
       <AdminPageHeader
         title="GST Rate Management"
         description="Manage GST rates for products."
       />
 
       <AdminContent className="flex-1">
-        <div className="flex flex-1 flex-col bg-[var(--color-background)] py-1 rounded-2xl">
+        <div className="flex-1 min-h-0 min-w-0 flex flex-col bg-[var(--color-background)] py-1 rounded-2xl">
           <div className="flex-shrink-0 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <SearchInput
               placeholder="Search GST rates..."
@@ -164,7 +164,7 @@ export default function AdminGstRatesPage() {
             </Button>
           </div>
 
-          <div className="mt-6 flex-1 flex flex-col">
+          <div className="mt-6 flex-1 min-h-0 min-w-0 flex flex-col">
             <DataTable
               columns={columns}
               data={gstRates}

@@ -6,7 +6,7 @@ import { AdminPageHeader, AdminContent } from "@/components/admin/AdminPageHeade
 
 export default function CustomersReportPage() {
   return (
-    <div>
+    <div className="flex flex-1 min-h-0 min-w-0 flex-col space-y-6">
       <AdminPageHeader
         title="Customers Report"
         description="Understand customer behavior and demographics."

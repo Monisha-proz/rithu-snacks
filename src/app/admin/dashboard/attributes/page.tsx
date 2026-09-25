@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function AttributesPage() {
   return (
-    <div>
+    <div className="flex flex-1 min-h-0 min-w-0 flex-col space-y-6">
       <AdminBreadcrumb items={[{ label: "Catalog" }, { label: "Attributes" }]} />
       <AdminPageHeader title="Attributes" description="Manage product attributes" />
       <AdminContent>

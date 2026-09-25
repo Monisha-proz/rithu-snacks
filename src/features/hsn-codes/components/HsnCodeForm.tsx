@@ -40,7 +40,7 @@ export function HsnCodeForm({
 
   const gstOptions =
     gstData?.data.map((gst) => ({
-      label: `${gst.name} (${gst.igstPercent}%)`,
+      label: `${gst.name}`,
       value: gst.id,
     })) ?? [];
 

@@ -54,7 +54,7 @@ const reports = [
 
 export default function ReportsPage() {
   return (
-    <div>
+    <div className="flex-1 min-h-0 min-w-0 flex flex-col">
       <AdminPageHeader
         title="Reports"
         description="Access detailed analytics and reports for your store."

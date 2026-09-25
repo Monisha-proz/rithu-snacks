@@ -568,7 +568,7 @@ function CreateCampaignContent() {
           </div>
 
           {/* Customer Table List */}
-          <div className="border border-neutral-200/80 rounded-xl overflow-hidden max-h-[380px] overflow-y-auto">
+          <div className="border border-neutral-200/80 rounded-xl overflow-auto max-h-[380px]">
             {isLoadingCustomers ? (
               <div className="p-12 text-center text-neutral-400 flex flex-col items-center gap-2">
                 <Loader2 className="w-6 h-6 animate-spin text-secondary-600" />

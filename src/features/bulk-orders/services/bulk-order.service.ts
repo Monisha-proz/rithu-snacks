@@ -1,4 +1,5 @@
 import { ApiError } from "@/lib/api/api-error";
+import { emailService } from "@/lib/email/email.service";
 import { bulkOrderRepository } from "../repositories/bulk-order.repository";
 import { userRepository } from "@/features/users/repositories/user.repository";
 import type {
@@ -53,6 +54,25 @@ export const bulkOrderService = {
     input: CreateBulkOrderInput
   ): Promise<BulkOrderEnquiryResponse> {
     const created = await bulkOrderRepository.create(input);
+
+    // Send auto-acknowledgement email to customer (non-blocking failure tolerance)
+    try {
+      await emailService.sendBulkOrderAcknowledgementEmail({
+        to: input.email,
+        name: input.name,
+        phone: input.phone,
+        quantity: input.quantity,
+        productInterest: input.productInterest,
+        companyName: input.companyName,
+        message: input.message,
+      });
+    } catch (err) {
+      console.error(
+        "[BULK ORDER SERVICE] Failed to send auto acknowledgement email:",
+        err
+      );
+    }
+
     return formatBulkOrderResponse(created);
   },
 

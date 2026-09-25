@@ -381,7 +381,7 @@ export default function AdminContactsPage() {
       </div>
 
       {/* Data Table Container */}
-      <div className="flex-1 flex flex-col min-h-[420px] w-full rounded-2xl overflow-hidden bg-white shadow-xs">
+      <div className="flex-1 min-h-0 min-w-0 flex flex-col w-full">
         <DataTable
           columns={columns}
           data={contacts}
@@ -398,7 +398,7 @@ export default function AdminContactsPage() {
             setPageSize(newSize);
             setPage(1);
           }}
-          className="bg-white border-0"
+          className="bg-white"
           emptyMessage="No contact messages found matching your criteria."
         />
       </div>

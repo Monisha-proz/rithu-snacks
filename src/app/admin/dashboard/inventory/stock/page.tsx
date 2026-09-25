@@ -260,13 +260,13 @@ export default function InventoryStockPage() {
   if (error) return <ErrorState message={error.message} onRetry={() => refetch()} />;
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex-1 min-h-0 min-w-0 flex flex-col">
       <AdminPageHeader
         title="Inventory Stock"
         description="Manage your inventory stock levels and threshold alerts."
       />
       <AdminContent className="flex-1">
-        <div className="flex flex-1 flex-col bg-[var(--color-background)] py-1 rounded-2xl">
+        <div className="flex-1 min-h-0 min-w-0 flex flex-col bg-[var(--color-background)] py-1 rounded-2xl">
           {/* Search + Add Button Header */}
           <div className="flex-shrink-0 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <SearchInput
@@ -290,7 +290,7 @@ export default function InventoryStockPage() {
           </div>
 
           {/* Table Container */}
-          <div className="mt-6 flex-1 flex flex-col">
+          <div className="mt-6 flex-1 min-h-0 min-w-0 flex flex-col">
             <DataTable
               columns={columns}
               data={filteredData}

@@ -20,7 +20,7 @@ function PageContainer({
   children,
 }: PageContainerProps) {
   return (
-    <div className="space-y-6">
+    <div className="flex flex-1 min-h-0 min-w-0 flex-col">
       <AdminPageHeader
         breadcrumbs={<AdminBreadcrumb items={breadcrumbs} />}
         title={title}

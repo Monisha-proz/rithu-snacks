@@ -12,12 +12,23 @@ import type {
   BulkOrderEnquiryResponse,
 } from "../types";
 
-export function useAdminBulkOrders(params?: Partial<AdminBulkOrderListInput>) {
+export interface UseAdminBulkOrdersOptions {
+  refetchInterval?: number | false;
+  enabled?: boolean;
+}
+
+export function useAdminBulkOrders(
+  params?: Partial<AdminBulkOrderListInput>,
+  options?: UseAdminBulkOrdersOptions
+) {
   return useQuery<AdminBulkOrderListResponse>({
     queryKey: adminBulkOrderKeys.list(params as Record<string, unknown>),
     queryFn: () => getAdminBulkOrders(params),
     placeholderData: keepPreviousData,
-    staleTime: 30 * 1000,
+    staleTime: 4 * 1000,
+    refetchInterval: options?.refetchInterval !== undefined ? options.refetchInterval : 5000,
+    refetchOnWindowFocus: true,
+    enabled: options?.enabled ?? true,
   });
 }
 

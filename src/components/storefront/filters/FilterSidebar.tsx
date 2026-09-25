@@ -302,61 +302,161 @@ export function FilterSidebar({
     [expandedCategoryIds, categoryProducts]
   );
 
+  // Helper to check if a category is selected (either explicitly in activeCategoryIds or via any of its products)
+  const isCategoryActive = React.useCallback(
+    (catId: string) => {
+      if (isSingleCategoryMode) return true;
+      if (activeCategoryIds.includes(catId)) return true;
+      const prods = categoryProducts[catId] || [];
+      return prods.some((p) => activeProductIds.includes(p.id));
+    },
+    [isSingleCategoryMode, activeCategoryIds, categoryProducts, activeProductIds]
+  );
+
   // Multi-select handlers
-  const handleCategoryToggle = (catId: string) => {
-    const isCurrentlyActive = activeCategoryIds.includes(catId);
-    const next = isCurrentlyActive
-      ? activeCategoryIds.filter((id) => id !== catId)
-      : [...activeCategoryIds, catId];
+  const handleCategoryToggle = React.useCallback(
+    (catId: string) => {
+      const catProds = categoryProducts[catId] || [];
+      const isCurrentlyActive = isCategoryActive(catId);
 
-    if (onSelectCategories) {
-      onSelectCategories(next);
-    } else if (onSelectCategory) {
-      onSelectCategory(next.length === 1 ? next[0] : next.length > 1 ? next[next.length - 1] : null);
-    }
-  };
+      if (isCurrentlyActive) {
+        // UNCHECKING category:
+        // 1. Remove catId from category list
+        const nextCatIds = activeCategoryIds.filter((id) => id !== catId);
 
-  const handleProductToggle = (prodId: string, catId?: string) => {
-    const isCurrentlyActive = activeProductIds.includes(prodId);
-    const next = isCurrentlyActive
-      ? activeProductIds.filter((id) => id !== prodId)
-      : [...activeProductIds, prodId];
+        // 2. Remove all products belonging to this category from product list
+        const catProdIds = new Set(catProds.map((p) => p.id));
+        let nextProdIds = activeProductIds.filter((id) => !catProdIds.has(id));
 
-    if (onSelectProducts) {
-      onSelectProducts(next);
-    } else if (onSelectProduct) {
-      onSelectProduct(next.length === 1 ? next[0] : next.length > 1 ? next[next.length - 1] : null);
-    }
+        // If no categories remain selected, clear all products so All Snacks is fully active
+        if (nextCatIds.length === 0) {
+          nextProdIds = [];
+        }
 
-    // In multi-category mode, if category wasn't active, ensure it's selected
-    if (catId && !isSingleCategoryMode && !activeCategoryIds.includes(catId)) {
-      if (onSelectCategories) {
-        onSelectCategories([...activeCategoryIds, catId]);
+        if (onSelectCategories) {
+          onSelectCategories(nextCatIds);
+        } else if (onSelectCategory) {
+          onSelectCategory(nextCatIds.length > 0 ? nextCatIds[0] : null);
+        }
+
+        if (onSelectProducts) {
+          onSelectProducts(nextProdIds);
+        } else if (onSelectProduct) {
+          onSelectProduct(nextProdIds.length > 0 ? nextProdIds[0] : null);
+        }
+      } else {
+        // CHECKING category (show all products of that category):
+        // 1. Add catId to category list
+        const nextCatIds = onSelectCategories
+          ? [...activeCategoryIds.filter((id) => id !== catId), catId]
+          : [catId];
+
+        // 2. Clear any specific product filters under this category so ALL products of this category are displayed
+        const catProdIds = new Set(catProds.map((p) => p.id));
+        const nextProdIds = activeProductIds.filter((id) => !catProdIds.has(id));
+
+        if (onSelectCategories) {
+          onSelectCategories(nextCatIds);
+        } else if (onSelectCategory) {
+          onSelectCategory(catId);
+        }
+
+        if (onSelectProducts) {
+          onSelectProducts(nextProdIds);
+        } else if (onSelectProduct) {
+          onSelectProduct(nextProdIds.length > 0 ? nextProdIds[0] : null);
+        }
+
+        // Auto-expand category so user sees its products
+        if (!expandedCategoryIds.has(catId)) {
+          toggleCategoryExpand(catId);
+        }
       }
-    }
-  };
+    },
+    [
+      isCategoryActive,
+      activeCategoryIds,
+      activeProductIds,
+      categoryProducts,
+      onSelectCategories,
+      onSelectCategory,
+      onSelectProducts,
+      onSelectProduct,
+      expandedCategoryIds,
+      toggleCategoryExpand,
+    ]
+  );
 
-  const handleAllSnacksClick = () => {
+  const handleProductToggle = React.useCallback(
+    (prodId: string, catId?: string) => {
+      const isCurrentlyActive = activeProductIds.includes(prodId);
+
+      if (isCurrentlyActive) {
+        // UNCHECKING product:
+        const nextProdIds = activeProductIds.filter((id) => id !== prodId);
+
+        if (onSelectProducts) {
+          onSelectProducts(nextProdIds);
+        } else if (onSelectProduct) {
+          onSelectProduct(nextProdIds.length > 0 ? nextProdIds[0] : null);
+        }
+      } else {
+        // CHECKING product: ensure parent category checkbox is selected!
+        const nextProdIds = [...activeProductIds, prodId];
+
+        if (onSelectProducts) {
+          onSelectProducts(nextProdIds);
+        } else if (onSelectProduct) {
+          onSelectProduct(prodId);
+        }
+
+        if (catId && !isSingleCategoryMode) {
+          if (!activeCategoryIds.includes(catId)) {
+            const nextCatIds = [...activeCategoryIds, catId];
+            if (onSelectCategories) {
+              onSelectCategories(nextCatIds);
+            } else if (onSelectCategory) {
+              onSelectCategory(catId);
+            }
+          }
+        }
+      }
+    },
+    [
+      activeProductIds,
+      activeCategoryIds,
+      isSingleCategoryMode,
+      onSelectProducts,
+      onSelectProduct,
+      onSelectCategories,
+      onSelectCategory,
+    ]
+  );
+
+  const handleAllSnacksClick = React.useCallback(() => {
     if (onSelectCategories) onSelectCategories([]);
     if (onSelectCategory) onSelectCategory(null);
     if (onSelectProducts) onSelectProducts([]);
     if (onSelectProduct) onSelectProduct(null);
-  };
+  }, [onSelectCategories, onSelectCategory, onSelectProducts, onSelectProduct]);
 
-  const handleAllInCategoryClick = (catId: string) => {
-    // Clear product selections
-    if (onSelectProducts) onSelectProducts([]);
-    if (onSelectProduct) onSelectProduct(null);
+  const handleAllInCategoryClick = React.useCallback(
+    (catId: string) => {
+      // Clear product selections
+      if (onSelectProducts) onSelectProducts([]);
+      if (onSelectProduct) onSelectProduct(null);
 
-    // If category is not selected, select it
-    if (!activeCategoryIds.includes(catId)) {
-      if (onSelectCategories) {
-        onSelectCategories([catId]);
-      } else if (onSelectCategory) {
-        onSelectCategory(catId);
+      // If category is not selected, select it
+      if (!activeCategoryIds.includes(catId)) {
+        if (onSelectCategories) {
+          onSelectCategories([catId]);
+        } else if (onSelectCategory) {
+          onSelectCategory(catId);
+        }
       }
-    }
-  };
+    },
+    [activeCategoryIds, onSelectProducts, onSelectProduct, onSelectCategories, onSelectCategory]
+  );
 
   // Local state for instant slider responsiveness, debounced to parent
   const [localMinPrice, setLocalMinPrice] = React.useState(currentMinPrice);
@@ -740,7 +840,7 @@ export function FilterSidebar({
                 </div>
               ) : filteredCategories.length > 0 ? (
                 filteredCategories.map((cat) => {
-                  const isSelected = isSingleCategoryMode ? true : activeCategoryIds.includes(cat.id);
+                  const isSelected = isSingleCategoryMode ? true : isCategoryActive(cat.id);
                   const isExpanded = isSingleCategoryMode ? true : expandedCategoryIds.has(cat.id);
                   const products = categoryProducts[cat.id] || [];
                   const isLoadingProducts = loadingCategoryIds.has(cat.id);

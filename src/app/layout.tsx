@@ -14,6 +14,14 @@ const hanken = Hanken_Grotesk({
 });
 
 export const metadata: Metadata = {
+  icons: {
+    icon: [
+      { url: "/logos/logo.svg", type: "image/svg+xml" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/logos/logo.svg",
+    apple: "/logos/logo.svg",
+  },
   title: "RithuSnacks - Premium Snacks",
   description: "Premium snacks delivered to your doorstep. Quality you can taste.",
 };

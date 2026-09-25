@@ -9,12 +9,16 @@ import {
   IndianRupee,
   ArrowDownRight,
   ArrowUpRight,
+  ChevronDown,
 } from "lucide-react";
-import {
-  useVariantPriceHistory,
-  useVariantPriceHistoryChart,
-} from "../hooks";
-import type { AdminVariantResponse, VariantPriceHistoryResponse } from "../types";
+import { useQueries } from "@tanstack/react-query";
+import { variantKeys } from "@/lib/api/query-keys";
+import { useVariantPriceHistory } from "../hooks";
+import type {
+  AdminVariantResponse,
+  VariantPriceHistoryResponse,
+  VariantUnitPriceResponse,
+} from "../types";
 
 export interface VariantPriceHistoryCardProps {
   variant: AdminVariantResponse;
@@ -23,44 +27,172 @@ export interface VariantPriceHistoryCardProps {
 
 type RangeOption = "30D" | "6M" | "1Y";
 
-/**
- * Price + price-history are now tracked per (unit, price) combination rather
- * than per item, since one item can be sold in multiple pack sizes. When the
- * item has more than one unit price, a selector lets the admin switch which
- * pack size's history to view.
- */
+const RANGE_OPTIONS: { label: string; value: RangeOption; desc: string }[] = [
+  { label: "30 Days", value: "30D", desc: "5-day intervals, last 30 days" },
+  { label: "6 Months", value: "6M", desc: "monthly average, last 6 months" },
+  { label: "1 Year", value: "1Y", desc: "monthly average, last 12 months" },
+];
+
+const VARIANT_COLORS = [
+  {
+    name: "emerald",
+    bg: "bg-emerald-600",
+    text: "text-emerald-700",
+    border: "border-emerald-500",
+    dot: "bg-emerald-500",
+    hex: "#059669",
+  },
+  {
+    name: "indigo",
+    bg: "bg-indigo-600",
+    text: "text-indigo-700",
+    border: "border-indigo-500",
+    dot: "bg-indigo-500",
+    hex: "#4f46e5",
+  },
+  {
+    name: "amber",
+    bg: "bg-amber-600",
+    text: "text-amber-700",
+    border: "border-amber-500",
+    dot: "bg-amber-500",
+    hex: "#d97706",
+  },
+  {
+    name: "rose",
+    bg: "bg-rose-600",
+    text: "text-rose-700",
+    border: "border-rose-500",
+    dot: "bg-rose-500",
+    hex: "#e11d48",
+  },
+  {
+    name: "teal",
+    bg: "bg-teal-600",
+    text: "text-teal-700",
+    border: "border-teal-500",
+    dot: "bg-teal-500",
+    hex: "#0d9488",
+  },
+];
+
+function getUnitLabel(up: VariantUnitPriceResponse | null | undefined): string {
+  if (!up) return "Variant";
+  const val = up.measurement?.value ?? "";
+  const unit = up.unitCode || up.measurement?.unit || "";
+  if (val && unit) return `${val} ${unit}`;
+  if (val) return String(val);
+  if (unit) return unit;
+  return up.sku || "Variant";
+}
+
+function formatChartDate(monthStr: string): { label: string; fullDate: string } {
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+  const parts = monthStr.split("-");
+
+  if (parts.length === 3) {
+    const [yearStr, monthNumStr, dayNumStr] = parts;
+    const mIdx = parseInt(monthNumStr, 10) - 1;
+    const mName = months[mIdx] || monthNumStr;
+    const day = parseInt(dayNumStr, 10);
+    return {
+      label: `${day} ${mName}`,
+      fullDate: `${day} ${mName} ${yearStr}`,
+    };
+  }
+
+  if (parts.length === 2) {
+    const [yearStr, monthNumStr] = parts;
+    const mIdx = parseInt(monthNumStr, 10) - 1;
+    const mName = months[mIdx] || monthNumStr;
+    return {
+      label: mName,
+      fullDate: `${mName} ${yearStr}`,
+    };
+  }
+
+  return { label: monthStr, fullDate: monthStr };
+}
+
 export function VariantPriceHistoryCard({
   variant,
   gstPercent = 18,
 }: VariantPriceHistoryCardProps) {
-  const unitPrices = variant.unitPrices ?? [];
-  const [selectedUnitPriceId, setSelectedUnitPriceId] = useState<string | null>(null);
+  const unitPrices = useMemo(() => variant.unitPrices ?? [], [variant.unitPrices]);
 
-  // Fall back to the default (or first) unit price whenever no explicit
-  // selection has been made yet, without needing an effect + extra render.
-  const selectedUnitPrice =
-    unitPrices.find((up) => up.id === selectedUnitPriceId) ??
-    unitPrices.find((up) => up.isDefault) ??
-    unitPrices[0] ??
-    null;
+  // "all" shows both/all variants side-by-side; or a specific unitPrice.id
+  const [selectedView, setSelectedView] = useState<"all" | string>(
+    unitPrices.length > 1 ? "all" : (unitPrices[0]?.id ?? "")
+  );
+
+  // Active unit for single-variant cards (Pricing & Tax Breakdown, Timeline List)
+  const [activeUnitId, setActiveUnitId] = useState<string | null>(null);
+
+  const activeUnitPrice = useMemo(() => {
+    return (
+      unitPrices.find(
+        (up) =>
+          up.id ===
+          (activeUnitId || (selectedView !== "all" ? selectedView : null))
+      ) ??
+      unitPrices.find((up) => up.isDefault) ??
+      unitPrices[0] ??
+      null
+    );
+  }, [unitPrices, activeUnitId, selectedView]);
 
   const [activeTab, setActiveTab] = useState<"graph" | "list">("graph");
   const [range, setRange] = useState<RangeOption>("1Y");
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   const periodApiVal = useMemo(() => {
-    if (range === "30D") return "30d";
+    if (range === "30D") return "1m";
     if (range === "6M") return "6m";
     return "1y";
   }, [range]);
 
-  const { data: chartApiData = [] } = useVariantPriceHistoryChart(
-    selectedUnitPrice?.id ?? null,
-    periodApiVal
-  );
+  const activeRangeDesc = useMemo(() => {
+    return (
+      RANGE_OPTIONS.find((r) => r.value === range)?.desc ??
+      "monthly average, last 12 months"
+    );
+  }, [range]);
 
+  // Parallel chart queries for all unit prices
+  const chartQueries = useQueries({
+    queries: unitPrices.map((up) => ({
+      queryKey: [
+        ...variantKeys.all,
+        "price-history-chart",
+        up.id,
+        periodApiVal,
+      ] as const,
+      queryFn: async () => {
+        const { getVariantPriceHistoryChart } = await import(
+          "../api/get-variants"
+        );
+        return getVariantPriceHistoryChart(up.id, periodApiVal);
+      },
+      enabled: !!up.id,
+    })),
+  });
+
+  // Timeline list data for the active unit
   const { data: historyApiResponse, isLoading: isLoadingHistory } =
-    useVariantPriceHistory(selectedUnitPrice?.id ?? null, {
+    useVariantPriceHistory(activeUnitPrice?.id ?? null, {
       pageSize: 50,
       sortOrder: "desc",
     });
@@ -69,70 +201,100 @@ export function VariantPriceHistoryCard({
     return (historyApiResponse?.data as VariantPriceHistoryResponse[]) ?? [];
   }, [historyApiResponse]);
 
-  const basePrice = Number(selectedUnitPrice?.basePrice) || 0;
+  // Pricing calculations for the active unit
+  const basePrice = Number(activeUnitPrice?.basePrice) || 0;
   const gstAmount = Math.round((basePrice * gstPercent) / (100 + gstPercent));
   const taxableValue = basePrice - gstAmount;
 
-  const chartSeries = useMemo(() => {
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  // Build unified multi-variant timeline data
+  const timelinePoints = useMemo(() => {
+    const primaryItems = chartQueries.find((q) => q.data && q.data.length > 0)?.data;
 
-    if (chartApiData && chartApiData.length > 0) {
-      return chartApiData.map((item) => {
-        const parts = item.month.split("-");
-        if (parts.length === 3) {
-          const [yearStr, monthNumStr, dayStr] = parts;
-          const monthIndex = parseInt(monthNumStr, 10) - 1;
-          const monthLabel = months[monthIndex] || monthNumStr;
-          const dayNum = parseInt(dayStr, 10);
-          return {
-            date: `${dayNum} ${monthLabel}`,
-            fullDate: `${dayNum} ${monthLabel} ${yearStr}`,
-            value: item.price,
-          };
+    let dateKeys: string[] = [];
+
+    if (primaryItems && primaryItems.length > 0) {
+      dateKeys = primaryItems.map((item) => item.month);
+    } else {
+      const now = new Date();
+      if (range === "30D") {
+        const dayIntervals = [29, 24, 19, 14, 9, 4, 0];
+        dateKeys = dayIntervals.map((daysAgo) => {
+          const d = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, "0");
+          const day = String(d.getDate()).padStart(2, "0");
+          return `${y}-${m}-${day}`;
+        });
+      } else {
+        const count = range === "6M" ? 6 : 12;
+        for (let i = count - 1; i >= 0; i--) {
+          const d = new Date(
+            Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1)
+          );
+          const y = d.getUTCFullYear();
+          const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+          dateKeys.push(`${y}-${m}`);
         }
-
-        const [yearStr, monthNumStr] = parts;
-        const monthIndex = parseInt(monthNumStr, 10) - 1;
-        const monthLabel = months[monthIndex] || item.month;
-        return {
-          date: monthLabel,
-          fullDate: `${monthLabel} ${yearStr}`,
-          value: item.price,
-        };
-      });
+      }
     }
 
-    return [
-      { date: "Current", fullDate: "Latest updated price", value: basePrice },
-    ];
-  }, [chartApiData, basePrice]);
+    return dateKeys.map((dateKey, ptIdx) => {
+      const formatted = formatChartDate(dateKey);
 
-  const values = chartSeries.map((s) => s.value);
-  const maxValue = Math.max(...values, basePrice, 1);
+      const variantItems = unitPrices.map((up, vIdx) => {
+        const qData = chartQueries[vIdx]?.data;
+        const matched =
+          qData?.find((item) => item.month === dateKey) ?? qData?.[ptIdx];
+        const price = matched ? matched.price : Number(up.basePrice) || 0;
+        const color = VARIANT_COLORS[vIdx % VARIANT_COLORS.length];
 
-  // Compute a clean upper bound for the Y-axis with headroom for price labels
-  const yMax = useMemo(() => {
-    if (maxValue <= 0) return 100;
-    const target = maxValue * 1.25;
-    if (target <= 50) return 50;
-    if (target <= 100) return 100;
-    if (target <= 200) return 200;
-    if (target <= 500) return Math.ceil(target / 50) * 50;
-    if (target <= 1000) return Math.ceil(target / 100) * 100;
-    if (target <= 5000) return Math.ceil(target / 250) * 250;
-    if (target <= 20000) return Math.ceil(target / 1000) * 1000;
-    return Math.ceil(target / 5000) * 5000;
-  }, [maxValue]);
+        return {
+          unitPriceId: up.id,
+          unitName: getUnitLabel(up),
+          sku: up.sku,
+          isDefault: !!up.isDefault,
+          price,
+          color,
+        };
+      });
 
-  // 4 Y-axis ticks: [yMax, ~67%, ~33%, 0]
-  const yTicks = useMemo(() => {
-    return [
-      yMax,
-      Math.round((yMax * 2) / 3),
-      Math.round(yMax / 3),
-      0,
-    ];
-  }, [yMax]);
+      return {
+        dateKey,
+        label: formatted.label,
+        fullDate: formatted.fullDate,
+        variants: variantItems,
+      };
+    });
+  }, [chartQueries, unitPrices, range]);
+
+  // Determine min, max, span for bar heights
+  const { maxVal, minVal, span } = useMemo(() => {
+    let allPrices: number[] = [];
+
+    if (selectedView === "all") {
+      allPrices = timelinePoints.flatMap((tp) =>
+        tp.variants.map((v) => v.price)
+      );
+    } else {
+      allPrices = timelinePoints.flatMap((tp) =>
+        tp.variants
+          .filter((v) => v.unitPriceId === selectedView)
+          .map((v) => v.price)
+      );
+    }
+
+    if (allPrices.length === 0) {
+      allPrices = unitPrices.map((up) => Number(up.basePrice) || 0);
+    }
+
+    const max = Math.max(...allPrices, 1);
+    const min = Math.min(...allPrices);
+    return {
+      maxVal: max,
+      minVal: min,
+      span: Math.max(1, max - min),
+    };
+  }, [timelinePoints, selectedView, unitPrices]);
 
   if (unitPrices.length === 0) {
     return (
@@ -144,46 +306,62 @@ export function VariantPriceHistoryCard({
 
   return (
     <div className="space-y-6">
-      {/* Unit / pack-size selector when there is more than one */}
-      {unitPrices.length > 1 && (
-        <div className="flex items-center gap-2 flex-wrap">
-          {unitPrices.map((up) => (
-            <button
-              key={up.id}
-              type="button"
-              onClick={() => setSelectedUnitPriceId(up.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
-                selectedUnitPrice?.id === up.id
-                  ? "bg-secondary-600 text-white border-secondary-600"
-                  : "bg-white text-neutral-600 border-cream-border hover:bg-cream-50"
-              }`}
-            >
-              {up.measurement?.value} {up.unitCode || up.measurement?.unit}
-            </button>
-          ))}
-        </div>
-      )}
-
       {/* 1. PRICING & GST BREAKDOWN CARD */}
       <div className="bg-white border border-cream-border rounded-2xl overflow-hidden shadow-xs">
-        <div className="px-6 py-4 border-b border-cream-border flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-cream-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <IndianRupee className="w-4 h-4 text-secondary-600" />
             <h2 className="text-[15px] font-bold text-neutral-900 tracking-tight">
               Pricing Overview & Tax Breakdown
             </h2>
           </div>
-          <span className="text-xs text-neutral-400">
-            Prices are GST inclusive ({gstPercent}%)
-          </span>
+
+          {/* Unit selector dropdown inside Pricing Overview */}
+          {unitPrices.length > 1 && (
+            <div className="flex items-center gap-2">
+              <label
+                htmlFor="pricing-unit-select"
+                className="text-xs font-semibold text-neutral-500 whitespace-nowrap"
+              >
+                Variant:
+              </label>
+              <div className="relative">
+                <select
+                  id="pricing-unit-select"
+                  value={activeUnitPrice?.id}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    setActiveUnitId(id);
+                    setSelectedView(id);
+                  }}
+                  className="bg-cream-50 border border-cream-border rounded-xl px-3 py-1.5 text-xs font-bold text-neutral-800 shadow-2xs hover:border-secondary-400 focus:outline-none focus:ring-2 focus:ring-secondary-500/20 pr-8 cursor-pointer appearance-none"
+                >
+                  {unitPrices.map((up) => (
+                    <option key={up.id} value={up.id}>
+                      {getUnitLabel(up)} — ₹{(Number(up.basePrice) || 0).toLocaleString("en-IN")}
+                      {up.isDefault ? " (Default)" : ""}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-neutral-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           {/* Base Price */}
           <div className="border-2 border-secondary-200 bg-secondary-50/40 rounded-xl p-4 flex flex-col justify-between gap-1 shadow-2xs">
-            <span className="text-[11px] font-bold tracking-wider text-secondary-800 uppercase">
-              Base Price
-            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold tracking-wider text-secondary-800 uppercase">
+                Base Price ({getUnitLabel(activeUnitPrice)})
+              </span>
+              {activeUnitPrice?.isDefault && (
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300">
+                  Default
+                </span>
+              )}
+            </div>
             <span className="text-xl sm:text-2xl font-bold text-secondary-900 font-mono">
               ₹{basePrice.toLocaleString("en-IN")}.00
             </span>
@@ -199,7 +377,10 @@ export function VariantPriceHistoryCard({
               SKU
             </span>
             <span className="text-lg font-bold text-neutral-900 font-mono">
-              {selectedUnitPrice?.sku}
+              {activeUnitPrice?.sku || "—"}
+            </span>
+            <span className="text-[11px] text-neutral-500 font-medium">
+              Pack Size: {getUnitLabel(activeUnitPrice)}
             </span>
           </div>
         </div>
@@ -214,7 +395,8 @@ export function VariantPriceHistoryCard({
             </div>
             <div className="flex items-center justify-between px-4 py-2.5">
               <span className="text-neutral-500 font-medium">
-                GST @ {gstPercent}% (CGST {gstPercent / 2}% + SGST {gstPercent / 2}%)
+                GST @ {gstPercent}% (CGST {gstPercent / 2}% + SGST{" "}
+                {gstPercent / 2}%)
               </span>
               <span className="font-bold text-neutral-900 font-mono">
                 ₹{gstAmount.toLocaleString("en-IN")}.00
@@ -232,7 +414,8 @@ export function VariantPriceHistoryCard({
 
       {/* 2. PRICE HISTORY CARD (GRAPH & TIMELINE LIST) */}
       <div className="bg-white border border-cream-border rounded-2xl overflow-hidden shadow-xs">
-        <div className="px-6 py-4.5 border-b border-cream-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        {/* Card Header with Dropdown on the right */}
+        <div className="px-6 py-4 border-b border-cream-border flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <History className="w-4 h-4 text-secondary-600" />
             <h2 className="text-[15px] font-bold text-neutral-900 tracking-tight">
@@ -240,183 +423,295 @@ export function VariantPriceHistoryCard({
             </h2>
           </div>
 
-          <div className="flex items-center p-1 bg-cream-200 border border-cream-border rounded-xl gap-1 shadow-2xs">
-            <button
-              type="button"
-              onClick={() => setActiveTab("graph")}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                activeTab === "graph"
-                  ? "bg-secondary-600 text-cream-white shadow-xs"
-                  : "text-neutral-600 hover:text-neutral-900 hover:bg-white"
-              }`}
-            >
-              <BarChart3 className="w-3.5 h-3.5" />
-              <span>Graph</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("list")}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                activeTab === "list"
-                  ? "bg-secondary-600 text-cream-white shadow-xs"
-                  : "text-neutral-600 hover:text-neutral-900 hover:bg-white"
-              }`}
-            >
-              <List className="w-3.5 h-3.5" />
-              <span>Timeline List</span>
-            </button>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            {/* VARIANT SELECT DROPDOWN */}
+            {unitPrices.length > 1 && (
+              <div className="flex items-center gap-1.5">
+                <label
+                  htmlFor="history-variant-dropdown"
+                  className="text-xs font-semibold text-neutral-500 whitespace-nowrap"
+                >
+                  Variant:
+                </label>
+                <div className="relative">
+                  <select
+                    id="history-variant-dropdown"
+                    value={selectedView}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSelectedView(val);
+                      if (val !== "all") {
+                        setActiveUnitId(val);
+                      }
+                    }}
+                    className="bg-cream-50 border border-cream-border rounded-xl px-3 py-1.5 text-xs font-bold text-neutral-800 shadow-2xs hover:border-secondary-400 focus:outline-none focus:ring-2 focus:ring-secondary-500/20 pr-8 cursor-pointer appearance-none"
+                  >
+                    <option value="all">
+                      All Variants (Compare Both)
+                    </option>
+                    {unitPrices.map((up) => (
+                      <option key={up.id} value={up.id}>
+                        {getUnitLabel(up)} — ₹{(Number(up.basePrice) || 0).toLocaleString("en-IN")}{up.isDefault ? " (Default)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-neutral-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+              </div>
+            )}
+
+            {/* View Tab Toggle (Graph vs Timeline List) */}
+            <div className="flex items-center p-1 bg-cream-200 border border-cream-border rounded-xl gap-1 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setActiveTab("graph")}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === "graph"
+                    ? "bg-secondary-600 text-cream-white shadow-xs"
+                    : "text-neutral-600 hover:text-neutral-900 hover:bg-white"
+                }`}
+              >
+                <BarChart3 className="w-3.5 h-3.5" />
+                <span>Graph</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("list")}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === "list"
+                    ? "bg-secondary-600 text-cream-white shadow-xs"
+                    : "text-neutral-600 hover:text-neutral-900 hover:bg-white"
+                }`}
+              >
+                <List className="w-3.5 h-3.5" />
+                <span>Timeline List</span>
+              </button>
+            </div>
           </div>
         </div>
 
         {activeTab === "graph" && (
           <div className="p-6">
+            {/* Summary Row: Left Side Price badges, Right Side 30D / 6M / 1Y range filter */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-              <div className="space-y-1">
-                <div className="flex items-baseline gap-2.5 flex-wrap">
-                  <span className="text-2xl sm:text-3xl font-bold text-neutral-900 font-mono">
-                    ₹{basePrice.toLocaleString("en-IN")}.00
+              {/* Dynamic Price Display */}
+              {selectedView === "all" ? (
+                <div className="space-y-1.5">
+                  <span className="text-[11px] font-bold tracking-wider uppercase text-neutral-400">
+                    Comparing {unitPrices.length} Variants
                   </span>
+                  <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+                    {unitPrices.map((up, idx) => {
+                      const color = VARIANT_COLORS[idx % VARIANT_COLORS.length];
+                      const p = Number(up.basePrice) || 0;
+                      return (
+                        <div
+                          key={up.id}
+                          className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-cream-border shadow-2xs"
+                        >
+                          <span className={`w-2.5 h-2.5 rounded-full ${color.bg}`} />
+                          <span className="text-xs font-bold text-neutral-700">
+                            {getUnitLabel(up)}:
+                          </span>
+                          <span className="text-base sm:text-lg font-bold text-neutral-900 font-mono">
+                            ₹{p.toLocaleString("en-IN")}.00
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs text-neutral-400">
+                    Base price comparison · {activeRangeDesc}
+                  </p>
                 </div>
-                <p className="text-xs text-neutral-400">
-                  {range === "30D"
-                    ? "Base price trend · last 30 days"
-                    : range === "6M"
-                    ? "Base price trend · monthly average, last 6 months"
-                    : "Base price trend · monthly average, last 12 months"}
-                </p>
-              </div>
+              ) : (
+                <div className="space-y-1">
+                  <div className="flex items-baseline gap-2.5 flex-wrap">
+                    <span className="text-2xl sm:text-3xl font-bold text-neutral-900 font-mono">
+                      ₹
+                      {(
+                        Number(
+                          unitPrices.find((up) => up.id === selectedView)
+                            ?.basePrice || basePrice
+                        ) || 0
+                      ).toLocaleString("en-IN")}
+                      .00
+                    </span>
+                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-md bg-secondary-50 text-secondary-700 border border-secondary-200">
+                      {getUnitLabel(
+                        unitPrices.find((up) => up.id === selectedView) ||
+                          activeUnitPrice
+                      )}
+                    </span>
+                  </div>
+                  <p className="text-xs text-neutral-400">
+                    Base price trend · {activeRangeDesc}
+                  </p>
+                </div>
+              )}
 
-              <div className="flex items-center gap-1.5 bg-cream-100 p-1 rounded-lg border border-cream-border shadow-2xs self-start sm:self-auto">
-                {(["30D", "6M", "1Y"] as RangeOption[]).map((r) => (
+              {/* Range Filter Buttons: 30 Days | 6 Months | 1 Year */}
+              <div className="flex items-center gap-1 bg-cream-100 p-1 rounded-xl border border-cream-border shadow-2xs self-start sm:self-auto">
+                {RANGE_OPTIONS.map((opt) => (
                   <button
-                    key={r}
+                    key={opt.value}
                     type="button"
-                    onClick={() => setRange(r)}
-                    className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
-                      range === r
+                    onClick={() => setRange(opt.value)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      range === opt.value
                         ? "bg-secondary-600 text-cream-white shadow-xs"
-                        : "text-neutral-500 hover:text-neutral-800"
+                        : "text-neutral-500 hover:text-neutral-900 hover:bg-white"
                     }`}
                   >
-                    {r}
+                    <span>{opt.label}</span>
                   </button>
                 ))}
               </div>
             </div>
 
-            <div className="rounded-2xl bg-cream-50/50 border border-cream-border p-5">
-              <div className="overflow-x-auto pt-4 pb-2">
-                <div className="min-w-[460px]">
-                  <div className="flex">
-                    {/* Y-Axis Labels */}
-                    <div className="relative h-44 w-12 sm:w-14 shrink-0 select-none">
-                      {yTicks.map((tick, i) => {
-                        const topPct = (i / (yTicks.length - 1)) * 100;
-                        return (
-                          <span
-                            key={i}
-                            style={{ top: `${topPct}%` }}
-                            className="absolute right-2.5 -translate-y-1/2 text-[10.5px] font-mono font-medium text-neutral-400 whitespace-nowrap leading-none"
-                          >
-                            ₹{tick.toLocaleString("en-IN")}
-                          </span>
-                        );
-                      })}
-                    </div>
+            {/* CHART CANVAS */}
+            <div className="rounded-2xl bg-cream-50/50 border border-cream-border p-5 overflow-x-auto">
+              <div className="min-w-max">
+                {/* Single unified flex row for all columns: Bars + Date aligned together */}
+                <div className="flex items-end gap-3 sm:gap-6 pb-2 border-b border-cream-border">
+                  {timelinePoints.map((pt, idx) => {
+                    const isHot = hoveredIndex === idx;
 
-                    {/* Chart Plot & X-Axis */}
-                    <div className="flex-1 flex flex-col min-w-0">
-                      {/* Plot Area */}
-                      <div className="relative h-44">
-                        {/* Horizontal Grid Lines */}
-                        <div className="absolute inset-0 pointer-events-none">
-                          {yTicks.map((_, i) => {
-                            const topPct = (i / (yTicks.length - 1)) * 100;
-                            return (
-                              <div
-                                key={i}
-                                style={{ top: `${topPct}%` }}
-                                className={`absolute left-0 right-0 ${
-                                  i === yTicks.length - 1
-                                    ? "border-b border-cream-border"
-                                    : "border-b border-dashed border-cream-border/70"
-                                }`}
-                              />
-                            );
-                          })}
-                        </div>
+                    const renderedVariants =
+                      selectedView === "all"
+                        ? pt.variants
+                        : pt.variants.filter(
+                            (v) => v.unitPriceId === selectedView
+                          );
 
-                        {/* Bars Container */}
-                        <div className="relative h-full flex items-end gap-2 sm:gap-4 px-2">
-                          {chartSeries.map((pt, idx) => {
-                            const isLatest = idx === chartSeries.length - 1;
-                            const isHot = hoveredIndex === idx;
-                            const heightPercent =
-                              yMax > 0
-                                ? Math.min(100, Math.max(3, (pt.value / yMax) * 100))
-                                : 0;
+                    const colWidth =
+                      selectedView === "all"
+                        ? Math.max(68, renderedVariants.length * 38)
+                        : 60;
 
-                            return (
-                              <div
-                                key={idx}
-                                onMouseEnter={() => setHoveredIndex(idx)}
-                                onMouseLeave={() => setHoveredIndex(null)}
-                                className="flex-1 relative flex flex-col items-center justify-end h-full group cursor-pointer"
-                              >
-                                {isHot && (
-                                  <div
-                                    style={{ bottom: `${heightPercent}%` }}
-                                    className="absolute z-30 mb-2 left-1/2 -translate-x-1/2 rounded-xl bg-neutral-900 text-white px-3 py-1.5 text-center shadow-xl pointer-events-none whitespace-nowrap animate-in fade-in-0 duration-150"
-                                  >
-                                    <div className="text-[10px] text-neutral-300 font-medium">
-                                      {pt.fullDate}
-                                    </div>
-                                    <div className="text-xs font-bold font-mono text-emerald-400">
-                                      ₹{pt.value.toLocaleString("en-IN")}.00
-                                    </div>
+                    return (
+                      <div
+                        key={idx}
+                        onMouseEnter={() => setHoveredIndex(idx)}
+                        onMouseLeave={() => setHoveredIndex(null)}
+                        className="flex flex-col items-center relative group cursor-pointer"
+                        style={{ width: `${colWidth}px` }}
+                      >
+                        {/* Hover Tooltip */}
+                        {isHot && (
+                          <div className="absolute z-30 bottom-[180px] mb-2 left-1/2 -translate-x-1/2 rounded-xl bg-neutral-900 text-white px-3.5 py-2 text-left shadow-xl pointer-events-none whitespace-nowrap border border-neutral-700 animate-in fade-in-0 duration-150">
+                            <div className="text-[10px] text-neutral-300 font-semibold mb-1 pb-1 border-b border-neutral-800">
+                              {pt.fullDate}
+                            </div>
+                            <div className="space-y-1">
+                              {renderedVariants.map((v) => (
+                                <div
+                                  key={v.unitPriceId}
+                                  className="flex items-center justify-between gap-3 text-xs"
+                                >
+                                  <div className="flex items-center gap-1.5">
+                                    <span
+                                      className={`w-2 h-2 rounded-full ${v.color.bg}`}
+                                    />
+                                    <span className="text-neutral-300">
+                                      {v.unitName}:
+                                    </span>
                                   </div>
-                                )}
+                                  <span className="font-bold font-mono text-emerald-400">
+                                    ₹{v.price.toLocaleString("en-IN")}.00
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
+                        {/* Chart Area - Fixed height 150px, flex items-end ensures bars stick to baseline */}
+                        <div className="h-[150px] w-full flex items-end justify-center gap-2">
+                          {renderedVariants.map((v) => {
+                            // Calculate explicit height in pixels (from 28px min to 118px max)
+                            const barHeightPx =
+                              span > 0
+                                ? Math.round(
+                                    28 + ((v.price - minVal) / span) * 90
+                                  )
+                                : 65;
+
+                            const barWidth =
+                              selectedView === "all" ? "w-7 sm:w-8" : "w-10 sm:w-12";
+
+                            return (
+                              <div
+                                key={v.unitPriceId}
+                                className={`flex flex-col items-center justify-end ${barWidth}`}
+                              >
+                                {/* Price label above the bar */}
                                 <span
-                                  className={`text-[10px] sm:text-[10.5px] font-bold font-mono mb-1.5 transition-colors whitespace-nowrap select-none ${
-                                    isHot || isLatest
-                                      ? "text-secondary-900 font-bold"
+                                  className={`text-[9.5px] sm:text-[10px] font-mono font-semibold mb-1 transition-colors whitespace-nowrap ${
+                                    isHot
+                                      ? "text-neutral-900 font-bold"
                                       : "text-neutral-500"
                                   }`}
                                 >
-                                  ₹{pt.value}
+                                  ₹{v.price}
                                 </span>
 
+                                {/* The Bar itself with explicit height in pixels */}
                                 <div
-                                  style={{ height: `${heightPercent}%` }}
-                                  className={`w-full max-w-[42px] rounded-t-md transition-all duration-200 ${
+                                  style={{ height: `${barHeightPx}px` }}
+                                  className={`w-full rounded-t-lg transition-all duration-200 ${
+                                    v.color.bg
+                                  } ${
                                     isHot
-                                      ? "bg-secondary-900 shadow-md scale-105"
-                                      : isLatest
-                                      ? "bg-secondary-600 shadow-xs"
-                                      : "bg-secondary-200 hover:bg-secondary-300"
+                                      ? "brightness-110 shadow-md scale-y-[1.02]"
+                                      : "shadow-2xs opacity-95 hover:opacity-100"
                                   }`}
                                 />
                               </div>
                             );
                           })}
                         </div>
-                      </div>
 
-                      {/* X-Axis Month Labels */}
-                      <div className="flex gap-2 sm:gap-4 px-2 mt-2.5">
-                        {chartSeries.map((pt, idx) => (
-                          <div
-                            key={idx}
-                            className="flex-1 text-center text-[11px] sm:text-xs font-semibold text-neutral-500 whitespace-nowrap"
-                          >
-                            {pt.date}
-                          </div>
-                        ))}
+                        {/* Date label directly beneath this exact column */}
+                        <div className="mt-2.5 text-center text-[11px] font-semibold text-neutral-500 whitespace-nowrap">
+                          {pt.label}
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    );
+                  })}
                 </div>
+
+                {/* Legend below the chart when comparing all */}
+                {selectedView === "all" && unitPrices.length > 1 && (
+                  <div className="flex items-center justify-center gap-4 pt-4 mt-2 flex-wrap text-xs">
+                    <span className="text-neutral-400 font-medium text-[11px]">
+                      Legend:
+                    </span>
+                    {unitPrices.map((up, idx) => {
+                      const color = VARIANT_COLORS[idx % VARIANT_COLORS.length];
+                      const p = Number(up.basePrice) || 0;
+                      return (
+                        <button
+                          key={up.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedView(up.id);
+                            setActiveUnitId(up.id);
+                          }}
+                          className="flex items-center gap-1.5 font-medium text-neutral-600 hover:text-neutral-900 transition-colors cursor-pointer bg-white px-2.5 py-1 rounded-md border border-cream-border shadow-2xs hover:border-secondary-400"
+                        >
+                          <span
+                            className={`w-2.5 h-2.5 rounded-full ${color.bg}`}
+                          />
+                          <span className="font-bold">{getUnitLabel(up)}</span>
+                          <span className="font-mono text-neutral-400">
+                            (₹{p.toLocaleString("en-IN")})
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -424,6 +719,29 @@ export function VariantPriceHistoryCard({
 
         {activeTab === "list" && (
           <div className="p-6">
+            {/* Dropdown in Timeline List View when there are multiple variants */}
+            {unitPrices.length > 1 && (
+              <div className="mb-5 pb-4 border-b border-cream-border flex items-center justify-between gap-3 flex-wrap">
+                <span className="text-xs font-semibold text-neutral-500">
+                  Showing audit log for:
+                </span>
+                <div className="relative">
+                  <select
+                    value={activeUnitPrice?.id}
+                    onChange={(e) => setActiveUnitId(e.target.value)}
+                    className="bg-cream-50 border border-cream-border rounded-xl px-3 py-1.5 text-xs font-bold text-neutral-800 shadow-2xs hover:border-secondary-400 focus:outline-none focus:ring-2 focus:ring-secondary-500/20 pr-8 cursor-pointer appearance-none"
+                  >
+                    {unitPrices.map((up) => (
+                      <option key={up.id} value={up.id}>
+                        {getUnitLabel(up)} — ₹{(Number(up.basePrice) || 0).toLocaleString("en-IN")}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-neutral-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+              </div>
+            )}
+
             {isLoadingHistory ? (
               <div className="py-12 text-center text-xs text-neutral-400">
                 Loading price history timeline...
@@ -432,11 +750,11 @@ export function VariantPriceHistoryCard({
               <div className="py-12 text-center flex flex-col items-center gap-2">
                 <History className="w-8 h-8 text-neutral-300" />
                 <p className="text-sm font-bold text-neutral-800">
-                  Initial Price Recorded
+                  Initial Price Recorded for {getUnitLabel(activeUnitPrice)}
                 </p>
                 <p className="text-xs text-neutral-400 max-w-sm">
                   This unit price is currently ₹{basePrice.toLocaleString("en-IN")}.
-                  Historical revisions will appear here when the base price is
+                  Historical revisions will appear here when this pack size's base price is
                   modified.
                 </p>
               </div>
